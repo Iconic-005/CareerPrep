@@ -1,0 +1,284 @@
+{
+  "profile": {
+    "name": "Jordan Avery",
+    "title": "Transitioning into Senior Product Management",
+    "skills": [
+      "Product Strategy",
+      "Figma",
+      "Python Basics",
+      "SQL",
+      "Leadership",
+      "Research Ops"
+    ],
+    "about": "Product-minded operator with a background in growth, experimentation, and stakeholder leadership. Focused on translating customer insight into measurable business outcomes.",
+    "metrics": [
+      {
+        "label": "Profile Strength",
+        "value": "91%",
+        "accent": "blue"
+      },
+      {
+        "label": "Recruiter Fit",
+        "value": "86%",
+        "accent": "violet"
+      }
+    ],
+    "focusAreas": [
+      {
+        "label": "Target role",
+        "value": "Senior Product Manager"
+      },
+      {
+        "label": "Target companies",
+        "value": "Google, Stripe, Figma"
+      },
+      {
+        "label": "Next milestone",
+        "value": "Complete SQL experimentation module"
+      }
+    ],
+    "recruiterSnapshot": "Strong product and growth foundation. Add two quantified leadership stories to make your transition narrative more compelling."
+  },
+  "goals": [
+    {
+      "id": "g1",
+      "title": "3 Coding Problems",
+      "done": false,
+      "status": "1 / 3 Done"
+    },
+    {
+      "id": "g2",
+      "title": "Review Resume Feedback",
+      "done": true,
+      "status": "Complete"
+    },
+    {
+      "id": "g3",
+      "title": "1 Mock Interview Session for Senior Product Manager",
+      "done": false,
+      "status": "Pending"
+    }
+  ],
+  "resume": {
+    "suggestions": [
+      {
+        "id": 1,
+        "title": "Quantify achievements in your current role.",
+        "desc": "Specific percentages increase credibility with ATS filters by 22%.",
+        "accent": "blue"
+      },
+      {
+        "id": 2,
+        "title": "Rewrite summary for a leadership focus.",
+        "desc": "Shift the summary from task-based language to strategic outcomes.",
+        "accent": "violet"
+      }
+    ],
+    "missingSkills": [
+      "Python",
+      "AWS",
+      "Kubernetes"
+    ],
+    "resumeText": "Product Manager with 4+ years of experience leading cross-functional teams, driving roadmap strategy, and optimizing user engagement metrics."
+  },
+  "roadmap": {
+    "bannerTitle": "Target Transition",
+    "bannerSubtitle": "Senior Product Manager",
+    "bannerMeta": "Projected readiness: Next quarter at your current pace.",
+    "milestones": [
+      {
+        "id": "m1",
+        "title": "Research foundations",
+        "desc": "Completed JTBD and user interview basics.",
+        "time": "Done",
+        "tone": "mint",
+        "done": true
+      },
+      {
+        "id": "m2",
+        "title": "Analytics fluency",
+        "desc": "Finish SQL + experimentation module.",
+        "time": "In progress",
+        "tone": "blue",
+        "done": false
+      },
+      {
+        "id": "m3",
+        "title": "Leadership stories",
+        "desc": "Build 3 promotion-ready case studies.",
+        "time": "Next up",
+        "tone": "violet",
+        "done": false
+      },
+      {
+        "id": "m4",
+        "title": "Mock interview series",
+        "desc": "Complete 5 PM interview simulations.",
+        "time": "Scheduled",
+        "tone": "slate",
+        "done": false
+      }
+    ],
+    "focusAreas": [
+      {
+        "id": "f1",
+        "title": "Product strategy depth",
+        "text": "Add stronger examples of prioritization and roadmap tradeoff decisions."
+      },
+      {
+        "id": "f2",
+        "title": "Technical fluency",
+        "text": "Ship one analytics mini-project and one API integration case study."
+      },
+      {
+        "id": "f3",
+        "title": "Executive communication",
+        "text": "Practice concise narratives for leadership and stakeholder alignment."
+      }
+    ]
+  },
+  "notifications": [
+    {
+      "id": "n1",
+      "title": "Interview reminder",
+      "time": "Today, 4:45 PM",
+      "detail": "Your mock interview prep for Senior Product Manager is ready.",
+      "accent": "blue",
+      "read": false
+    },
+    {
+      "id": "n2",
+      "title": "Resume suggestion",
+      "time": "Today, 1:12 PM",
+      "detail": "AI found 3 impact metrics to strengthen your profile story.",
+      "accent": "violet",
+      "read": false
+    },
+    {
+      "id": "n3",
+      "title": "Roadmap milestone",
+      "time": "Yesterday",
+      "detail": "You completed the latest skill milestone ahead of schedule.",
+      "accent": "mint",
+      "read": true
+    },
+    {
+      "id": "n4",
+      "title": "New report ready",
+      "time": "Today",
+      "detail": "Your latest mock interview confidence report is ready to review.",
+      "accent": "slate",
+      "read": true
+    }
+  ],
+  "practiceTracks": [
+    {
+      "id": "pt1",
+      "title": "Coding Arena",
+      "subtitle": "Algorithms, system design, frontend debugging, and timed contests.",
+      "accent": "blue",
+      "metric": "17 challenges active",
+      "items": [
+        "Data Structures Sprint",
+        "React Bug Bash",
+        "System Design Drills"
+      ]
+    },
+    {
+      "id": "pt2",
+      "title": "Aptitude Lab",
+      "subtitle": "Quant, logical reasoning, and recruiter-style problem sets for Product Strategy.",
+      "accent": "violet",
+      "metric": "420 questions ready",
+      "items": [
+        "Quantitative Reasoning",
+        "Logical Deduction",
+        "Pattern Analysis"
+      ]
+    }
+  ],
+  "adminUsers": [
+    {
+      "id": "u1",
+      "initials": "JD",
+      "name": "Jordan Avery",
+      "email": "jane.doe@example.com",
+      "status": "Active",
+      "statusTone": "green",
+      "subscription": "Pro Tier",
+      "activity": "2h ago",
+      "accent": "blue"
+    },
+    {
+      "id": "u2",
+      "initials": "MS",
+      "name": "Michael Smith",
+      "email": "m.smith@dev.co",
+      "status": "Interviewing",
+      "statusTone": "amber",
+      "subscription": "Free",
+      "activity": "5m ago",
+      "accent": "violet"
+    },
+    {
+      "id": "u3",
+      "initials": "AW",
+      "name": "Alex Wong",
+      "email": "alex.w@uxdesign.com",
+      "status": "Offline",
+      "statusTone": "gray",
+      "subscription": "Enterprise",
+      "activity": "1d ago",
+      "accent": "slate"
+    }
+  ],
+  "resourceGroups": [
+    {
+      "id": "rg1",
+      "title": "Aptitude Pool",
+      "icon": "brain",
+      "tone": "blue",
+      "action": "Manage All",
+      "buttonLabel": "+ Add Category",
+      "items": [
+        {
+          "title": "Quantitative Reasoning",
+          "subtitle": "420 Questions"
+        },
+        {
+          "title": "Logical Deduction",
+          "subtitle": "315 Questions"
+        }
+      ]
+    },
+    {
+      "id": "rg2",
+      "title": "Coding Challenges",
+      "icon": "code",
+      "tone": "violet",
+      "action": "Manage All",
+      "buttonLabel": "+ New Challenge",
+      "items": [
+        {
+          "title": "Data Structures",
+          "subtitle": "Expert • 85 Problems"
+        },
+        {
+          "title": "System Design",
+          "subtitle": "Senior • 42 Case Studies"
+        }
+      ]
+    }
+  ],
+  "jdAnalyses": [],
+  "chatHistory": [],
+  "settings": {
+    "preferences": {
+      "email": true,
+      "reminders": true,
+      "insights": false
+    },
+    "theme": "Light"
+  },
+  "users": []
+}
