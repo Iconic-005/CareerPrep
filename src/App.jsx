@@ -1,7 +1,116 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Icon } from './components/Icon.jsx';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+const AuthContext = createContext(null);
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCurrentUser = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+      } else {
+        localStorage.removeItem('careerprep_token');
+        localStorage.removeItem('careerprep_userid');
+        localStorage.removeItem('careerprep_username');
+        setUser(null);
+      }
+    } catch (err) {
+      console.error('Failed to restore session:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('careerprep_token');
+    if (token) {
+      fetchCurrentUser(token);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const login = (token, userData) => {
+    localStorage.setItem('careerprep_token', token);
+    localStorage.setItem('careerprep_userid', userData.id);
+    localStorage.setItem('careerprep_username', userData.name);
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('careerprep_token');
+    localStorage.removeItem('careerprep_userid');
+    localStorage.removeItem('careerprep_username');
+    setUser(null);
+    navigate('/auth');
+  };
+
+  const updateUser = (updatedUser) => {
+    setUser((prev) => (prev ? { ...prev, ...updatedUser } : updatedUser));
+    if (updatedUser.name) {
+      localStorage.setItem('careerprep_username', updatedUser.name);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function RouteGuard({ path, children }) {
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user && path !== '/' && path !== '/auth') {
+      navigate('/auth');
+    }
+    if (!loading && user && path === '/auth') {
+      navigate('/dashboard');
+    }
+  }, [user, loading, path]);
+
+  if (loading) {
+    return (
+      <div className="auth-shell auth-shell--single" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#090d16' }}>
+        <div style={{ textAlign: 'center', color: '#6366f1' }}>
+          <div className="spinner" style={{ border: '4px solid rgba(255,255,255,0.1)', borderTop: '4px solid #6366f1', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>Verifying your secure session...</p>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
+
+  const isPublic = path === '/' || path === '/auth';
+  if (!user && !isPublic) {
+    return null;
+  }
+
+  return children;
+}
 
 const appNav = [
   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
@@ -28,37 +137,30 @@ const morePages = [
   { label: 'Auth', path: '/auth' },
 ];
 
-const stats = [
-  { title: 'Resume Score', value: '85 / 100', accent: 'blue', icon: 'document' },
-  { title: 'Interview Rank', value: 'Top 5%', accent: 'violet', icon: 'mic' },
-  { title: 'Coding XP', value: '2,400 pts', accent: 'slate', icon: 'code' },
-];
+function getAuthHeaders() {
+  const token = localStorage.getItem('careerprep_token') || '';
+  const userId = localStorage.getItem('careerprep_userid') || '';
+  const userName = localStorage.getItem('careerprep_username') || '';
+  return {
+    'Content-Type': 'application/json',
+    Authorization: token ? `Bearer ${token}` : '',
+    'x-user-id': userId,
+    'x-user-name': encodeURIComponent(userName),
+  };
+}
 
-const practiceTracks = [
-  {
-    title: 'Coding Arena',
-    subtitle: 'Algorithms, system design, frontend debugging, and timed contests.',
-    accent: 'blue',
-    metric: '17 challenges active',
-    items: ['Data Structures Sprint', 'React Bug Bash', 'System Design Drills'],
-  },
-  {
-    title: 'Aptitude Lab',
-    subtitle: 'Quant, logical reasoning, and recruiter-style problem sets.',
-    accent: 'violet',
-    metric: '420 questions ready',
-    items: ['Quantitative Reasoning', 'Logical Deduction', 'Pattern Analysis'],
-  },
-];
-
-const notificationGroups = [
-  { title: 'Interview reminder', time: 'Today, 4:45 PM', detail: 'Google PM mock interview starts in 15 minutes.', accent: 'blue' },
-  { title: 'Resume suggestion', time: 'Today, 1:12 PM', detail: 'AI found 3 impact metrics to strengthen your Stripe case study.', accent: 'violet' },
-  { title: 'Roadmap milestone', time: 'Yesterday', detail: 'You completed the Product Strategy module ahead of schedule.', accent: 'mint' },
-  { title: 'New report ready', time: 'July 15, 2026', detail: 'Your latest mock interview confidence report is ready to review.', accent: 'slate' },
-];
-
-const profileSkills = ['Product Strategy', 'Figma', 'Python Basics', 'SQL', 'Leadership', 'Research Ops'];
+function EmptyState({ title = 'No data available', message = 'Complete actions to populate this section.', actionLabel, onAction, icon = 'bulb' }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94a3b8' }}>
+      <div style={{ fontSize: '28px', marginBottom: '8px' }}><Icon name={icon} /></div>
+      <h4 style={{ color: '#f8fafc', margin: '4px 0', fontSize: '1.05rem', fontWeight: 600 }}>{title}</h4>
+      <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: '#94a3b8' }}>{message}</p>
+      {actionLabel && onAction ? (
+        <button type="button" className="primary-button" onClick={onAction}>{actionLabel}</button>
+      ) : null}
+    </div>
+  );
+}
 
 const settingsTabs = [
   'Profile',
@@ -68,85 +170,6 @@ const settingsTabs = [
   'Security',
   'Billing',
 ];
-
-const userActivity = [
-  {
-    initials: 'JD',
-    name: 'Jane Doe',
-    email: 'jane.doe@example.com',
-    status: 'Active',
-    statusTone: 'green',
-    subscription: 'Pro Tier',
-    activity: '2h ago',
-    accent: 'blue',
-  },
-  {
-    initials: 'MS',
-    name: 'Michael Smith',
-    email: 'm.smith@dev.co',
-    status: 'Interviewing',
-    statusTone: 'amber',
-    subscription: 'Free',
-    activity: '5m ago',
-    accent: 'violet',
-  },
-  {
-    initials: 'AW',
-    name: 'Alex Wong',
-    email: 'alex.w@uxdesign.com',
-    status: 'Offline',
-    statusTone: 'gray',
-    subscription: 'Enterprise',
-    activity: '1d ago',
-    accent: 'slate',
-  },
-];
-
-const adminStats = [
-  {
-    title: 'Total Users',
-    value: '42,892',
-    icon: 'users',
-    tone: 'blue',
-    change: '+12.5%',
-    trend: 'up',
-    progress: 74,
-  },
-  {
-    title: 'Active Interviews',
-    value: '1,402',
-    icon: 'broadcast',
-    tone: 'violet',
-    change: '+8.2%',
-    trend: 'up',
-    progress: 52,
-  },
-  {
-    title: 'Monthly Revenue',
-    value: '$128,450',
-    icon: 'wallet',
-    tone: 'slate',
-    change: '-2.4%',
-    trend: 'down',
-    progress: 61,
-  },
-  {
-    title: 'Success Rate',
-    value: '76.4%',
-    icon: 'badge',
-    tone: 'sky',
-    change: '98%',
-    trend: 'neutral',
-    progress: 78,
-  },
-];
-
-const reports = [
-  { label: 'Resume Score Avg.', value: 78, tone: 'blue' },
-  { label: 'Interview AI Confidence', value: 92, tone: 'violet' },
-];
-
-const topSkills = ['Python', 'Cloud Arch', 'React', 'LLM Tuning', 'Product Logic'];
 
 const systemHealth = [
   { label: 'API Latency', value: '24ms' },
@@ -234,6 +257,7 @@ function ShellNav({ compact = false }) {
 }
 
 function SidebarShell() {
+  const { logout } = useAuth();
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -270,6 +294,15 @@ function SidebarShell() {
           <Icon name="user" />
           <span>Profile</span>
         </RouteLink>
+        <button
+          type="button"
+          onClick={logout}
+          className="nav-link"
+          style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
+          <Icon name="logout" />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   );
@@ -345,22 +378,12 @@ function MarketingFooter() {
 }
 
 function AppShell({ title, subtitle, actions, children }) {
-  const [initials, setInitials] = useState('US');
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/profile`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.name) {
-          const parts = data.name.trim().split(' ');
-          const inits = parts.length > 1
-            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-            : parts[0].slice(0, 2).toUpperCase();
-          setInitials(inits);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { user } = useAuth();
+  const name = user?.name || 'User';
+  const parts = name.trim().split(' ');
+  const initials = parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0].slice(0, 2).toUpperCase();
 
   return (
     <div className="app-shell">
@@ -563,6 +586,7 @@ function PricingCard({ title, price, items, cta, featured = false }) {
 }
 
 function AuthPage() {
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -587,6 +611,10 @@ function AuthPage() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Authentication failed');
+      }
+
+      if (data.token && data.user) {
+        login(data.token, data.user);
       }
 
       navigate('/dashboard');
@@ -685,15 +713,16 @@ function AuthPage() {
 }
 
 function UserDashboardPage() {
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [newGoal, setNewGoal] = useState('');
   const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
 
   const loadDashboard = () => {
-    fetch(`${API_BASE_URL}/dashboard`)
+    fetch(`${API_BASE_URL}/dashboard`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setDashboardData(data))
-      .catch(() => setDashboardData({ greeting: 'Alex', readiness: 92, stats, goals: [] }));
+      .catch(() => setDashboardData(null));
   };
 
   useEffect(() => {
@@ -707,7 +736,7 @@ function UserDashboardPage() {
     try {
       await fetch(`${API_BASE_URL}/goals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title: newGoal }),
       });
       setNewGoal('');
@@ -721,7 +750,7 @@ function UserDashboardPage() {
     try {
       await fetch(`${API_BASE_URL}/goals/${goal.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ done: !goal.done }),
       });
       loadDashboard();
@@ -732,7 +761,10 @@ function UserDashboardPage() {
 
   const handleDeleteGoal = async (goalId) => {
     try {
-      await fetch(`${API_BASE_URL}/goals/${goalId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
       loadDashboard();
     } catch (err) {
       console.error('Failed to delete goal', err);
@@ -740,12 +772,15 @@ function UserDashboardPage() {
   };
 
   if (!dashboardData) {
-    return <AppShell title="Loading..." subtitle="Fetching your latest career insights." actions={null}><p className="text-muted">Loading your dashboard…</p></AppShell>;
+    return <AppShell title="Loading..." subtitle="Fetching your career insights." actions={null}><p className="text-muted">Loading your dashboard…</p></AppShell>;
   }
+
+  const hasActivity = (dashboardData.weeklyActivity || []).some(d => d.count > 0);
+  const firstName = user?.name ? user.name.split(' ')[0] : 'User';
 
   return (
     <AppShell
-      title={`Hello, ${dashboardData.greeting}`}
+      title={`Hello, ${firstName}`}
       subtitle="Ready to land your dream role? Here's your prep summary."
       actions={<button type="button" className="ghost-button"><Icon name="calendar" />Last 7 Days</button>}
     >
@@ -754,17 +789,17 @@ function UserDashboardPage() {
           <p className="eyebrow">Career Readiness</p>
           <div className="ring">
             <div className="ring__inner">
-              <strong>{dashboardData.readiness}</strong>
+              <strong>{dashboardData.readiness || 0}</strong>
               <span>%</span>
             </div>
           </div>
-          <h3>Excellent Progress</h3>
-          <p>You're in the top 3% of candidates this week.</p>
+          <h3>{dashboardData.readiness > 50 ? 'Great Progress' : 'Start Your Journey'}</h3>
+          <p>{dashboardData.readiness > 0 ? 'Your calculated readiness score.' : 'Complete daily goals and scans to boost readiness.'}</p>
         </article>
 
         <div className="dashboard-grid__stack">
           <div className="mini-stats">
-            {dashboardData.stats.map((item) => (
+            {(dashboardData.stats || []).map((item) => (
               <article key={item.title} className={`card mini-stat mini-stat--${item.accent}`}>
                 <div className="mini-stat__head">
                   <Icon name={item.icon} />
@@ -780,47 +815,52 @@ function UserDashboardPage() {
               <h3>Weekly Activity</h3>
               <button type="button" className="text-button">Last 7 Days</button>
             </div>
-            <div className="chart">
-              <svg viewBox="0 0 400 120" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="dashboardGradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(37,108,240,0.22)" />
-                    <stop offset="100%" stopColor="rgba(37,108,240,0)" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34" fill="none" stroke="#256cf0" strokeWidth="4" strokeLinecap="round" />
-                <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34 V120 H0 Z" fill="url(#dashboardGradient)" />
-              </svg>
-              <div className="chart__labels">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                  <span key={day}>{day}</span>
-                ))}
+            {!hasActivity ? (
+              <EmptyState title="No activity recorded" message="Actions like setting goals and optimizing resumes will appear here." icon="analytics" />
+            ) : (
+              <div className="chart">
+                <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="dashboardGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(37,108,240,0.22)" />
+                      <stop offset="100%" stopColor="rgba(37,108,240,0)" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34" fill="none" stroke="#256cf0" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34 V120 H0 Z" fill="url(#dashboardGradient)" />
+                </svg>
+                <div className="chart__labels">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                    <span key={day}>{day}</span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </article>
         </div>
       </section>
 
       <section className="dashboard-lower">
         <div className="dashboard-lower__main">
-          <article className="card spotlight-card">
-            <div className="spotlight-card__meta">
-              <div className="spotlight-card__icon">
-                <Icon name="video" />
+          {dashboardData.upcomingInterview ? (
+            <article className="card spotlight-card">
+              <div className="spotlight-card__meta">
+                <div className="spotlight-card__icon"><Icon name="video" /></div>
+                <div>
+                  <h3>Upcoming Interview</h3>
+                  <p>{dashboardData.upcomingInterview.role} · {dashboardData.upcomingInterview.difficulty}</p>
+                </div>
               </div>
-              <div>
-                <h3>Upcoming Interview</h3>
-                <p>Google · Senior Product Designer</p>
+              <div className="spotlight-card__footer">
+                <div><strong>02</strong><span>Days Left</span></div>
+                <button type="button" className="ghost-button ghost-button--inverse">Prepare Now</button>
               </div>
-            </div>
-            <div className="spotlight-card__footer">
-              <div>
-                <strong>02</strong>
-                <span>Days Left</span>
-              </div>
-              <button type="button" className="ghost-button ghost-button--inverse">Prepare Now</button>
-            </div>
-          </article>
+            </article>
+          ) : (
+            <article className="card panel">
+              <EmptyState title="No interview scheduled" message="Mock interview sessions will show up here." actionLabel="Practice Interview" onAction={() => navigate('/interview-report')} icon="mic" />
+            </article>
+          )}
 
           <article className="card panel">
             <div className="panel__header panel__header--tight">
@@ -838,29 +878,36 @@ function UserDashboardPage() {
                 {isSubmittingGoal ? 'Adding...' : 'Add'}
               </button>
             </form>
-            <div className="goal-list">
-              {dashboardData.goals.map((goal) => (
-                <GoalItem
-                  key={goal.id || goal.title}
-                  done={goal.done}
-                  title={goal.title}
-                  status={goal.status}
-                  onToggle={() => handleToggleGoal(goal)}
-                  onDelete={() => handleDeleteGoal(goal.id)}
-                />
-              ))}
-            </div>
+            {dashboardData.goals.length === 0 ? (
+              <EmptyState title="No daily goals set" message="Add a goal above to start tracking your daily progress." icon="check" />
+            ) : (
+              <div className="goal-list">
+                {dashboardData.goals.map((goal) => (
+                  <GoalItem
+                    key={goal.id || goal.title}
+                    done={goal.done}
+                    title={goal.title}
+                    status={goal.status}
+                    onToggle={() => handleToggleGoal(goal)}
+                    onDelete={() => handleDeleteGoal(goal.id)}
+                  />
+                ))}
+              </div>
+            )}
           </article>
         </div>
 
         <article className="card panel timeline-card">
           <h3>Recent Activity</h3>
-          <div className="timeline">
-            <TimelineItem title="Resume updated" desc="ATS optimization applied to Experience section." time="2 hours ago" tone="blue" />
-            <TimelineItem title="Mock interview completed" desc="System Design performance: Excellent." time="Yesterday" tone="violet" />
-            <TimelineItem title="New badge earned" desc='"Consistent Coder" 7 day streak.' time="2 days ago" tone="slate" />
-            <TimelineItem title="Connected with recruiter" desc="Profile shared with Hiring Manager at Figma." time="July 12, 2026" tone="gray" />
-          </div>
+          {(dashboardData.recentActivity || []).length === 0 ? (
+            <EmptyState title="No recent activity" message="Your activity log will populate as you perform actions." icon="clock" />
+          ) : (
+            <div className="timeline">
+              {dashboardData.recentActivity.map((act) => (
+                <TimelineItem key={act.id || act.title} title={act.title} desc={act.desc} time={act.time} tone={act.tone || 'blue'} />
+              ))}
+            </div>
+          )}
         </article>
       </section>
     </AppShell>
@@ -904,24 +951,45 @@ function TimelineItem({ title, desc, time, tone }) {
 }
 
 function ResumePage() {
-  const [suggestions, setSuggestions] = useState([]);
-  const [missingSkills, setMissingSkills] = useState([]);
+  const [resumeData, setResumeData] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [resumeInput, setResumeInput] = useState('');
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
+  const loadResume = () => {
+    fetch(`${API_BASE_URL}/resume`, { headers: getAuthHeaders() })
+      .then((res) => res.json())
+      .then((data) => setResumeData(data))
+      .catch(() => setResumeData({ suggestions: [], missingSkills: [], resumeText: '', score: 'Not Generated' }));
+
+    fetch(`${API_BASE_URL}/profile`, { headers: getAuthHeaders() })
+      .then((res) => res.json())
+      .then((data) => setProfile(data))
+      .catch(() => {});
+  };
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/resume`)
-      .then((response) => response.json())
-      .then((data) => {
-        setSuggestions(data.suggestions || []);
-        setMissingSkills(data.missingSkills || []);
-      })
-      .catch(() => {
-        setSuggestions([
-          { id: 1, title: 'Quantify achievements in your Stripe role.', desc: 'Specific percentages increase credibility with ATS filters by 22%.', accent: 'blue' },
-          { id: 2, title: 'Rewrite summary for a leadership focus.', desc: 'Shift the summary from task-based language to strategic outcomes.', accent: 'violet' },
-        ]);
-        setMissingSkills(['Python', 'AWS', 'Kubernetes']);
-      });
+    loadResume();
   }, []);
+
+  const handleOptimize = async () => {
+    if (!resumeInput.trim()) return;
+    setIsOptimizing(true);
+    try {
+      await fetch(`${API_BASE_URL}/resume/optimize`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ resumeText: resumeInput }),
+      });
+      loadResume();
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const suggestions = resumeData?.suggestions || [];
+  const missingSkills = resumeData?.missingSkills || [];
+  const resumeText = resumeData?.resumeText || '';
 
   return (
     <AppShell
@@ -929,8 +997,9 @@ function ResumePage() {
       subtitle="Refine your resume with live AI guidance, ATS scoring, and targeted rewrites."
       actions={
         <>
-          <button type="button" className="ghost-button"><Icon name="history" />Version History</button>
-          <button type="button" className="primary-button">Generate Improved Resume</button>
+          <button type="button" className="primary-button" onClick={handleOptimize} disabled={isOptimizing || !resumeInput.trim()}>
+            {isOptimizing ? 'Optimizing...' : 'Optimize Resume with AI'}
+          </button>
         </>
       }
     >
@@ -938,84 +1007,78 @@ function ResumePage() {
         <article className="resume-stage">
           <div className="resume-paper">
             <div className="resume-paper__heading">
-              <h3>Alex Thompson</h3>
-              <p>Senior Product Designer & Systems Architect</p>
+              <h3>{profile?.name || 'Your Name'}</h3>
+              <p>{profile?.title || 'Target Professional Role'}</p>
               <div className="resume-paper__meta">
-                <span>alex.t@example.com</span>
-                <span>+1 (555) 000-1234</span>
-                <span>New York, NY</span>
+                <span>{profile?.email || 'email@example.com'}</span>
               </div>
             </div>
 
             <section className="resume-paper__section">
-              <p className="resume-paper__label">Professional Experience</p>
-              <div className="resume-entry">
-                <div className="resume-entry__head">
-                  <strong>Stripe</strong>
-                  <span>2021 — Present</span>
+              <p className="resume-paper__label">Resume Content</p>
+              {resumeText ? (
+                <div style={{ whiteSpace: 'pre-wrap', color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                  {resumeText}
                 </div>
-                <p>Senior Product Designer (Checkout & Payments)</p>
-                <ul>
-                  <li>Led the redesign of the Stripe Checkout flow, increasing mobile conversion by 14%.</li>
-                  <li>Built a scalable design system for payment method expansion in emerging markets.</li>
-                  <li className="resume-entry__highlight">AI suggestion: quantify leadership impact across the growth program.</li>
-                </ul>
-              </div>
-              <div className="resume-entry">
-                <div className="resume-entry__head">
-                  <strong>Figma</strong>
-                  <span>2018 — 2021</span>
+              ) : (
+                <div style={{ marginTop: '12px' }}>
+                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '12px' }}>
+                    No resume text added yet. Paste your current resume bullet points below to optimize against ATS filters:
+                  </p>
+                  <textarea
+                    rows="8"
+                    value={resumeInput}
+                    onChange={(e) => setResumeInput(e.target.value)}
+                    placeholder="Paste your resume content or experience bullet points here..."
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                  />
                 </div>
-                <p>Product Designer (Design Systems Team)</p>
-                <ul>
-                  <li>Maintained and scaled the internal design system supporting 200+ engineers.</li>
-                  <li>Launched Auto-Layout v3 documentation and onboarding tutorials.</li>
-                </ul>
-              </div>
+              )}
             </section>
           </div>
         </article>
 
         <aside className="resume-insights">
           <article className="card panel">
-            <h3>Resume Analysis</h3>
-            <div className="score-grid">
-              <ScoreCard label="ATS Score" value="82" accent="blue" />
-              <ScoreCard label="Skill Match" value="88%" accent="violet" />
+            <h3>Resume Score</h3>
+            <div className="score-ring">
+              <ScoreCard label="ATS Score" value={resumeData?.score || 'Not Generated'} accent="blue" />
             </div>
           </article>
 
           <article className="card panel">
-            <h3>Missing Skills</h3>
-            <div className="tag-list">
-              {missingSkills.map((item) => (
-                <span key={item} className="tag tag--alert">{item}</span>
-              ))}
-            </div>
-            <h3 className="panel__subhead">Missing Sections</h3>
-            <button type="button" className="outline-row">
-              <Icon name="folder" />
-              <span>Projects Section</span>
-              <Icon name="plusCircle" />
-            </button>
+            <h3>Missing Target Skills</h3>
+            {missingSkills.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Add profile skills or scan a JD to identify skill gaps.</p>
+            ) : (
+              <div className="skill-pills">
+                {missingSkills.map((skill) => (
+                  <span key={skill} className="skill-pill skill-pill--missing">{skill}</span>
+                ))}
+              </div>
+            )}
           </article>
 
           <article className="card panel">
             <div className="panel__header panel__header--tight">
-              <h3>AI Suggestions</h3>
-              <span className="chip chip--blue">4 new</span>
+              <h3>AI Optimization Tips</h3>
             </div>
-            <div className="suggestion-list">
-              {suggestions.length ? suggestions.map((suggestion) => (
-                <SuggestionCard key={suggestion.id} {...suggestion} onDismiss={() => setSuggestions((current) => current.filter((item) => item.id !== suggestion.id))} />
-              )) : <p className="text-muted">All suggestions have been reviewed.</p>}
-            </div>
+            {suggestions.length === 0 ? (
+              <EmptyState title="No suggestions yet" message="Run an AI resume optimization to generate tailored feedback." icon="spark" />
+            ) : (
+              <div className="suggestion-list">
+                {suggestions.map((suggestion) => (
+                  <SuggestionCard key={suggestion.id} {...suggestion} onDismiss={() => setSuggestions((current) => current.filter((item) => item.id !== suggestion.id))} />
+                ))}
+              </div>
+            )}
           </article>
         </aside>
       </section>
     </AppShell>
   );
 }
+
 
 function ScoreCard({ label, value, accent }) {
   return (
@@ -1212,10 +1275,10 @@ function CoachPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/coach`)
+    fetch(`${API_BASE_URL}/coach`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setCoachState(data))
-      .catch(() => setCoachState({ welcome: 'I reviewed your recent job searches. Let’s sharpen your profile for a Senior Product role.', starterPrompts: ['Review my resume', 'Prep for Google', 'Find gaps in my skills'] }));
+      .catch(() => setCoachState(null));
   }, []);
 
   const sendMessage = (text = message) => {
@@ -1299,19 +1362,58 @@ function MessageBubble({ role, children }) {
 
 function RoadmapPage() {
   const [roadmapData, setRoadmapData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/roadmap`)
+  const loadRoadmap = () => {
+    fetch(`${API_BASE_URL}/roadmap`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setRoadmapData(data))
       .catch(() => setRoadmapData(null));
+  };
+
+  useEffect(() => {
+    loadRoadmap();
   }, []);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      await fetch(`${API_BASE_URL}/roadmap/generate`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ targetRole: 'Senior Product Manager', targetCompany: 'Top Tech Firms' }),
+      });
+      loadRoadmap();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleToggleMilestone = async (milestone) => {
+    try {
+      await fetch(`${API_BASE_URL}/roadmap/milestones/${milestone.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ done: !milestone.done }),
+      });
+      loadRoadmap();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const milestones = roadmapData?.milestones || [];
+  const focusAreas = roadmapData?.focusAreas || [];
 
   return (
     <AppShell
       title="Career Roadmap"
       subtitle="Track your growth path from current role to target role with milestones and blockers."
-      actions={<button type="button" className="ghost-button"><Icon name="calendar" />Next 90 Days</button>}
+      actions={
+        <button type="button" className="primary-button" onClick={handleGenerate} disabled={isGenerating}>
+          {isGenerating ? 'Generating...' : 'Generate Roadmap'}
+        </button>
+      }
     >
       <section className="roadmap-hero">
         <article className="card roadmap-banner">
@@ -1319,33 +1421,47 @@ function RoadmapPage() {
             <div className="roadmap-banner__icon"><Icon name="roadmap" /></div>
             <div>
               <p className="eyebrow">{roadmapData?.bannerTitle || 'Target Transition'}</p>
-              <h3>{roadmapData?.bannerSubtitle || 'Your next role'}</h3>
-              <p>{roadmapData?.bannerMeta || 'Projected readiness at your current pace.'}</p>
+              <h3>{roadmapData?.bannerSubtitle || 'Not Set'}</h3>
+              <p>{roadmapData?.bannerMeta || 'No roadmap generated yet.'}</p>
             </div>
           </div>
-          <button type="button" className="ghost-button">Update Goal</button>
+          <button type="button" className="ghost-button" onClick={handleGenerate} disabled={isGenerating}>Generate Roadmap</button>
         </article>
       </section>
 
-      <section className="roadmap-grid roadmap-grid--career">
-        <article className="card panel">
-          <h3>Milestone Timeline</h3>
-          <div className="timeline">
-            {(roadmapData?.milestones || []).map((item) => (
-              <TimelineItem key={item.title} title={item.title} desc={item.desc} time={item.time} tone={item.tone} />
-            ))}
-          </div>
-        </article>
+      {milestones.length === 0 ? (
+        <section className="card panel" style={{ marginTop: '24px' }}>
+          <EmptyState
+            title="No roadmap milestones generated"
+            message="Map your target transition path with customized milestone phases."
+            actionLabel="Generate Career Roadmap"
+            onAction={handleGenerate}
+            icon="roadmap"
+          />
+        </section>
+      ) : (
+        <section className="roadmap-grid roadmap-grid--career">
+          <article className="card panel">
+            <h3>Milestone Timeline</h3>
+            <div className="timeline">
+              {milestones.map((item) => (
+                <div key={item.id || item.title} onClick={() => handleToggleMilestone(item)} style={{ cursor: 'pointer' }}>
+                  <TimelineItem title={item.title} desc={item.desc} time={item.time} tone={item.tone} />
+                </div>
+              ))}
+            </div>
+          </article>
 
-        <article className="card panel">
-          <h3>Focus Areas</h3>
-          <div className="step-grid step-grid--single">
-            {(roadmapData?.focusAreas || []).map((item, index) => (
-              <StepCard key={item.title} index={['A', 'B', 'C'][index] || `${index + 1}`} title={item.title} text={item.text} />
-            ))}
-          </div>
-        </article>
-      </section>
+          <article className="card panel">
+            <h3>Focus Areas</h3>
+            <div className="step-grid step-grid--single">
+              {focusAreas.map((item, index) => (
+                <StepCard key={item.id || item.title} index={['A', 'B', 'C'][index] || `${index + 1}`} title={item.title} text={item.text} />
+              ))}
+            </div>
+          </article>
+        </section>
+      )}
     </AppShell>
   );
 }
@@ -1354,47 +1470,59 @@ function PracticePage() {
   const [practiceData, setPracticeData] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/practice`)
+    fetch(`${API_BASE_URL}/practice`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setPracticeData(data))
       .catch(() => setPracticeData(null));
   }, []);
 
+  const tracks = practiceData?.tracks || [];
+
   return (
     <AppShell
       title="Practice Hub"
-      subtitle="Coding, aptitude, and interview-style drills from the CareerPrep mockup pack."
+      subtitle="Coding, aptitude, and interview-style drills to build your problem-solving metrics."
       actions={<button type="button" className="ghost-button"><Icon name="spark" />Personalized Sets</button>}
     >
-      <section className="practice-grid">
-        {(practiceData?.tracks || []).map((track) => (
-          <article key={track.title} className="card panel">
-            <div className="panel__header panel__header--tight">
-              <div className={`feature-card__icon feature-card__icon--${track.accent}`}>
-                <Icon name={track.title.includes('Coding') ? 'code' : 'brain'} />
+      {tracks.length === 0 ? (
+        <section className="card panel" style={{ marginTop: '24px' }}>
+          <EmptyState
+            title="No practice tracks active"
+            message="Complete coding or aptitude challenges to earn XP and build your problem-solving metrics."
+            icon="code"
+          />
+        </section>
+      ) : (
+        <section className="practice-grid">
+          {tracks.map((track) => (
+            <article key={track.id || track.title} className="card panel">
+              <div className="panel__header panel__header--tight">
+                <div className={`feature-card__icon feature-card__icon--${track.accent}`}>
+                  <Icon name={track.title.includes('Coding') ? 'code' : 'brain'} />
+                </div>
+                <div>
+                  <h3>{track.title}</h3>
+                  <p className="panel-copy">{track.subtitle}</p>
+                </div>
               </div>
-              <div>
-                <h3>{track.title}</h3>
-                <p className="panel-copy">{track.subtitle}</p>
+              <strong className="panel-metric">{track.metric}</strong>
+              <div className="resource-panel__items">
+                {track.items.map((item) => (
+                  <article key={item} className="resource-item">
+                    <div>
+                      <h4>{item}</h4>
+                      <p>Curated by CareerPrep AI</p>
+                    </div>
+                    <button type="button" className="primary-square">
+                      <Icon name="arrowRight" />
+                    </button>
+                  </article>
+                ))}
               </div>
-            </div>
-            <strong className="panel-metric">{track.metric}</strong>
-            <div className="resource-panel__items">
-              {track.items.map((item) => (
-                <article key={item} className="resource-item">
-                  <div>
-                    <h4>{item}</h4>
-                    <p>Curated by CareerPrep AI</p>
-                  </div>
-                  <button type="button" className="primary-square">
-                    <Icon name="arrowRight" />
-                  </button>
-                </article>
-              ))}
-            </div>
-          </article>
-        ))}
-      </section>
+            </article>
+          ))}
+        </section>
+      )}
     </AppShell>
   );
 }
@@ -1403,11 +1531,13 @@ function InterviewReportPage() {
   const [interviewData, setInterviewData] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/interview-report`)
+    fetch(`${API_BASE_URL}/interview-report`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setInterviewData(data))
       .catch(() => setInterviewData(null));
   }, []);
+
+  const metrics = interviewData?.metrics || [];
 
   return (
     <AppShell
@@ -1415,39 +1545,53 @@ function InterviewReportPage() {
       subtitle="Replay your latest mock interview with strengths, risks, and coaching priorities."
       actions={<button type="button" className="primary-button">Download Report</button>}
     >
-      <section className="analysis-results__grid">
-        {(interviewData?.metrics || []).map((metric) => (
-          <article key={metric.label} className="card panel metric-panel">
-            <p>{metric.label}</p>
-            <div className={`ring ring--small ring--${metric.accent || 'blue'}`}>
-              <div className="ring__inner">
-                <strong>{metric.value}</strong>
+      {metrics.length === 0 ? (
+        <section className="card panel" style={{ marginTop: '24px' }}>
+          <EmptyState
+            title="No mock interview reports"
+            message="Take a mock interview session with AI to generate confidence scores, feedback, and STAR response analysis."
+            actionLabel="Start AI Mock Interview"
+            onAction={() => navigate('/coach')}
+            icon="mic"
+          />
+        </section>
+      ) : (
+        <>
+          <section className="analysis-results__grid">
+            {metrics.map((metric) => (
+              <article key={metric.label} className="card panel metric-panel">
+                <p>{metric.label}</p>
+                <div className={`ring ring--small ring--${metric.accent || 'blue'}`}>
+                  <div className="ring__inner">
+                    <strong>{metric.value}</strong>
+                  </div>
+                </div>
+                <span>{metric.detail}</span>
+              </article>
+            ))}
+          </section>
+
+          <section className="roadmap-grid">
+            <article className="card panel">
+              <h3>Top Strengths</h3>
+              <div className="step-grid step-grid--single">
+                {(interviewData?.strengths || []).map((item, index) => (
+                  <StepCard key={item.title} index={`${index + 1}`} title={item.title} text={item.text} />
+                ))}
               </div>
-            </div>
-            <span>{metric.detail}</span>
-          </article>
-        ))}
-      </section>
+            </article>
 
-      <section className="roadmap-grid">
-        <article className="card panel">
-          <h3>Top Strengths</h3>
-          <div className="step-grid step-grid--single">
-            {(interviewData?.strengths || []).map((item, index) => (
-              <StepCard key={item.title} index={`${index + 1}`} title={item.title} text={item.text} />
-            ))}
-          </div>
-        </article>
-
-        <article className="card panel">
-          <h3>Coach Notes</h3>
-          <div className="timeline">
-            {(interviewData?.notes || []).map((item) => (
-              <TimelineItem key={item.title} title={item.title} desc={item.desc} time={item.time} tone={item.tone} />
-            ))}
-          </div>
-        </article>
-      </section>
+            <article className="card panel">
+              <h3>Coach Notes</h3>
+              <div className="timeline">
+                {(interviewData?.notes || []).map((item) => (
+                  <TimelineItem key={item.title} title={item.title} desc={item.desc} time={item.time} tone={item.tone} />
+                ))}
+              </div>
+            </article>
+          </section>
+        </>
+      )}
     </AppShell>
   );
 }
@@ -1456,49 +1600,73 @@ function NotificationsPage() {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/notifications`)
+    fetch(`${API_BASE_URL}/notifications`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => setItems(data.groups || []))
-      .catch(() => setItems(notificationGroups));
+      .catch(() => setItems([]));
   }, []);
+
+  const handleDeleteNotif = async (id) => {
+    try {
+      await fetch(`${API_BASE_URL}/notifications/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setItems((curr) => curr.filter((i) => i.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <AppShell
       title="Notifications"
       subtitle="A consolidated feed of reminders, AI suggestions, and progress milestones."
-      actions={<button type="button" className="ghost-button">Mark all as read</button>}
+      actions={items.length ? <button type="button" className="ghost-button" onClick={() => setItems([])}>Clear all</button> : null}
     >
-      <section className="stack-section">
-        {items.map((item) => (
-          <article key={item.title + item.time} className="card panel notification-row">
-            <div className={`feature-card__icon feature-card__icon--${item.accent}`}>
-              <Icon name="bell" />
-            </div>
-            <div>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-            </div>
-            <span>{item.time}</span>
-          </article>
-        ))}
-      </section>
+      {items.length === 0 ? (
+        <section className="card panel" style={{ marginTop: '24px' }}>
+          <EmptyState title="No notifications" message="You're all caught up! System updates and reminders will appear here." icon="bell" />
+        </section>
+      ) : (
+        <section className="stack-section">
+          {items.map((item) => (
+            <article key={item.id || item.title} className="card panel notification-row">
+              <div className={`feature-card__icon feature-card__icon--${item.accent || 'blue'}`}>
+                <Icon name="bell" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span>{item.time}</span>
+                {item.id ? (
+                  <button type="button" className="icon-button" onClick={() => handleDeleteNotif(item.id)}>✕</button>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
     </AppShell>
   );
 }
 
 function ProfilePage() {
+  const { updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
   const loadProfile = () => {
-    fetch(`${API_BASE_URL}/profile`)
+    fetch(`${API_BASE_URL}/profile`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => {
         setProfile(data);
         setDraft(data.name || '');
       })
-      .catch(() => setProfile({ name: 'Jordan Avery', title: 'Transitioning into Senior Product Management', skills: profileSkills, about: 'Product-minded operator with a background in growth, experimentation, and stakeholder leadership. Focused on translating customer insight into measurable business outcomes.', metrics: [{ label: 'Profile Strength', value: '91%', accent: 'blue' }, { label: 'Recruiter Fit', value: '86%', accent: 'violet' }], focusAreas: [{ label: 'Target role', value: 'Senior Product Manager' }, { label: 'Target companies', value: 'Google, Stripe, Figma' }, { label: 'Next milestone', value: 'Complete SQL experimentation module' }], recruiterSnapshot: 'Strong product and growth foundation. Add two quantified leadership stories to make your transition narrative more compelling.' }));
+      .catch(() => setProfile(null));
   };
 
   useEffect(() => {
@@ -1508,10 +1676,15 @@ function ProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: draft }) });
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ name: draft }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to save profile');
       setProfile((current) => ({ ...current, name: data.name }));
+      updateUser({ name: data.name });
     } finally {
       setSaving(false);
     }
@@ -1520,6 +1693,8 @@ function ProfilePage() {
   if (!profile) {
     return <AppShell title="Profile" subtitle="Loading your profile details..." actions={null}><p className="text-muted">Loading profile…</p></AppShell>;
   }
+
+  const initials = profile.name ? profile.name.trim().split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : 'US';
 
   return (
     <AppShell
@@ -1531,28 +1706,28 @@ function ProfilePage() {
         <article className="card panel profile-card">
           <div className="profile-card__header">
             <div className="profile-card__avatar">
-              <span>JA</span>
+              <span>{initials}</span>
             </div>
             <div>
               <input aria-label="Profile name" value={draft} onChange={(event) => setDraft(event.target.value)} className="large-textarea" style={{ minHeight: '2.5rem', marginBottom: '0.4rem' }} />
-              <p>{profile.title}</p>
+              <p>{profile.title || 'Target Role Not Set'}</p>
             </div>
           </div>
           <div className="tag-list">
-            {profile.skills.map((skill) => (
+            {(profile.skills || []).map((skill) => (
               <span key={skill} className="tag">{skill}</span>
             ))}
           </div>
           <div className="profile-card__meta">
-            <span><strong>{profile.skills.length}</strong> verified skills</span>
-            <span><strong>84%</strong> profile complete</span>
+            <span><strong>{(profile.skills || []).length}</strong> verified skills</span>
+            <span><strong>{profile.skills?.length ? '84%' : '20%'}</strong> profile complete</span>
           </div>
         </article>
         <article className="card panel">
           <h3>About</h3>
-          <p className="panel-copy">{profile.about}</p>
+          <p className="panel-copy">{profile.about || 'No bio specified. Update your profile to describe your background.'}</p>
           <div className="score-grid">
-            {profile.metrics.map((metric) => (
+            {(profile.metrics || []).map((metric) => (
               <ScoreCard key={metric.label} label={metric.label} value={metric.value} accent={metric.accent} />
             ))}
           </div>
@@ -1562,15 +1737,14 @@ function ProfilePage() {
         <article className="card panel">
           <div className="panel__header panel__header--tight"><h3>Career Focus</h3><span className="chip chip--blue">This quarter</span></div>
           <div className="profile-list">
-            {profile.focusAreas.map((item) => (
+            {(profile.focusAreas || []).map((item) => (
               <div key={item.label}><strong>{item.label}</strong><span>{item.value}</span></div>
             ))}
           </div>
         </article>
         <article className="card panel">
           <div className="panel__header panel__header--tight"><h3>Recruiter Snapshot</h3><span className="text-button">Updated today</span></div>
-          <p className="panel-copy">{profile.recruiterSnapshot}</p>
-          <div className="tag-list"><span className="tag">Product strategy</span><span className="tag">Experimentation</span><span className="tag">Stakeholder leadership</span></div>
+          <p className="panel-copy">{profile.recruiterSnapshot || 'Complete your career goals to generate recruiter insights.'}</p>
         </article>
       </section>
     </AppShell>
@@ -1589,14 +1763,14 @@ function SettingsPage() {
   }, [theme]);
 
   const loadSettings = () => {
-    fetch(`${API_BASE_URL}/settings`)
+    fetch(`${API_BASE_URL}/settings`, { headers: getAuthHeaders() })
       .then((response) => response.json())
       .then((data) => {
         setSettingsData(data);
         setTheme(data.theme || 'Light');
         setPreferences(data.preferences || { email: true, reminders: true, insights: false });
       })
-      .catch(() => setSettingsData({ tabs: settingsTabs, content: { Profile: [['Name', 'Jordan Avery'], ['Career goal', 'Senior Product Manager'], ['Location', 'New York, NY']], Account: [['Email', 'jordan.avery@example.com'], ['Plan', 'CareerPrep Pro'], ['Member since', 'July 2025']], Notifications: [['Interview reminders', '15 minutes before sessions'], ['Weekly summary', 'Every Monday at 9:00 AM'], ['Product updates', 'Only important releases']], Security: [['Password', 'Last changed 42 days ago'], ['Two-factor authentication', 'Enabled'], ['Active sessions', '2 devices']], Billing: [['Current plan', 'Pro · $19/month'], ['Next billing date', 'August 18, 2026'], ['Payment method', 'Visa ending in 4242']] }, themeOptions: ['Light', 'Dark', 'System'], preferences: { email: true, reminders: true, insights: false }, theme: 'Light' }));
+      .catch(() => setSettingsData(null));
   };
 
   useEffect(() => {
@@ -1606,7 +1780,11 @@ function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferences, theme }) });
+      const response = await fetch(`${API_BASE_URL}/settings`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ preferences, theme }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to save settings');
       setSettingsData((current) => current ? { ...current, preferences: data.preferences, theme: data.theme } : current);
@@ -2001,5 +2179,11 @@ export default function App() {
     document.title = `CareerPrep${pathname === '/' ? '' : ` · ${pathname.replace('/', '').replace(/-/g, ' ')}`}`;
   }, [pathname]);
 
-  return <Page />;
+  return (
+    <AuthProvider>
+      <RouteGuard path={pathname}>
+        <Page />
+      </RouteGuard>
+    </AuthProvider>
+  );
 }

@@ -99,3 +99,32 @@ test('POST /api/chat returns dynamic AI responses', async () => {
     server.close();
   }
 });
+
+test('GET /api/auth/me returns registered user details using token', async () => {
+  resetStore();
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const registerRes = await fetch(`http://localhost:${port}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Sanju Dutta', email: 'sanju@gmail.com', password: 'password123' }),
+    });
+    const registerData = await registerRes.json();
+    assert.ok(registerData.token);
+
+    const meRes = await fetch(`http://localhost:${port}/api/auth/me`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${registerData.token}`,
+      },
+    });
+    const meData = await meRes.json();
+    assert.equal(meRes.status, 200);
+    assert.equal(meData.name, 'Sanju Dutta');
+    assert.equal(meData.email, 'sanju@gmail.com');
+  } finally {
+    server.close();
+  }
+});
