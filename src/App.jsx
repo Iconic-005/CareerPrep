@@ -1269,6 +1269,7 @@ function StepCard({ index, title, text }) {
 }
 
 function CoachPage() {
+  const { user } = useAuth();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [coachState, setCoachState] = useState(null);
@@ -1292,16 +1293,19 @@ function CoachPage() {
 
     fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ message: content }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Unable to reach the AI service. Please try again.');
+        return res.json();
+      })
       .then((data) => {
         const replyText = data.reply || data.text || 'Answer received.';
         setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', content: replyText }]);
       })
       .catch(() => {
-        setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', content: 'Connection issue. Please retry.' }]);
+        setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', content: 'Unable to reach the AI service. Please try again.' }]);
       })
       .finally(() => setIsLoading(false));
   };
@@ -1319,7 +1323,7 @@ function CoachPage() {
           </div>
           <div className="chat-welcome__copy">
             <span>Career copilot</span>
-            <h3>Hi, {coachState?.userName || 'there'}</h3>
+            <h3>Hi, {coachState?.userName || user?.name?.split(' ')[0] || 'there'}</h3>
             <p>{coachState?.welcome || 'Loading your coach context…'}</p>
           </div>
         </div>
@@ -1352,9 +1356,11 @@ function CoachPage() {
 }
 
 function MessageBubble({ role, children }) {
+  const { user } = useAuth();
+  const initial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
   return (
     <div className={`message message--${role}`}>
-      <div className="message__avatar">{role === 'assistant' ? <Icon name="bot" /> : <span>J</span>}</div>
+      <div className="message__avatar">{role === 'assistant' ? <Icon name="bot" /> : <span>{initial}</span>}</div>
       <div className="message__body">{children}</div>
     </div>
   );

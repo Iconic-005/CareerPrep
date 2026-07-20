@@ -1,7 +1,7 @@
 {
   "users": {
-    "usr_1784566563758": {
-      "userId": "usr_1784566563758",
+    "usr_1784567545242": {
+      "userId": "usr_1784567545242",
       "profile": {
         "name": "Sanju Dutta",
         "email": "sanju@gmail.com",
@@ -13,14 +13,14 @@
         "recruiterSnapshot": ""
       },
       "analytics": {
-        "codingXP": 0,
+        "codingXP": 20,
         "careerReadiness": 0,
         "resumeScore": "Not Generated",
         "interviewRank": "--",
         "weeklyActivity": [
           {
             "day": "Mon",
-            "count": 0
+            "count": 2
           },
           {
             "day": "Tue",
@@ -47,7 +47,22 @@
             "count": 0
           }
         ],
-        "activityLog": [],
+        "activityLog": [
+          {
+            "id": "act_1784567783342",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Find gaps in my skills...\"",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784567748606",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Review my resume...\"",
+            "time": "Just now",
+            "tone": "violet"
+          }
+        ],
         "practiceStats": {
           "questionsCompleted": 0,
           "accuracy": 0
@@ -72,7 +87,139 @@
       "practiceTracks": [],
       "interviews": [],
       "jdAnalyses": [],
-      "chatHistory": [],
+      "chatHistory": [
+        {
+          "role": "user",
+          "content": "Review my resume"
+        },
+        {
+          "role": "assistant",
+          "content": "Excellent! I'm ready to provide a thorough and actionable review of your resume.\n\nTo get started, please paste the full content of your resume here. Once I have it, I'll analyze it for:\n\n1.  **ATS Optimization:** Ensuring it can pass Applicant Tracking Systems and be easily parsed.\n2.  **Impact and Achievements:** Checking that your accomplishments are quantified and impactful, rather than just listing duties.\n3.  **Clarity and Conciseness:** Making sure it's easy to read and understand, highlighting your most relevant skills and experiences.\n4.  **Keywords:** Identifying industry-specific keywords that will help your resume get noticed.\n5.  **Formatting and Readability:** Providing suggestions for layout, design, and overall presentation.\n6.  **Targeting:** How well it aligns with the types of roles you're pursuing.\n\nI look forward to helping you refine it!"
+        },
+        {
+          "role": "user",
+          "content": "Find gaps in my skills"
+        },
+        {
+          "role": "assistant",
+          "content": "Absolutely! Pinpointing skill gaps is a crucial step in career development, ensuring you're always growing towards your professional goals.\n\nTo provide you with a *personalized* and *actionable* skill gap analysis, I need a little more information from you. Please tell me:\n\n1.  **Your Current Role/Experience:** A summary of your current professional background, including your industry, typical responsibilities, and key technologies/tools you currently use. (Even better, if you can paste your resume, that would be ideal!)\n2.  **Your Target Role/Industry:** What kind of role are you aspiring to next? What industry or specific companies are you interested in? This helps me understand the *destination* you're aiming for.\n3.  **Specific Areas of Interest:** Are there any particular technologies, methodologies, or domains you're keen to learn or improve in?\n\nOnce I have this context, I can analyze:\n*   **Required vs. Existing Skills:** Compare the skills demanded by your target roles against what you currently possess.\n*   **Industry Trends:** Highlight emerging skills that are becoming essential in your desired field.\n*   **Strategic Gaps:** Identify critical skills that, if acquired, would significantly boost your competitiveness and career trajectory.\n\nI'm ready when you are!"
+        }
+      ],
+      "badges": [],
+      "settings": {
+        "preferences": {
+          "email": true,
+          "reminders": true,
+          "insights": false
+        },
+        "theme": "Light"
+      }
+    },
+    "usr_1784566563758": {
+      "userId": "usr_1784566563758",
+      "profile": {
+        "name": "User",
+        "email": "usr_1784566563758@example.com",
+        "title": "",
+        "skills": [],
+        "about": "",
+        "metrics": [],
+        "focusAreas": [],
+        "recruiterSnapshot": ""
+      },
+      "analytics": {
+        "codingXP": 20,
+        "careerReadiness": 0,
+        "resumeScore": "Not Generated",
+        "interviewRank": "--",
+        "weeklyActivity": [
+          {
+            "day": "Mon",
+            "count": 2
+          },
+          {
+            "day": "Tue",
+            "count": 0
+          },
+          {
+            "day": "Wed",
+            "count": 0
+          },
+          {
+            "day": "Thu",
+            "count": 0
+          },
+          {
+            "day": "Fri",
+            "count": 0
+          },
+          {
+            "day": "Sat",
+            "count": 0
+          },
+          {
+            "day": "Sun",
+            "count": 0
+          }
+        ],
+        "activityLog": [
+          {
+            "id": "act_1784567684738",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Prep for Google...\"",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784567596324",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Prep for Google...\"",
+            "time": "Just now",
+            "tone": "violet"
+          }
+        ],
+        "practiceStats": {
+          "questionsCompleted": 0,
+          "accuracy": 0
+        },
+        "streak": 0
+      },
+      "goals": [],
+      "resume": {
+        "suggestions": [],
+        "missingSkills": [],
+        "resumeText": "",
+        "versions": []
+      },
+      "roadmap": {
+        "bannerTitle": "Target Transition",
+        "bannerSubtitle": "Not Set",
+        "bannerMeta": "No roadmap generated yet. Generate a roadmap to map your transition.",
+        "milestones": [],
+        "focusAreas": []
+      },
+      "notifications": [],
+      "practiceTracks": [],
+      "interviews": [],
+      "jdAnalyses": [],
+      "chatHistory": [
+        {
+          "role": "user",
+          "content": "Prep for Google"
+        },
+        {
+          "role": "assistant",
+          "content": "Structure all behavioral and technical answers using the **STAR method** (Situation, Task, Action, Result). Focus heavily on your specific actions and clear results!"
+        },
+        {
+          "role": "user",
+          "content": "Prep for Google"
+        },
+        {
+          "role": "assistant",
+          "content": "Excellent! Preparing for Google is a comprehensive undertaking, as they look for a unique blend of technical prowess, problem-solving skills, and cultural fit (often referred to as \"Googliness\").\n\nTo give you the most targeted advice, could you please tell me:\n\n1.  **What role are you preparing for?** (e.g., Software Engineer, Product Manager, Data Scientist, Sales Engineer, HR Business Partner, etc.)\n2.  **What level are you targeting?** (e.g., Entry-level/New Grad, Mid-level, Senior, Staff)\n\nKnowing this will allow me to tailor the prep strategy precisely.\n\nIn the meantime, here's a general overview of the key pillars for Google interview preparation, which apply to almost all roles, and how we can tackle them:\n\n---\n\n### **Google Interview Prep: The Core Pillars**\n\nGoogle's interview process typically assesses candidates across three main areas, often over multiple rounds:\n\n1.  **Technical & Analytical Problem Solving:**\n    *   **For Software Roles (SWE, SRE, ML Eng):** This is primarily Data Structures & Algorithms (DS&A) for coding interviews, and System Design for more senior levels. Expect problems that require efficient solutions, handling edge cases, and robust testing.\n    *   **For Product Roles (PM):** This involves Product Sense, Product Strategy, Execution, and Analytical skills (e.g., interpreting data, A/B testing).\n    *   **For Data Science/Analytics Roles:** Expect SQL, Python/R coding, statistical concepts, experimental design, and analytical case studies.\n    *   **For Technical Program Managers/Solutions Engineers:** Expect deep technical understanding relevant to the role's domain, architecture discussions, and troubleshooting.\n\n    **How we'll prep:**\n    *   **Coding:** We'll focus on patterns (e.g., Two Pointers, Sliding Window, DFS/BFS, Dynamic Programming), optimizing solutions, and practicing effective communication while coding.\n    *   **System Design:** We'll break down complex systems, discuss trade-offs (scalability, availability, consistency), and explore common components.\n    *   **Role-Specific Cases:** We'll practice structuring your thoughts for product, analytical, or technical architectural challenges.\n\n2.  **Leadership & Collaboration (Behavioral Questions):**\n    *   Google wants to see how you operate within a team, handle challenges, influence others, and drive initiatives. This isn't just about managing people; it's about leading projects, ideas, and taking ownership.\n    *   Questions will probe your experiences with conflict, failure, success, ambiguity, and cross-functional work.\n\n    **How we'll prep:**\n    *   We will rigorously apply the **STAR method (Situation, Task, Action, Result)** to structure your answers. Remember, your **Actions** and measurable **Results** are paramount.\n    *   We'll identify 10-15 compelling stories from your past experiences that highlight specific skills (e.g., problem-solving, collaboration, handling ambiguity, initiative, learning from mistakes, influencing without authority).\n\n3.  **\"Googliness\" / Cultural Fit:**\n    *   This is about how well you align with Google's culture of curiosity, ambiguity tolerance, intellectual humility, impact-driven work, and bias to action. They look for individuals who are comfortable with change, collaborative, and always looking to improve.\n    *   These questions might be woven into behavioral rounds or asked directly.\n\n    **How we'll prep:**\n    *   We'll discuss Google's values and how to organically weave examples of them into your stories.\n    *   We'll ensure your examples showcase your ability to learn quickly, adapt, solve unstructured problems, and work effectively with diverse teams.\n\n---\n\nOnce you provide the role and level, we can dive deeper into specific resources, practice strategies, and conduct mock interviews tailored to your exact needs.\n\n**Let's get started – tell me about the role!**"
+        }
+      ],
       "badges": [],
       "settings": {
         "preferences": {
@@ -86,7 +233,7 @@
   },
   "globalUsersList": [
     {
-      "id": "usr_1784566563758",
+      "id": "usr_1784567545242",
       "initials": "SD",
       "name": "Sanju Dutta",
       "email": "sanju@gmail.com",

@@ -1,5 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  generateChatReply,
+  generateOptimizedResume,
+  generateJDAnalysis,
+  generateRoadmap as aiGenerateRoadmap,
+} from '../services/aiService.js';
 
 const defaultStoreData = {
   users: {},
@@ -269,97 +275,83 @@ export function createStore(filePath = path.join(process.cwd(), 'backend', 'data
       const user = getUserRecord(data, userId);
       const role = targetRole || user.profile.title || 'Target Role';
       
-      user.resume.resumeText = resumeText || user.resume.resumeText;
-      user.analytics.resumeScore = '84/100';
-      user.analytics.codingXP += 50;
-      
-      const result = {
-        score: '84/100',
-        critique: `Your resume shows key fundamentals for ${role}. Tailor achievements using the Google X-Y-Z formula for higher ATS match.`,
-        optimizedText: `### Polished Experience for ${role}\n• Engineered scalable software pipeline, increasing execution speed by 35%.\n• Coordinated cross-functional teams to release feature upgrades 2 weeks ahead of schedule.`,
-        suggestedSkills: ['System Design', 'Cloud Architecture', 'A/B Testing', 'CI/CD Pipelines'],
-      };
-      
-      user.resume.suggestions.unshift({
-        id: `sug_${Date.now()}`,
-        title: `Optimized section for ${role}`,
-        desc: 'Applied STAR method and metric quantification.',
-        accent: 'mint',
-      });
-      
-      logActivity(user, 'Optimized resume with AI', `Analyzed resume for ${role}`, 'violet');
-      updateAnalytics(user);
-      write(data);
-      return result;
+      try {
+        const result = await generateOptimizedResume(resumeText, role);
+        
+        user.resume.resumeText = resumeText || user.resume.resumeText;
+        user.analytics.resumeScore = result.score || '84/100';
+        user.analytics.codingXP += 50;
+        
+        user.resume.suggestions.unshift({
+          id: `sug_${Date.now()}`,
+          title: `Optimized section for ${role}`,
+          desc: 'Applied STAR method and metric quantification.',
+          accent: 'mint',
+        });
+        
+        logActivity(user, 'Optimized resume with AI', `Analyzed resume for ${role}`, 'violet');
+        updateAnalytics(user);
+        write(data);
+        return result;
+      } catch (err) {
+        console.error('Failed to optimize resume with Gemini:', err);
+        throw new Error('Unable to reach the AI service. Please try again.');
+      }
     },
 
     // JD Analyzer per user
     async analyzeJD(userId, jobDescription) {
       const data = read();
       const user = getUserRecord(data, userId);
-      const text = (jobDescription || '').toLowerCase();
       const userSkills = user.profile.skills || [];
       
-      const potentialSkills = [
-        'Figma', 'Product Strategy', 'SQL', 'Python', 'React', 'TypeScript',
-        'Node.js', 'AWS', 'Docker', 'Kubernetes', 'Design Systems', 'Agile',
-        'Data Analysis', 'User Research', 'A/B Testing', 'System Design', 'Leadership'
-      ];
-      
-      const matched = potentialSkills.filter(s => text.includes(s.toLowerCase()) && userSkills.some(us => us.toLowerCase() === s.toLowerCase()));
-      const missing = potentialSkills.filter(s => text.includes(s.toLowerCase()) && !userSkills.some(us => us.toLowerCase() === s.toLowerCase()));
-      
-      const keywordMatchScore = Math.min(98, Math.max(50, 60 + matched.length * 8));
-      const atsScore = Math.min(95, Math.max(60, 65 + (matched.length - missing.length) * 5));
-      
-      const analysisResult = {
-        id: `jda_${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        jobTitle: text.match(/(senior|lead|principal|junior)?\s*(product manager|ux designer|software engineer|data scientist|developer|architect)/i)?.[0] || 'Target Role Audit',
-        keywordMatch: `${keywordMatchScore}%`,
-        atsScore: `${atsScore}%`,
-        matchedSkills: matched,
-        missingSkills: missing,
-        recommendations: [
-          `Highlight quantifiable metrics for ${matched[0] || 'core technical competencies'} in your experience section.`,
-          `Consider adding ${missing[0] || 'key industry tools'} to your skills list.`,
-          'Ensure job title matches standard recruiter search terms.',
-        ],
-      };
-      
-      user.jdAnalyses.unshift(analysisResult);
-      user.analytics.codingXP += 30;
-      logActivity(user, 'Ran JD Analyzer scan', `Analyzed role: ${analysisResult.jobTitle}`, 'blue');
-      updateAnalytics(user);
-      write(data);
-      return analysisResult;
+      try {
+        const analysis = await generateJDAnalysis(jobDescription, userSkills);
+        
+        const analysisResult = {
+          id: `jda_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          jobTitle: analysis.jobTitle || 'Target Role Audit',
+          keywordMatch: analysis.keywordMatch || '0%',
+          atsScore: analysis.atsScore || '0%',
+          matchedSkills: analysis.matchedSkills || [],
+          missingSkills: analysis.missingSkills || [],
+          recommendations: analysis.recommendations || [],
+        };
+        
+        user.jdAnalyses.unshift(analysisResult);
+        user.analytics.codingXP += 30;
+        logActivity(user, 'Ran JD Analyzer scan', `Analyzed role: ${analysisResult.jobTitle}`, 'blue');
+        updateAnalytics(user);
+        write(data);
+        return analysisResult;
+      } catch (err) {
+        console.error('Failed to analyze JD with Gemini:', err);
+        throw new Error('Unable to reach the AI service. Please try again.');
+      }
     },
 
     // AI Coach Chat per user
     async handleChat(userId, userMessage) {
       const data = read();
       const user = getUserRecord(data, userId);
-      const msg = (userMessage || '').toLowerCase();
-      const profile = user.profile;
+      const history = user.chatHistory || [];
       
-      let reply = `Great question! For your focus as a ${profile.title || 'professional'}, emphasize quantifiable impact, structured problem solving, and clear storytelling. What specific area should we tackle next?`;
-      
-      if (msg.includes('resume') || msg.includes('cv')) {
-        reply = `To optimize your resume for **${profile.title || 'your target role'}**, format bullet points using the Google X-Y-Z formula: *"Accomplished [X] as measured by [Y], by doing [Z]"*.`;
-      } else if (msg.includes('interview') || msg.includes('mock') || msg.includes('prep')) {
-        reply = `Structure all behavioral and technical answers using the **STAR method** (Situation, Task, Action, Result). Focus heavily on your specific actions and clear results!`;
-      } else if (msg.includes('salary') || msg.includes('negotiat') || msg.includes('pay') || msg.includes('offer')) {
-        reply = `Salary negotiation is about data and leverage. Research market standards on Glassdoor or Levels.fyi for ${profile.title || 'your role'}. Present your target based on business outcomes.`;
+      try {
+        const result = await generateChatReply(history, userMessage);
+        
+        user.chatHistory.push({ role: 'user', content: userMessage });
+        user.chatHistory.push({ role: 'assistant', content: result.reply });
+        user.analytics.codingXP += 10;
+        logActivity(user, 'Consulted AI Career Coach', `Prompt: "${userMessage.slice(0, 30)}..."`, 'violet');
+        updateAnalytics(user);
+        write(data);
+        
+        return { reply: result.reply, model: result.model };
+      } catch (err) {
+        console.error('Failed to generate chat reply with Gemini:', err);
+        throw new Error('Unable to reach the AI service. Please try again.');
       }
-
-      user.chatHistory.push({ role: 'user', content: userMessage });
-      user.chatHistory.push({ role: 'assistant', content: reply });
-      user.analytics.codingXP += 10;
-      logActivity(user, 'Consulted AI Career Coach', `Prompt: "${userMessage.slice(0, 30)}..."`, 'violet');
-      updateAnalytics(user);
-      write(data);
-      
-      return { reply, model: 'dynamic-career-coach' };
     },
 
     async getCoachData(userId) {
@@ -389,26 +381,36 @@ export function createStore(filePath = path.join(process.cwd(), 'backend', 'data
       const role = targetRole || user.profile.title || 'Target Role';
       const company = targetCompany || 'Top Companies';
       
-      user.roadmap = {
-        bannerTitle: 'Target Transition',
-        bannerSubtitle: `${role} @ ${company}`,
-        bannerMeta: 'Projected readiness: Next 8-12 weeks at current pace.',
-        milestones: [
-          { id: `m_${Date.now()}_1`, title: 'Skill Baseline Audit', desc: `Map requirements for ${role}.`, time: 'Done', tone: 'mint', done: true },
-          { id: `m_${Date.now()}_2`, title: 'Core Competency Building', desc: `Complete advanced modules for ${role}.`, time: 'In progress', tone: 'blue', done: false },
-          { id: `m_${Date.now()}_3`, title: 'Case Study Portfolio', desc: `Build 3 high-impact projects for ${company}.`, time: 'Next up', tone: 'violet', done: false },
-          { id: `m_${Date.now()}_4`, title: 'Mock Interview Loops', desc: 'Simulate full length interview rounds.', time: 'Scheduled', tone: 'slate', done: false },
-        ],
-        focusAreas: [
-          { id: `f_${Date.now()}_1`, title: 'Strategic Execution', text: `Demonstrate metrics relevant to ${role}.` },
-          { id: `f_${Date.now()}_2`, title: 'Technical Depth', text: `Build production ready projects matching ${company} stack.` },
-        ],
-      };
-      
-      logActivity(user, 'Generated Custom Roadmap', `Target: ${role} @ ${company}`, 'mint');
-      updateAnalytics(user);
-      write(data);
-      return user.roadmap;
+      try {
+        const roadmapData = await aiGenerateRoadmap(role, company);
+        
+        user.roadmap = {
+          bannerTitle: roadmapData.bannerTitle || 'Target Transition',
+          bannerSubtitle: roadmapData.bannerSubtitle || `${role} @ ${company}`,
+          bannerMeta: roadmapData.bannerMeta || 'Projected readiness timeline.',
+          milestones: (roadmapData.milestones || []).map((m, i) => ({
+            id: `m_${Date.now()}_${i}`,
+            title: m.title,
+            desc: m.desc,
+            time: m.time || 'Scheduled',
+            tone: m.tone || 'slate',
+            done: Boolean(m.done),
+          })),
+          focusAreas: (roadmapData.focusAreas || []).map((f, i) => ({
+            id: `f_${Date.now()}_${i}`,
+            title: f.title,
+            text: f.text,
+          })),
+        };
+        
+        logActivity(user, 'Generated Custom Roadmap', `Target: ${role} @ ${company}`, 'mint');
+        updateAnalytics(user);
+        write(data);
+        return user.roadmap;
+      } catch (err) {
+        console.error('Failed to generate roadmap with Gemini:', err);
+        throw new Error('Unable to reach the AI service. Please try again.');
+      }
     },
 
     async updateMilestone(userId, id, patch) {

@@ -12,6 +12,7 @@
     "test": "node --test backend/data/store.test.js backend/routes/apiRoutes.test.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.0",
     "dotenv": "^16.4.1",
     "express": "^4.21.2",
