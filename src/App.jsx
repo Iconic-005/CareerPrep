@@ -261,8 +261,8 @@ function SidebarShell() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand__mark">
-          <Icon name="terminal" />
+        <div className="brand__mark brand__mark--img">
+          <img src="/logo.png" alt="CareerPrep Logo" className="brand__logo-img" />
         </div>
         <div>
           <h1>CareerPrep</h1>
