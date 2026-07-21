@@ -610,6 +610,82 @@ export function createStore(filePath = path.join(process.cwd(), 'backend', 'data
     },
 
 
+    // Mock Interview Report
+    async getInterviewReport(userId) {
+      const data = read();
+      const user = getUserRecord(data, userId);
+      return {
+        score: 8.5,
+        maxScore: 10,
+        headline: 'Excellent Performance!',
+        percentileText: 'You are in the top 5% of candidates for Senior Product Designer roles.',
+        targetCompany: 'Google',
+        role: 'Product Manager',
+        difficulty: 'Mid-Level',
+        skillsRadar: {
+          Technical: 88,
+          Communication: 82,
+          Grammar: 75,
+          Behavioral: 85,
+          Confidence: 90,
+        },
+        strengths: [
+          {
+            id: 'str_1',
+            title: 'Strong Domain Expertise',
+            desc: 'Your technical explanation of React hooks and system design was precise and architectural.',
+          },
+          {
+            id: 'str_2',
+            title: 'Natural Confidence',
+            desc: 'Maintained steady eye contact and had very few filler words during the 45-minute session.',
+          },
+          {
+            id: 'str_3',
+            title: 'Structured Storytelling',
+            desc: 'Successfully used the STAR method for behavioral questions regarding team conflicts.',
+          },
+        ],
+        improvements: [
+          {
+            id: 'imp_1',
+            title: 'Elaborate on Trade-offs',
+            desc: 'When discussing the database choice, you jumped to the solution too fast. Mention 1-2 alternatives next time.',
+          },
+          {
+            id: 'imp_2',
+            title: 'Grammar Consistency',
+            desc: 'Small slip-ups with subject-verb agreement when talking under pressure about previous project timelines.',
+          },
+          {
+            id: 'imp_3',
+            title: 'Clarifying Questions',
+            desc: 'Try asking more "Why" questions about the constraints before diving into the whiteboard design phase.',
+          },
+        ],
+        nextSteps: [
+          {
+            id: 'q1',
+            title: 'Practice Question 01',
+            text: '"How do you handle scope creep when working with multiple high-priority stakeholders?"',
+            icon: 'chat',
+          },
+          {
+            id: 'q2',
+            title: 'Practice Question 02',
+            text: '"Explain the concept of \'Consistency vs Availability\' in distributed systems to a non-technical manager."',
+            icon: 'gearSpark',
+          },
+          {
+            id: 'q3',
+            title: 'Practice Question 03',
+            text: '"Describe a time you had to deliver critical feedback to a senior peer who was underperforming."',
+            icon: 'users',
+          },
+        ],
+      };
+    },
+
     // Profile & Settings per user
     async getProfile(userId) {
       const data = read();

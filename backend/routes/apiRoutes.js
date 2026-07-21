@@ -10,6 +10,7 @@ import {
   getCoachData,
   getCurrentUser,
   getDashboardData,
+  getInterviewReportData,
   getNotificationsData,
   getPracticeData,
   getProfileData,
@@ -179,6 +180,12 @@ router.post('/practice/submit', async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+// Mock Interview Report
+router.get('/interview-report', async (req, res) => {
+  res.json(await getInterviewReportData(req.user.id));
+});
+
 
 // Notifications
 router.get('/notifications', async (req, res) => {

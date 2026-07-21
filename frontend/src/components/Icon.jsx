@@ -473,15 +473,40 @@ export function Icon({ name }) {
           <polyline points="12 6 12 12 16 14" />
         </Svg>
       );
-    case 'lightning':
+    case 'trophy':
       return (
         <Svg>
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          <path d="M8 21h8M12 17v4M6 4h12a2 2 0 0 1 2 2v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V6a2 2 0 0 1 2-2z" />
+          <path d="M4 6H2a2 2 0 0 0-2 2v1a3 3 0 0 0 3 3h1M20 6h2a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-1" />
+        </Svg>
+      );
+    case 'shieldCheck':
+      return (
+        <Svg>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </Svg>
+      );
+    case 'alertCircle':
+      return (
+        <Svg>
+          <circle cx="12" cy="12" r="9" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </Svg>
+      );
+    case 'refresh':
+      return (
+        <Svg>
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
         </Svg>
       );
     default:
       return null;
   }
 }
+
 
 

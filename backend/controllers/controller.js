@@ -94,6 +94,11 @@ export async function submitPracticeData(userId, payload = {}) {
   return store.submitPractice(userId, payload);
 }
 
+export async function getInterviewReportData(userId) {
+  return store.getInterviewReport(userId);
+}
+
+
 export async function getAdminData() {
   return store.getAdminData();
 }
