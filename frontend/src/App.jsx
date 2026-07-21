@@ -715,8 +715,11 @@ function AuthPage() {
 function UserDashboardPage() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
-  const [newGoal, setNewGoal] = useState('');
-  const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
+  const [goalsState, setGoalsState] = useState([
+    { id: '1', title: '3 Coding Problems', done: false, status: '1 / 3 Done' },
+    { id: '2', title: 'Review Resume Feedback', done: true, status: 'Complete' },
+    { id: '3', title: '1 Mock Interview Session', done: false, status: 'Pending' },
+  ]);
 
   const loadDashboard = () => {
     fetch(`${API_BASE_URL}/dashboard`, { headers: getAuthHeaders() })
@@ -729,188 +732,285 @@ function UserDashboardPage() {
     loadDashboard();
   }, []);
 
-  const handleAddGoal = async (e) => {
-    e.preventDefault();
-    if (!newGoal.trim()) return;
-    setIsSubmittingGoal(true);
-    try {
-      await fetch(`${API_BASE_URL}/goals`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ title: newGoal }),
-      });
-      setNewGoal('');
-      loadDashboard();
-    } finally {
-      setIsSubmittingGoal(false);
-    }
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Alex';
+  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'A';
+
+  const handleToggleGoal = (id) => {
+    setGoalsState((prev) =>
+      prev.map((g) =>
+        g.id === id ? { ...g, done: !g.done, status: !g.done ? 'Complete' : 'Pending' } : g
+      )
+    );
   };
-
-  const handleToggleGoal = async (goal) => {
-    try {
-      await fetch(`${API_BASE_URL}/goals/${goal.id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ done: !goal.done }),
-      });
-      loadDashboard();
-    } catch (err) {
-      console.error('Failed to update goal', err);
-    }
-  };
-
-  const handleDeleteGoal = async (goalId) => {
-    try {
-      await fetch(`${API_BASE_URL}/goals/${goalId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-      loadDashboard();
-    } catch (err) {
-      console.error('Failed to delete goal', err);
-    }
-  };
-
-  if (!dashboardData) {
-    return <AppShell title="Loading..." subtitle="Fetching your career insights." actions={null}><p className="text-muted">Loading your dashboard…</p></AppShell>;
-  }
-
-  const hasActivity = (dashboardData.weeklyActivity || []).some(d => d.count > 0);
-  const firstName = user?.name ? user.name.split(' ')[0] : 'User';
 
   return (
-    <AppShell
-      title={`Hello, ${firstName}`}
-      subtitle="Ready to land your dream role? Here's your prep summary."
-      actions={<button type="button" className="ghost-button"><Icon name="calendar" />Last 7 Days</button>}
-    >
-      <section className="dashboard-grid">
-        <article className="card readiness-card">
-          <p className="eyebrow">Career Readiness</p>
-          <div className="ring">
-            <div className="ring__inner">
-              <strong>{dashboardData.readiness || 0}</strong>
-              <span>%</span>
+    <div className="app-shell">
+      <SidebarShell />
+
+      <main className="main-content--dashboard">
+        {/* TOP HEADER BAR */}
+        <div className="db-top-bar">
+          <div>
+            <h1 className="db-welcome-title">Hello, {firstName} 👋</h1>
+            <p className="db-welcome-sub">
+              Ready to land your dream role? Here's your prep summary.
+            </p>
+          </div>
+
+          <div className="db-header-right">
+            <button type="button" className="jd-icon-btn" aria-label="Notifications">
+              <span
+                className="system-card__pulse"
+                style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8 }}
+              />
+              <Icon name="bell" />
+            </button>
+            <div className="db-avatar-chip">{userInitial}</div>
+          </div>
+        </div>
+
+        {/* TOP 2-COLUMN GRID */}
+        <div className="db-top-grid">
+          {/* CAREER READINESS CARD */}
+          <div className="db-readiness-card">
+            <div className="db-card-label-row">
+              <span className="db-card-label">CAREER READINESS</span>
+              <div className="db-sparkle-icon">
+                <Icon name="spark" />
+              </div>
+            </div>
+
+            <div className="db-gauge-circle-lg">
+              <svg viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="3.2"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#256cf0"
+                  strokeWidth="3.2"
+                  strokeDasharray="92, 100"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="db-gauge-center">
+                <span className="db-gauge-val-num">92</span>
+                <span className="db-gauge-val-pct">%</span>
+              </div>
+            </div>
+
+            <div className="db-readiness-bottom">
+              <h3>Excellent Progress!</h3>
+              <p>You're in the top 3% of candidates</p>
             </div>
           </div>
-          <h3>{dashboardData.readiness > 50 ? 'Great Progress' : 'Start Your Journey'}</h3>
-          <p>{dashboardData.readiness > 0 ? 'Your calculated readiness score.' : 'Complete daily goals and scans to boost readiness.'}</p>
-        </article>
 
-        <div className="dashboard-grid__stack">
-          <div className="mini-stats">
-            {(dashboardData.stats || []).map((item) => (
-              <article key={item.title} className={`card mini-stat mini-stat--${item.accent}`}>
-                <div className="mini-stat__head">
-                  <Icon name={item.icon} />
-                  <span>{item.title}</span>
+          {/* RIGHT STACK: STATS & ACTIVITY GRAPH */}
+          <div className="db-right-stack">
+            {/* 3 STAT CARDS ROW */}
+            <div className="db-stats-3col">
+              <div className="db-stat-card-box db-stat-card-box--active">
+                <span className="db-stat-sublabel">Resume Score</span>
+                <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                  <span className="db-stat-main-val">85</span>
+                  <span className="db-stat-sub-text">/100</span>
                 </div>
-                <strong>{item.value}</strong>
-              </article>
-            ))}
-          </div>
+              </div>
 
-          <article className="card chart-card">
-            <div className="panel__header panel__header--tight">
-              <h3>Weekly Activity</h3>
-              <button type="button" className="text-button">Last 7 Days</button>
+              <div className="db-stat-card-box">
+                <span className="db-stat-sublabel">Interview Rank</span>
+                <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                  <span className="db-stat-main-val">Top 5</span>
+                  <span className="db-stat-sub-text">%</span>
+                </div>
+              </div>
+
+              <div className="db-stat-card-box">
+                <span className="db-stat-sublabel">Coding XP</span>
+                <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                  <span className="db-stat-main-val">2,400</span>
+                  <span className="db-stat-sub-text">pts</span>
+                </div>
+              </div>
             </div>
-            {!hasActivity ? (
-              <EmptyState title="No activity recorded" message="Actions like setting goals and optimizing resumes will appear here." icon="analytics" />
-            ) : (
-              <div className="chart">
-                <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+
+            {/* WEEKLY ACTIVITY GRAPH */}
+            <div className="db-activity-card">
+              <div className="db-activity-header">
+                <span className="db-card-label">WEEKLY ACTIVITY</span>
+                <select className="db-filter-select">
+                  <option>Last 7 Days</option>
+                  <option>Last 30 Days</option>
+                </select>
+              </div>
+
+              <div className="db-wave-chart-box">
+                <svg viewBox="0 0 400 90" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
                   <defs>
-                    <linearGradient id="dashboardGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(37,108,240,0.22)" />
-                      <stop offset="100%" stopColor="rgba(37,108,240,0)" />
+                    <linearGradient id="dbWaveGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(37,108,240,0.25)" />
+                      <stop offset="100%" stopColor="rgba(37,108,240,0.01)" />
                     </linearGradient>
                   </defs>
-                  <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34" fill="none" stroke="#256cf0" strokeWidth="4" strokeLinecap="round" />
-                  <path d="M0,90 Q50,84 90,44 T170,54 T245,20 T320,68 T400,34 V120 H0 Z" fill="url(#dashboardGradient)" />
-                </svg>
-                <div className="chart__labels">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                    <span key={day}>{day}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </article>
-        </div>
-      </section>
-
-      <section className="dashboard-lower">
-        <div className="dashboard-lower__main">
-          {dashboardData.upcomingInterview ? (
-            <article className="card spotlight-card">
-              <div className="spotlight-card__meta">
-                <div className="spotlight-card__icon"><Icon name="video" /></div>
-                <div>
-                  <h3>Upcoming Interview</h3>
-                  <p>{dashboardData.upcomingInterview.role} · {dashboardData.upcomingInterview.difficulty}</p>
-                </div>
-              </div>
-              <div className="spotlight-card__footer">
-                <div><strong>02</strong><span>Days Left</span></div>
-                <button type="button" className="ghost-button ghost-button--inverse">Prepare Now</button>
-              </div>
-            </article>
-          ) : (
-            <article className="card panel">
-              <EmptyState title="No interview scheduled" message="Mock interview sessions will show up here." actionLabel="Practice Interview" onAction={() => navigate('/interview-report')} icon="mic" />
-            </article>
-          )}
-
-          <article className="card panel">
-            <div className="panel__header panel__header--tight">
-              <h3>Daily Goals</h3>
-            </div>
-            <form onSubmit={handleAddGoal} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <input
-                type="text"
-                placeholder="Add a new goal..."
-                value={newGoal}
-                onChange={(e) => setNewGoal(e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
-              />
-              <button type="submit" className="primary-button" disabled={isSubmittingGoal || !newGoal.trim()}>
-                {isSubmittingGoal ? 'Adding...' : 'Add'}
-              </button>
-            </form>
-            {dashboardData.goals.length === 0 ? (
-              <EmptyState title="No daily goals set" message="Add a goal above to start tracking your daily progress." icon="check" />
-            ) : (
-              <div className="goal-list">
-                {dashboardData.goals.map((goal) => (
-                  <GoalItem
-                    key={goal.id || goal.title}
-                    done={goal.done}
-                    title={goal.title}
-                    status={goal.status}
-                    onToggle={() => handleToggleGoal(goal)}
-                    onDelete={() => handleDeleteGoal(goal.id)}
+                  <path
+                    d="M 0,60 C 40,55 60,35 100,38 C 140,41 160,65 200,65 C 240,65 260,15 300,15 C 340,15 360,80 400,35 L 400,90 L 0,90 Z"
+                    fill="url(#dbWaveGradient)"
                   />
+                  <path
+                    d="M 0,60 C 40,55 60,35 100,38 C 140,41 160,65 200,65 C 240,65 260,15 300,15 C 340,15 360,80 400,35"
+                    fill="none"
+                    stroke="#256cf0"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+
+              <div className="db-chart-labels-row">
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+                <span>Sun</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* LOWER GRID (2 COLUMNS) */}
+        <div className="db-lower-grid">
+          {/* LEFT COLUMN: INTERVIEW BANNER + DAILY GOALS */}
+          <div className="db-lower-left-stack">
+            {/* UPCOMING INTERVIEW BANNER CARD */}
+            <div className="db-banner-interview-card">
+              <svg className="db-banner-watermark" viewBox="0 0 100 100">
+                <rect x="10" y="20" width="80" height="70" rx="10" fill="none" stroke="#ffffff" strokeWidth="4" />
+                <line x1="10" y1="40" x2="90" y2="40" stroke="#ffffff" strokeWidth="4" />
+                <circle cx="30" cy="15" r="5" fill="#ffffff" />
+                <circle cx="70" cy="15" r="5" fill="#ffffff" />
+              </svg>
+
+              <div className="db-banner-top-row">
+                <div className="db-camera-badge">
+                  <Icon name="video" />
+                </div>
+                <div className="db-banner-info">
+                  <h3>Upcoming Interview</h3>
+                  <p>Google | Senior Product Designer</p>
+                </div>
+              </div>
+
+              <div className="db-banner-bottom-row">
+                <div className="db-days-left-counter">
+                  <strong>02</strong>
+                  <span>DAYS LEFT</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-prepare-now"
+                  onClick={() => navigate('/interview-report')}
+                >
+                  Prepare Now
+                </button>
+              </div>
+            </div>
+
+            {/* DAILY GOALS CARD */}
+            <div className="db-goals-card-box">
+              <span className="db-card-label">DAILY GOALS</span>
+
+              <div className="db-goals-list">
+                {goalsState.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className="db-goal-item-card"
+                    onClick={() => handleToggleGoal(goal.id)}
+                  >
+                    <div className="db-goal-left">
+                      <div className={goal.done ? 'db-checkbox-square db-checkbox-square--checked' : 'db-checkbox-square'}>
+                        {goal.done && '✓'}
+                      </div>
+                      <span className={goal.done ? 'text-strike' : ''}>{goal.title}</span>
+                    </div>
+
+                    <span className={goal.done ? 'badge-goal-complete' : 'badge-goal-blue'}>
+                      {goal.status}
+                    </span>
+                  </div>
                 ))}
               </div>
-            )}
-          </article>
-        </div>
-
-        <article className="card panel timeline-card">
-          <h3>Recent Activity</h3>
-          {(dashboardData.recentActivity || []).length === 0 ? (
-            <EmptyState title="No recent activity" message="Your activity log will populate as you perform actions." icon="clock" />
-          ) : (
-            <div className="timeline">
-              {dashboardData.recentActivity.map((act) => (
-                <TimelineItem key={act.id || act.title} title={act.title} desc={act.desc} time={act.time} tone={act.tone || 'blue'} />
-              ))}
             </div>
-          )}
-        </article>
-      </section>
-    </AppShell>
+          </div>
+
+          {/* RIGHT COLUMN: RECENT ACTIVITY TIMELINE */}
+          <div className="db-recent-card-box">
+            <span className="db-card-label">RECENT ACTIVITY</span>
+
+            <div className="db-recent-list">
+              <div className="db-recent-item">
+                <div className="db-recent-icon-circle">
+                  <Icon name="refresh" />
+                </div>
+                <div className="db-recent-info">
+                  <strong>Resume updated</strong>
+                  <p>ATS optimization applied to Experience section.</p>
+                  <span>2 hours ago</span>
+                </div>
+              </div>
+
+              <div className="db-recent-item">
+                <div className="db-recent-icon-circle">
+                  <Icon name="checkCircle" />
+                </div>
+                <div className="db-recent-info">
+                  <strong>Mock interview completed</strong>
+                  <p>System Design performance: Excellent.</p>
+                  <span>Yesterday</span>
+                </div>
+              </div>
+
+              <div className="db-recent-item">
+                <div className="db-recent-icon-circle">
+                  <Icon name="spark" />
+                </div>
+                <div className="db-recent-info">
+                  <strong>New badge earned</strong>
+                  <p>"Consistent Coder" - 7 day streak.</p>
+                  <span>2 days ago</span>
+                </div>
+              </div>
+
+              <div className="db-recent-item">
+                <div className="db-recent-icon-circle">
+                  <Icon name="user" />
+                </div>
+                <div className="db-recent-info">
+                  <strong>Connected with Recruiter</strong>
+                  <p>Profile shared with Hiring Manager at Figma.</p>
+                  <span>Oct 24, 2024</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="db-view-history-btn"
+              onClick={() => alert('Loading full activity history log...')}
+            >
+              View All History
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <MobileNav />
+    </div>
   );
 }
 
