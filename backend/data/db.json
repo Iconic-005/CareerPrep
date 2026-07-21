@@ -1,0 +1,451 @@
+{
+  "users": {
+    "usr_1784567545242": {
+      "userId": "usr_1784567545242",
+      "profile": {
+        "name": "Sanju Dutta",
+        "email": "sanju@gmail.com",
+        "title": "",
+        "skills": [],
+        "about": "",
+        "metrics": [],
+        "focusAreas": [],
+        "recruiterSnapshot": ""
+      },
+      "analytics": {
+        "codingXP": 20,
+        "careerReadiness": 0,
+        "resumeScore": "Not Generated",
+        "interviewRank": "--",
+        "weeklyActivity": [
+          {
+            "day": "Mon",
+            "count": 2
+          },
+          {
+            "day": "Tue",
+            "count": 0
+          },
+          {
+            "day": "Wed",
+            "count": 0
+          },
+          {
+            "day": "Thu",
+            "count": 0
+          },
+          {
+            "day": "Fri",
+            "count": 0
+          },
+          {
+            "day": "Sat",
+            "count": 0
+          },
+          {
+            "day": "Sun",
+            "count": 0
+          }
+        ],
+        "activityLog": [
+          {
+            "id": "act_1784567783342",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Find gaps in my skills...\"",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784567748606",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Review my resume...\"",
+            "time": "Just now",
+            "tone": "violet"
+          }
+        ],
+        "practiceStats": {
+          "questionsCompleted": 0,
+          "accuracy": 0
+        },
+        "streak": 0
+      },
+      "goals": [],
+      "resume": {
+        "suggestions": [],
+        "missingSkills": [],
+        "resumeText": "",
+        "versions": []
+      },
+      "roadmap": {
+        "bannerTitle": "Target Transition",
+        "bannerSubtitle": "Not Set",
+        "bannerMeta": "No roadmap generated yet. Generate a roadmap to map your transition.",
+        "milestones": [],
+        "focusAreas": []
+      },
+      "notifications": [],
+      "practiceTracks": [],
+      "interviews": [],
+      "jdAnalyses": [],
+      "chatHistory": [
+        {
+          "role": "user",
+          "content": "Review my resume"
+        },
+        {
+          "role": "assistant",
+          "content": "Excellent! I'm ready to provide a thorough and actionable review of your resume.\n\nTo get started, please paste the full content of your resume here. Once I have it, I'll analyze it for:\n\n1.  **ATS Optimization:** Ensuring it can pass Applicant Tracking Systems and be easily parsed.\n2.  **Impact and Achievements:** Checking that your accomplishments are quantified and impactful, rather than just listing duties.\n3.  **Clarity and Conciseness:** Making sure it's easy to read and understand, highlighting your most relevant skills and experiences.\n4.  **Keywords:** Identifying industry-specific keywords that will help your resume get noticed.\n5.  **Formatting and Readability:** Providing suggestions for layout, design, and overall presentation.\n6.  **Targeting:** How well it aligns with the types of roles you're pursuing.\n\nI look forward to helping you refine it!"
+        },
+        {
+          "role": "user",
+          "content": "Find gaps in my skills"
+        },
+        {
+          "role": "assistant",
+          "content": "Absolutely! Pinpointing skill gaps is a crucial step in career development, ensuring you're always growing towards your professional goals.\n\nTo provide you with a *personalized* and *actionable* skill gap analysis, I need a little more information from you. Please tell me:\n\n1.  **Your Current Role/Experience:** A summary of your current professional background, including your industry, typical responsibilities, and key technologies/tools you currently use. (Even better, if you can paste your resume, that would be ideal!)\n2.  **Your Target Role/Industry:** What kind of role are you aspiring to next? What industry or specific companies are you interested in? This helps me understand the *destination* you're aiming for.\n3.  **Specific Areas of Interest:** Are there any particular technologies, methodologies, or domains you're keen to learn or improve in?\n\nOnce I have this context, I can analyze:\n*   **Required vs. Existing Skills:** Compare the skills demanded by your target roles against what you currently possess.\n*   **Industry Trends:** Highlight emerging skills that are becoming essential in your desired field.\n*   **Strategic Gaps:** Identify critical skills that, if acquired, would significantly boost your competitiveness and career trajectory.\n\nI'm ready when you are!"
+        }
+      ],
+      "badges": [],
+      "settings": {
+        "preferences": {
+          "email": true,
+          "reminders": true,
+          "insights": false
+        },
+        "theme": "Light"
+      }
+    },
+    "globalUsersList": [
+      {
+        "id": "usr_1784567545242",
+        "initials": "SD",
+        "name": "Sanju Dutta",
+        "email": "sanju@gmail.com",
+        "status": "Active",
+        "statusTone": "green",
+        "subscription": "Free Tier",
+        "activity": "Just now",
+        "accent": "blue"
+      }
+    ],
+    "usr_1784640917062": {
+      "userId": "usr_1784640917062",
+      "profile": {
+        "name": "Krishna Yadav",
+        "email": "krishna@gmail.com",
+        "title": "",
+        "skills": [],
+        "about": "",
+        "metrics": [],
+        "focusAreas": [],
+        "recruiterSnapshot": ""
+      },
+      "analytics": {
+        "codingXP": 0,
+        "careerReadiness": 0,
+        "resumeScore": "Not Generated",
+        "interviewRank": "--",
+        "weeklyActivity": [
+          {
+            "day": "Mon",
+            "count": 0
+          },
+          {
+            "day": "Tue",
+            "count": 0
+          },
+          {
+            "day": "Wed",
+            "count": 0
+          },
+          {
+            "day": "Thu",
+            "count": 0
+          },
+          {
+            "day": "Fri",
+            "count": 0
+          },
+          {
+            "day": "Sat",
+            "count": 0
+          },
+          {
+            "day": "Sun",
+            "count": 0
+          }
+        ],
+        "activityLog": [],
+        "practiceStats": {
+          "questionsCompleted": 0,
+          "accuracy": 0
+        },
+        "streak": 0
+      },
+      "goals": [],
+      "resume": {
+        "suggestions": [],
+        "missingSkills": [],
+        "resumeText": "",
+        "versions": []
+      },
+      "roadmap": {
+        "bannerTitle": "Target Transition",
+        "bannerSubtitle": "Not Set",
+        "bannerMeta": "No roadmap generated yet. Generate a roadmap to map your transition.",
+        "milestones": [],
+        "focusAreas": []
+      },
+      "notifications": [],
+      "practiceTracks": [],
+      "interviews": [],
+      "jdAnalyses": [],
+      "chatHistory": [],
+      "badges": [],
+      "settings": {
+        "preferences": {
+          "email": true,
+          "reminders": true,
+          "insights": false
+        },
+        "theme": "Light"
+      }
+    },
+    "usr_1784643012655": {
+      "userId": "usr_1784643012655",
+      "profile": {
+        "name": "Alex Thompson",
+        "email": "sanju@gmail.com",
+        "title": "Senior Product Designer @ Fintech Innovations",
+        "avatarUrl": "/images/alex_thompson.png",
+        "completion": 85,
+        "experiences": [
+          {
+            "id": "exp_1",
+            "role": "Senior Product Designer",
+            "company": "Fintech Innovations",
+            "period": "Jan 2022 — Present",
+            "description": "Leading the design system team for a series-B mobile banking app. Reduced design-to-code latency by 40%.",
+            "current": true
+          },
+          {
+            "id": "exp_2",
+            "role": "UX Designer",
+            "company": "Creativ Studio",
+            "period": "Jun 2019 — Dec 2021",
+            "description": "Designed end-to-end user journeys for high-traffic e-commerce platforms.",
+            "current": false
+          }
+        ],
+        "education": [
+          {
+            "id": "edu_1",
+            "degree": "B.S. Interaction Design",
+            "institution": "Stanford University",
+            "period": "2015 — 2019",
+            "description": "Focus on Human-Computer Interaction and Cognitive Psychology."
+          }
+        ],
+        "projects": [
+          {
+            "id": "proj_1",
+            "title": "Nexus Wallet",
+            "description": "Crypto asset management redesigned for clarity.",
+            "image": "/images/nexus_wallet.png"
+          },
+          {
+            "id": "proj_2",
+            "title": "DataStream Dashboard",
+            "description": "Real-time analytics for enterprise-level logistics.",
+            "image": "/images/datastream_dashboard.png"
+          }
+        ],
+        "skills": [
+          "Figma",
+          "UI/UX Design",
+          "React.js",
+          "Design Systems",
+          "Prototyping",
+          "User Testing",
+          "Adobe CC"
+        ],
+        "skillsActive": [
+          "Figma",
+          "UI/UX Design",
+          "React.js"
+        ],
+        "targetRoles": [
+          "Principal Product Designer",
+          "Design Manager"
+        ],
+        "dreamCompanies": [
+          {
+            "name": "Stripe",
+            "color": "#000000"
+          },
+          {
+            "name": "Linear",
+            "color": "#2563eb"
+          },
+          {
+            "name": "Airbnb",
+            "color": "#ff385c"
+          }
+        ],
+        "aiSuggestion": {
+          "targetCompany": "Stripe",
+          "title": "Optimize for Stripe",
+          "description": "Based on your target companies, you should highlight more 'Systems Thinking' in your project descriptions to align with Stripe's design philosophy.",
+          "buttonLabel": "Refine Project Text"
+        },
+        "about": "",
+        "metrics": [],
+        "focusAreas": [],
+        "recruiterSnapshot": ""
+      },
+      "analytics": {
+        "codingXP": 170,
+        "careerReadiness": 0,
+        "resumeScore": "75/100",
+        "interviewRank": "--",
+        "weeklyActivity": [
+          {
+            "day": "Mon",
+            "count": 0
+          },
+          {
+            "day": "Tue",
+            "count": 5
+          },
+          {
+            "day": "Wed",
+            "count": 0
+          },
+          {
+            "day": "Thu",
+            "count": 0
+          },
+          {
+            "day": "Fri",
+            "count": 0
+          },
+          {
+            "day": "Sat",
+            "count": 0
+          },
+          {
+            "day": "Sun",
+            "count": 0
+          }
+        ],
+        "activityLog": [
+          {
+            "id": "act_1784649490244",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"How should I prep for a Google...\"",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784648372096",
+            "title": "Optimized resume with AI",
+            "desc": "Analyzed resume for Senior Product Designer @ Fintech Innovations",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784646582384",
+            "title": "Consulted AI Career Coach",
+            "desc": "Prompt: \"Find gaps in my skills...\"",
+            "time": "Just now",
+            "tone": "violet"
+          },
+          {
+            "id": "act_1784646051169",
+            "title": "Submitted Coding Solution",
+            "desc": "Passed all test assertions",
+            "time": "Just now",
+            "tone": "blue"
+          },
+          {
+            "id": "act_1784646032344",
+            "title": "Submitted Coding Solution",
+            "desc": "Passed all test assertions",
+            "time": "Just now",
+            "tone": "blue"
+          }
+        ],
+        "practiceStats": {
+          "questionsCompleted": 2,
+          "accuracy": 100
+        },
+        "streak": 0
+      },
+      "goals": [],
+      "resume": {
+        "suggestions": [
+          {
+            "id": "sug_1784648372096",
+            "title": "Optimized section for Senior Product Designer @ Fintech Innovations",
+            "desc": "Applied STAR method and metric quantification.",
+            "accent": "mint"
+          }
+        ],
+        "missingSkills": [],
+        "resumeText": "Alex Thompson - Senior Product Designer & Systems Architect",
+        "versions": []
+      },
+      "roadmap": {
+        "bannerTitle": "Target Transition",
+        "bannerSubtitle": "Not Set",
+        "bannerMeta": "No roadmap generated yet. Generate a roadmap to map your transition.",
+        "milestones": [],
+        "focusAreas": []
+      },
+      "notifications": [],
+      "practiceTracks": [],
+      "interviews": [],
+      "jdAnalyses": [],
+      "chatHistory": [
+        {
+          "role": "user",
+          "content": "Find gaps in my skills"
+        },
+        {
+          "role": "assistant",
+          "content": "Absolutely, I can help you identify gaps in your skills to help you reach your career goals. This is a crucial step in professional development!\n\nHowever, to provide a truly personalized and actionable analysis, I need a bit more context from you. Skill gaps are always relative to a specific objective.\n\nPlease tell me about the following:\n\n1.  **Your Current Role & Experience:** What is your current job title, the industry you work in, and approximately how many years of experience do you have?\n2.  **Your Career Aspirations:** What kind of role or industry are you aiming for next, or what specific long-term career goal are you working towards? (e.g., \"I want to transition from a Junior Data Analyst to a Senior Machine Learning Engineer,\" or \"I want to move into product management from a software development background,\" or \"I'm a marketing specialist looking to become a Marketing Director\").\n3.  **Your Current Key Skills:** What are your primary skills right now? Please list both technical skills (e.g., Python, SQL, Salesforce, Photoshop, specific frameworks, cloud platforms) and important soft skills (e.g., project management, communication, leadership, problem-solving, stakeholder management).\n4.  **Any Specific Concerns:** Are there any particular areas where you *feel* you might be lacking, or any skills you've noticed frequently appear in job descriptions for your target roles that you don't currently possess?\n\nOnce I have this information, I can analyze the discrepancies between your current profile and your desired profile, pinpoint specific skill gaps, and even suggest resources or learning paths to address them."
+        },
+        {
+          "role": "user",
+          "content": "How should I prep for a Google interview?"
+        },
+        {
+          "role": "assistant",
+          "content": "Preparing for a Google interview is a significant undertaking, as they are known for their rigorous and multi-faceted hiring process. It's not just about technical skill, but also about problem-solving approach, collaboration, and cultural fit (often called \"Googliness\").\n\nTo give you the most targeted advice, I need to know: **What specific role are you interviewing for at Google?** (e.g., Software Engineer, Product Manager, Data Scientist, Sales Account Manager, UX Designer, etc.)\n\nHowever, I can provide a comprehensive framework that applies to most technical and many non-technical roles at Google. This will cover the general philosophy and key areas you'll need to master.\n\n---\n\n### General Google Interview Preparation Strategy\n\nRegardless of the role, Google's interviews typically assess:\n\n1.  **Role-Related Knowledge:** Your specific skills for the job (e.g., coding, system design, product sense, marketing strategy).\n2.  **Leadership:** How you take initiative, influence others, and drive projects forward.\n3.  **Googliness:** Your ability to thrive in an ambiguous, fast-paced, and collaborative environment (e.g., adaptability, humility, comfort with ambiguity, intellectual curiosity).\n4.  **Problem-Solving:** Your ability to break down complex problems, think critically, and articulate your thought process.\n\nHere's a breakdown of how to prepare:\n\n#### 1. Understand the Role & Job Description Deeply\n\n*   **Deconstruct the JD:** Go line by line. Highlight every skill, technology, and responsibility. This is your primary study guide.\n*   **Research the Team:** If you know which team you're interviewing for, try to understand their projects, tech stack, and challenges. Look for insights on LinkedIn or Google blogs.\n*   **Connect with Current/Former Googlers (if possible):** Informational interviews can provide invaluable insights into the specific role and team culture.\n\n#### 2. Master Core Concepts & Problem-Solving\n\n**For Technical Roles (Software Engineer, Data Scientist, etc.):**\n\n*   **Data Structures & Algorithms (DSA):** This is paramount for coding interviews.\n    *   **Topics:** Arrays, Strings, Linked Lists, Trees (BST, Trie, B-Tree), Graphs, Hash Maps, Heaps, Stacks, Queues, Recursion, Dynamic Programming, Sorting & Searching algorithms.\n    *   **Practice Platform:** LeetCode (filter by \"Google\" tagged questions), HackerRank. Aim for a mix of Easy, Medium, and Hard, focusing heavily on Medium.\n    *   **Focus:** Don't just get the answer. Understand multiple approaches, time and space complexity analysis, and how to handle edge cases.\n    *   **Language:** Be proficient in one coding language (Python, Java, C++, Go) that you'll use in the interview.\n*   **System Design (for Mid-Senior Level Technical Roles):**\n    *   **Concepts:** Scalability, reliability, consistency, availability, load balancing, caching, databases (SQL/NoSQL), messaging queues, microservices, APIs, security.\n    *   **Approach:** Learn a structured approach to system design (e.g., clarify requirements, functional/non-functional, estimate scale, high-level design, deep dive components, discuss trade-offs, identify bottlenecks).\n    *   **Resources:** \"Grokking the System Design Interview,\" \"Designing Data-Intensive Applications\" by Martin Kleppmann, YouTube channels like \"System Design Interview.\"\n*   **Domain-Specific Knowledge:** If it's a Machine Learning Engineer role, brush up on ML algorithms, model evaluation, MLOps. If it's a Data Scientist role, focus on statistics, experimental design, SQL, and specific ML applications.\n\n**For Non-Technical Roles (Product Manager, Marketing, Sales, Operations):**\n\n*   **Product Sense (PM):** How would you design a new Google product? How would you improve an existing one? Understand user needs, market trends, technical feasibility, and business impact.\n*   **Strategic Thinking:** How would you approach a new market? What's the competitive landscape? How would you measure success?\n*   **Analytical Skills:** Case studies, market sizing, data interpretation.\n*   **Industry Knowledge:** Be up-to-date on trends, competitors, and innovations in your specific domain.\n\n#### 3. Practice Communication & \"Thinking Out Loud\"\n\n*   **Crucial for Google:** Interviewers aren't just looking for the right answer, but *how* you arrive at it. Talk through your thought process:\n    *   **Clarify the question:** Repeat it, ask clarifying questions.\n    *   **Propose an initial approach:** State your assumptions.\n    *   **Discuss trade-offs:** Why one approach over another (e.g., space vs. time complexity, user experience vs. development cost).\n    *   **Explain your code/design:** Walk through it step-by-step.\n    *   **Test your solution:** Mentally run through example inputs, including edge cases.\n*   **Structure Behavioral Answers:** Use the **STAR Method** (Situation, Task, Action, Result) for all behavioral questions. Prepare 10-15 solid stories that highlight your:\n    *   Leadership and initiative\n    *   Collaboration and teamwork\n    *   Handling conflict or failure\n    *   Dealing with ambiguity\n    *   Problem-solving non-technical challenges\n    *   Learning from mistakes\n    *   Impact and results\n\n#### 4. Prepare for \"Googliness\" Questions\n\nThese are often woven into behavioral interviews. Reflect on:\n\n*   Why Google?\n*   What excites you about this role/team?\n*   How do you handle disagreement?\n*   Tell me about a time you failed. What did you learn?\n*   How do you prioritize?\n*   Describe a time you dealt with an ambiguous situation.\n\nYour answers should demonstrate humility, adaptability, a desire to learn, and a collaborative spirit.\n\n#### 5. Mock Interviews are ESSENTIAL\n\n*   **Practice with peers, mentors, or professional coaches (like me!):** This is the single best way to refine your communication, identify weaknesses, and get comfortable with the pressure.\n*   **Simulate the environment:** Use a whiteboard or online collaborative editor (like Google Docs or CoderPad).\n*   **Get honest feedback:** Ask for specific feedback on your problem-solving approach, communication clarity, and areas for improvement.\n\n#### 6. Prepare Questions for Your Interviewers\n\n*   Demonstrates engagement and thoughtfulness.\n*   Ask about the team, current challenges, Google's culture, growth opportunities, the most exciting part of their job.\n*   Avoid asking about salary or benefits in early rounds.\n\n#### 7. Logistics & Mindset\n\n*   **Rest:** Get good sleep before each interview.\n*   **Environment:** Ensure a quiet space, good internet connection, and proper lighting for virtual interviews.\n*   **Be Yourself:** Authenticity comes through.\n*   **Stay Positive:** It's a marathon, not a sprint. Learn from each round.\n\n---\n\nOnce you tell me the specific role you're targeting, I can narrow down these areas and provide even more tailored advice, including specific resources or practice strategies. Let's get you ready!"
+        }
+      ],
+      "badges": [],
+      "settings": {
+        "preferences": {
+          "email": true,
+          "reminders": true,
+          "insights": false
+        },
+        "theme": "Light"
+      }
+    }
+  },
+  "globalUsersList": [
+    {
+      "id": "usr_1784640917062",
+      "initials": "KY",
+      "name": "Krishna Yadav",
+      "email": "krishna@gmail.com",
+      "status": "Active",
+      "statusTone": "green",
+      "subscription": "Free Tier",
+      "activity": "Just now",
+      "accent": "blue"
+    }
+  ]
+}

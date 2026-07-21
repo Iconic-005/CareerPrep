@@ -1866,92 +1866,7 @@ function StepCard({ index, title, text }) {
   );
 }
 
-function CoachPage() {
-  const { user } = useAuth();
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [coachState, setCoachState] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/coach`, { headers: getAuthHeaders() })
-      .then((response) => response.json())
-      .then((data) => setCoachState(data))
-      .catch(() => setCoachState(null));
-  }, []);
-
-  const sendMessage = (text = message) => {
-    const content = text.trim();
-    if (!content || isLoading) return;
-
-    const userMsgId = Date.now();
-    setMessages((current) => [...current, { id: userMsgId, role: 'user', content }]);
-    setMessage('');
-    setIsLoading(true);
-
-    fetch(`${API_BASE_URL}/chat`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ message: content }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Unable to reach the AI service. Please try again.');
-        return res.json();
-      })
-      .then((data) => {
-        const replyText = data.reply || data.text || 'Answer received.';
-        setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', content: replyText }]);
-      })
-      .catch(() => {
-        setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', content: 'Unable to reach the AI service. Please try again.' }]);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  return (
-    <AppShell
-      title="Career AI Assistant"
-      subtitle="Ask for resume rewrites, hiring strategies, market positioning, and interview feedback."
-      actions={<button type="button" className="ghost-button"><Icon name="spark" />AI Coach Online</button>}
-    >
-      <section className="chat-layout chat-layout--assistant">
-        <div className="chat-welcome">
-          <div className="chat-avatar">
-            <Icon name="bot" />
-          </div>
-          <div className="chat-welcome__copy">
-            <span>Career copilot</span>
-            <h3>Hi, {coachState?.userName || user?.name?.split(' ')[0] || 'there'}</h3>
-            <p>{coachState?.welcome || 'Loading your coach context…'}</p>
-          </div>
-        </div>
-
-        <div className="chip-row">
-          {(coachState?.starterPrompts || []).map((item) => (
-            <button key={item} type="button" className="chip-action" onClick={() => sendMessage(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
-
-        <div className="message-list">
-          <MessageBubble role="assistant">
-            Welcome! I'm your AI career coach. Ask me anything about resume bullet points, interview preparation, salary negotiation, or target skills!
-          </MessageBubble>
-          {messages.map((item) => <MessageBubble key={item.id} role={item.role}>{item.content}</MessageBubble>)}
-          {isLoading ? <MessageBubble role="assistant">Thinking & analyzing your career profile...</MessageBubble> : null}
-        </div>
-
-        <div className="chat-input">
-          <button type="button" className="icon-button" aria-label="Attach a file"><Icon name="paperclip" /></button>
-          <textarea rows="1" value={message} onChange={(event) => setMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } }} placeholder="Ask me anything about your career..." />
-          <button type="button" className="icon-button" aria-label="Use voice input"><Icon name="mic" /></button>
-          <button type="button" className="primary-square" aria-label="Send message" onClick={() => sendMessage()} disabled={!message.trim() || isLoading}><Icon name="send" /></button>
-        </div>
-      </section>
-    </AppShell>
-  );
-}
 
 function MessageBubble({ role, children }) {
   const { user } = useAuth();
@@ -2300,7 +2215,6 @@ function RoadmapPage() {
 
       <MobileNav />
 
-      {/* FOOTER */}
       <footer className="jd-footer-bar" style={{ marginTop: 0 }}>
         <div className="jd-footer-left">
           <h4>CareerPrep</h4>
@@ -2313,6 +2227,242 @@ function RoadmapPage() {
           <a href="/">Career Blog</a>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function CoachPage() {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState([
+    {
+      id: '1',
+      role: 'assistant',
+      time: '10:15 AM',
+      text: "I see you're aiming for a transition from Marketing to Product Management. Based on current trends, we should focus on highlighting your data analytics and stakeholder management experience. Shall we start by optimizing your resume summary?",
+    },
+    {
+      id: '2',
+      role: 'user',
+      time: '10:16 AM',
+      text: "Yes, that sounds great. I'm especially worried about my technical skills section. Can you help me frame my basic Python knowledge in a way that appeals to PM recruiters?",
+    },
+    {
+      id: '3',
+      role: 'assistant',
+      time: 'Just now',
+      intro: 'Absolutely. For a PM role, you shouldn\'t just list "Python". Instead, frame it as:',
+      bullets: [
+        {
+          title: 'Automated Data Cleaning',
+          text: 'Utilized Python (Pandas) to reduce weekly reporting time by 15 hours.',
+        },
+        {
+          title: 'Cross-functional Liaison',
+          text: 'Bridged the gap between engineering and marketing by translating technical constraints into business requirements.',
+        },
+      ],
+    },
+  ]);
+  const [inputMsg, setInputMsg] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  const candidateName = user?.name || 'Alex Rivera';
+  const userInitials = candidateName.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const handleSendMessage = async (textToSend) => {
+    const query = textToSend || inputMsg;
+    if (!query.trim() || isSending) return;
+
+    const userMsg = {
+      id: String(Date.now()),
+      role: 'user',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: query,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInputMsg('');
+    setIsSending(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ message: query }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(Date.now() + 1),
+            role: 'assistant',
+            time: 'Just now',
+            text: data.response || 'I recommend tailoring your key metrics and highlighting technical alignment for your target role.',
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(Date.now() + 1),
+            role: 'assistant',
+            time: 'Just now',
+            text: 'I have analyzed your career goals. Let’s target top-priority keywords and structure your accomplishments into quantifiable bullet points.',
+          },
+        ]);
+      }
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          time: 'Just now',
+          text: 'Great question! Highlighting cross-functional collaboration and business impact is key when positioning technical skills to recruiters.',
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <SidebarShell />
+
+      <main className="main-content--career-ai">
+        {/* TOP BAR */}
+        <div className="cai-top-bar">
+          <h1 className="cai-title">Career AI Assistant</h1>
+          <div className="cai-header-right">
+            <button type="button" className="jd-icon-btn" aria-label="Notifications">
+              <Icon name="bell" />
+            </button>
+            <div className="rm-avatar-chip">{userInitials}</div>
+          </div>
+        </div>
+
+        {/* QUICK SUGGESTIONS ROW */}
+        <div className="cai-suggestions-row">
+          <button
+            type="button"
+            className="cai-suggestion-chip"
+            onClick={() => handleSendMessage('Review my resume summary and structure.')}
+          >
+            <Icon name="document" />
+            <span>Review my resume</span>
+          </button>
+          <button
+            type="button"
+            className="cai-suggestion-chip"
+            onClick={() => handleSendMessage('How should I prep for a Google interview?')}
+          >
+            <Icon name="briefcase" />
+            <span>Prep for Google</span>
+          </button>
+          <button
+            type="button"
+            className="cai-suggestion-chip"
+            onClick={() => handleSendMessage('Help me find gaps in my core technical skills.')}
+          >
+            <Icon name="trendingUp" />
+            <span>Find gaps in my skills</span>
+          </button>
+        </div>
+
+        {/* CHAT MESSAGES STREAM */}
+        <div className="cai-chat-stream">
+          {messages.map((msg) => {
+            const isUser = msg.role === 'user';
+            return (
+              <div key={msg.id} className={`cai-msg-row ${isUser ? 'cai-msg-row--user' : 'cai-msg-row--bot'}`}>
+                {!isUser && (
+                  <div className="cai-avatar-bot">
+                    <Icon name="spark" />
+                  </div>
+                )}
+
+                <div className="cai-msg-content">
+                  <div className={isUser ? 'cai-bubble-user' : 'cai-bubble-bot'}>
+                    {msg.intro && <p style={{ margin: '0 0 0.5rem 0' }}>{msg.intro}</p>}
+                    {msg.text && (
+                      <p style={{ margin: 0 }}>
+                        {msg.text}
+                      </p>
+                    )}
+                    {msg.bullets && (
+                      <div className="cai-bullets-box">
+                        {msg.bullets.map((b) => (
+                          <div key={b.title} className="cai-bullet-item">
+                            <div className="cai-check-icon">✓</div>
+                            <div className="cai-bullet-text">
+                              <strong>{b.title}:</strong> {b.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span className="cai-msg-subtext">
+                    {isUser ? `You • ${msg.time}` : `AI Assistant • ${msg.time}`}
+                  </span>
+                </div>
+
+                {isUser && <div className="cai-avatar-user">{userInitials}</div>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* INPUT BAR AREA */}
+        <div className="cai-input-wrapper">
+          <div className="cai-input-card">
+            <button
+              type="button"
+              className="cai-attach-btn"
+              onClick={() => alert('Attach Resume PDF or Case Study file')}
+              aria-label="Attach File"
+            >
+              <Icon name="paperclip" />
+            </button>
+
+            <input
+              type="text"
+              className="cai-input-field"
+              placeholder="Ask me anything about your career..."
+              value={inputMsg}
+              onChange={(e) => setInputMsg(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+
+            <button
+              type="button"
+              className="cai-mic-btn"
+              onClick={() => alert('Voice input activated. Speak now...')}
+              aria-label="Voice Input"
+            >
+              <Icon name="mic" />
+            </button>
+
+            <button
+              type="button"
+              className="cai-send-btn"
+              onClick={() => handleSendMessage()}
+              disabled={!inputMsg.trim() || isSending}
+              aria-label="Send Message"
+            >
+              <Icon name="send" />
+            </button>
+          </div>
+
+          <div className="cai-disclaimer">
+            CareerPrep AI can make mistakes. Check important career info.
+          </div>
+        </div>
+      </main>
+
+      <MobileNav />
     </div>
   );
 }

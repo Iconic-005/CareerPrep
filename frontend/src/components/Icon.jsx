@@ -356,6 +356,33 @@ export function Icon({ name }) {
           <path d="M4 20h16" />
         </Svg>
       );
+    case 'paperclip':
+      return (
+        <Svg>
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+        </Svg>
+      );
+    case 'send':
+      return (
+        <Svg>
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </Svg>
+      );
+    case 'trendingUp':
+      return (
+        <Svg>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+          <polyline points="17 6 23 6 23 12" />
+        </Svg>
+      );
+    case 'briefcase':
+      return (
+        <Svg>
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </Svg>
+      );
     case 'bulb':
       return (
         <Svg>
@@ -375,62 +402,12 @@ export function Icon({ name }) {
           <path d="M16 18v2" />
         </Svg>
       );
-    case 'paperclip':
-      return (
-        <Svg>
-          <path d="M8 12.5l6.5-6.5a3 3 0 1 1 4.2 4.2L10 19a5 5 0 1 1-7.1-7.1l8.5-8.5" />
-        </Svg>
-      );
-    case 'send':
-      return (
-        <Svg>
-          <path d="M21 3L10 14" />
-          <path d="M21 3l-7 18-4-7-7-4z" />
-        </Svg>
-      );
     case 'warning':
       return (
         <Svg>
           <path d="M12 3l10 18H2z" />
           <path d="M12 9v4" />
           <path d="M12 17h.01" />
-        </Svg>
-      );
-    case 'checkCircle':
-      return (
-        <Svg>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M8.5 12.5l2.2 2.2 4.8-5.2" />
-        </Svg>
-      );
-    case 'check':
-      return (
-        <Svg>
-          <path d="M5 12.5l4 4L19 7" />
-        </Svg>
-      );
-    case 'save':
-      return (
-        <Svg>
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-          <polyline points="17 21 17 13 7 13 7 21" />
-          <polyline points="7 3 7 8 15 8" />
-        </Svg>
-      );
-    case 'rocket':
-      return (
-        <Svg>
-          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-          <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-3.05 11a22.35 22.35 0 0 1-3.95 2z" />
-          <path d="M9 12l-5 5" />
-          <path d="M15 9l5 5" />
-        </Svg>
-      );
-    case 'briefcase':
-      return (
-        <Svg>
-          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
         </Svg>
       );
     case 'graduation':
