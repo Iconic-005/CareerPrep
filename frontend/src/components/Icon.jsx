@@ -372,7 +372,116 @@ export function Icon({ name }) {
           <path d="M5 12.5l4 4L19 7" />
         </Svg>
       );
+    case 'save':
+      return (
+        <Svg>
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
+        </Svg>
+      );
+    case 'rocket':
+      return (
+        <Svg>
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+          <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-3.05 11a22.35 22.35 0 0 1-3.95 2z" />
+          <path d="M9 12l-5 5" />
+          <path d="M15 9l5 5" />
+        </Svg>
+      );
+    case 'briefcase':
+      return (
+        <Svg>
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </Svg>
+      );
+    case 'graduation':
+      return (
+        <Svg>
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
+        </Svg>
+      );
+    case 'pencil':
+      return (
+        <Svg>
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+        </Svg>
+      );
+    case 'sparkles':
+      return (
+        <Svg>
+          <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
+          <path d="M19 15l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
+        </Svg>
+      );
+    case 'building':
+      return (
+        <Svg>
+          <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+          <path d="M9 22v-4h6v4" />
+          <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+        </Svg>
+      );
+    case 'landmark':
+      return (
+        <Svg>
+          <line x1="3" y1="22" x2="21" y2="22" />
+          <line x1="6" y1="18" x2="6" y2="11" />
+          <line x1="10" y1="18" x2="10" y2="11" />
+          <line x1="14" y1="18" x2="14" y2="11" />
+          <line x1="18" y1="18" x2="18" y2="11" />
+          <polygon points="12 2 20 7 4 7 12 2" />
+        </Svg>
+      );
+    case 'sigma':
+      return (
+        <Svg>
+          <path d="M18 4H6l6 8-6 8h12" />
+        </Svg>
+      );
+    case 'language':
+      return (
+        <Svg>
+          <path d="M5 8h14M12 4v4M6 8c0 4 2.5 7.5 6 9M18 8c0 3-1.5 5.5-4 7M14 14l3 5M21 19l-3-5" />
+        </Svg>
+      );
+    case 'play':
+      return (
+        <Svg>
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </Svg>
+      );
+    case 'bug':
+      return (
+        <Svg>
+          <rect x="8" y="6" width="8" height="14" rx="4" />
+          <path d="M6 10h4M14 10h4M6 14h4M14 14h4M10 2l-2 4M14 2l2 4" />
+        </Svg>
+      );
+    case 'expand':
+      return (
+        <Svg>
+          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+        </Svg>
+      );
+    case 'clock':
+      return (
+        <Svg>
+          <circle cx="12" cy="12" r="9" />
+          <polyline points="12 6 12 12 16 14" />
+        </Svg>
+      );
+    case 'lightning':
+      return (
+        <Svg>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </Svg>
+      );
     default:
       return null;
   }
 }
+
+

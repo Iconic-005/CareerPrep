@@ -224,7 +224,7 @@
         "recruiterSnapshot": ""
       },
       "analytics": {
-        "codingXP": 0,
+        "codingXP": 100,
         "careerReadiness": 0,
         "resumeScore": "Not Generated",
         "interviewRank": "--",
@@ -235,7 +235,7 @@
           },
           {
             "day": "Tue",
-            "count": 0
+            "count": 2
           },
           {
             "day": "Wed",
@@ -258,10 +258,25 @@
             "count": 0
           }
         ],
-        "activityLog": [],
+        "activityLog": [
+          {
+            "id": "act_1784646051169",
+            "title": "Submitted Coding Solution",
+            "desc": "Passed all test assertions",
+            "time": "Just now",
+            "tone": "blue"
+          },
+          {
+            "id": "act_1784646032344",
+            "title": "Submitted Coding Solution",
+            "desc": "Passed all test assertions",
+            "time": "Just now",
+            "tone": "blue"
+          }
+        ],
         "practiceStats": {
-          "questionsCompleted": 0,
-          "accuracy": 0
+          "questionsCompleted": 2,
+          "accuracy": 100
         },
         "streak": 0
       },

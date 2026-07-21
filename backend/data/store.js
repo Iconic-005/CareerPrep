@@ -12,6 +12,70 @@ const defaultStoreData = {
   globalUsersList: [],
 };
 
+const defaultProfileData = {
+  name: 'Alex Thompson',
+  email: 'alex.thompson@example.com',
+  title: 'Senior Product Designer @ Fintech Innovations',
+  avatarUrl: '/images/alex_thompson.png',
+  completion: 85,
+  experiences: [
+    {
+      id: 'exp_1',
+      role: 'Senior Product Designer',
+      company: 'Fintech Innovations',
+      period: 'Jan 2022 — Present',
+      description: 'Leading the design system team for a series-B mobile banking app. Reduced design-to-code latency by 40%.',
+      current: true,
+    },
+    {
+      id: 'exp_2',
+      role: 'UX Designer',
+      company: 'Creativ Studio',
+      period: 'Jun 2019 — Dec 2021',
+      description: 'Designed end-to-end user journeys for high-traffic e-commerce platforms.',
+      current: false,
+    },
+  ],
+  education: [
+    {
+      id: 'edu_1',
+      degree: 'B.S. Interaction Design',
+      institution: 'Stanford University',
+      period: '2015 — 2019',
+      description: 'Focus on Human-Computer Interaction and Cognitive Psychology.',
+    },
+  ],
+  projects: [
+    {
+      id: 'proj_1',
+      title: 'Nexus Wallet',
+      description: 'Crypto asset management redesigned for clarity.',
+      image: '/images/nexus_wallet.png',
+    },
+    {
+      id: 'proj_2',
+      title: 'DataStream Dashboard',
+      description: 'Real-time analytics for enterprise-level logistics.',
+      image: '/images/datastream_dashboard.png',
+    },
+  ],
+  skills: ['Figma', 'UI/UX Design', 'React.js', 'Design Systems', 'Prototyping', 'User Testing', 'Adobe CC'],
+  skillsActive: ['Figma', 'UI/UX Design', 'React.js'],
+  targetRoles: ['Principal Product Designer', 'Design Manager'],
+  dreamCompanies: [
+    { name: 'Stripe', color: '#000000' },
+    { name: 'Linear', color: '#2563eb' },
+    { name: 'Airbnb', color: '#ff385c' },
+  ],
+  aiSuggestion: {
+    targetCompany: 'Stripe',
+    title: 'Optimize for Stripe',
+    description: "Based on your target companies, you should highlight more 'Systems Thinking' in your project descriptions to align with Stripe's design philosophy.",
+    buttonLabel: 'Refine Project Text',
+  },
+};
+
+
 export function createStore(filePath = path.join(process.cwd(), 'backend', 'data', 'db.json')) {
   const absolutePath = path.resolve(filePath);
 
@@ -453,28 +517,124 @@ export function createStore(filePath = path.join(process.cwd(), 'backend', 'data
       const data = read();
       const user = getUserRecord(data, userId);
       return {
+        codingProblem: {
+          id: '142',
+          title: 'Linked List Cycle II',
+          difficulty: 'Medium',
+          description: 'Given the `head` of a linked list, return the node where the cycle begins. If there is no cycle, return `null`.\n\nThere is a cycle in a linked list if there is some node in the list that can be reached again by continuously following the `next` pointer.',
+          examples: [
+            {
+              id: 'ex_1',
+              input: 'head = [3,2,0,-4], pos = 1',
+              output: 'tail connects to node index 1',
+              explanation: 'There is a cycle in the linked list where tail connects to the second node.',
+            },
+          ],
+          constraints: [
+            'The number of nodes in the list is in the range [0, 10^4].',
+            '-10^5 <= Node.val <= 10^5',
+            'pos is -1 or a valid index in the linked-list.',
+          ],
+          aiAnalysis: {
+            algorithm: "Floyd's Tortoise and Hare",
+            text: 'Most candidates use a two-pointer approach here. Focus on the mathematical proof of why the pointers meet at the cycle start.',
+          },
+          starterCode: `class Solution:
+    def detectCycle(self, head: Optional[ListNode]) -> Optional[ListNode]:
+        # TODO: Initialize slow and fast pointers
+        slow = fast = head
+
+        while fast and fast.next:
+            slow = slow.next
+            fast = fast.next.next
+
+            if slow == fast:
+                slow = head
+                while slow != fast:
+                    slow = slow.next
+                    fast = fast.next
+                return slow
+
+        return None`,
+        },
+        aptitudeSession: {
+          currentQuestionIndex: 5,
+          totalQuestions: 20,
+          accuracy: 85,
+          category: 'Logical Reasoning',
+          questionText: "If 'CLARK' is coded as '24-12-1-18-11' in a certain language, how would you code 'MEMBER' using the same logic?",
+          options: [
+            { label: 'A', text: '13-5-13-2-5-18' },
+            { label: 'B', text: '14-6-14-3-6-19', isCorrect: true },
+            { label: 'C', text: '12-4-12-1-4-17' },
+            { label: 'D', text: '13-6-13-3-6-18' },
+          ],
+          metrics: {
+            avgTime: '42s',
+            streak: 12,
+            logicMapping: 'High',
+            speedControl: 'Medium',
+          },
+        },
         tracks: user.practiceTracks || [],
         stats: user.analytics.practiceStats,
       };
     },
 
-    async submitPractice(userId, payload) {
+    async submitPractice(userId, payload = {}) {
       const data = read();
       const user = getUserRecord(data, userId);
-      user.analytics.codingXP += 50;
+      const isCodeSubmit = payload.type === 'code' || payload.code;
+      const xpGained = isCodeSubmit ? 50 : 25;
+      
+      user.analytics.codingXP += xpGained;
       user.analytics.practiceStats.questionsCompleted += 1;
-      user.analytics.practiceStats.accuracy = 100;
-      logActivity(user, 'Submitted Coding Solution', 'Passed all test assertions', 'blue');
+      user.analytics.practiceStats.accuracy = 85;
+      logActivity(
+        user,
+        isCodeSubmit ? 'Submitted Coding Solution' : 'Answered Aptitude Drill',
+        isCodeSubmit ? 'Passed all standard test cases (48ms)' : 'Selected option B (Correct)',
+        'blue'
+      );
       updateAnalytics(user);
       write(data);
-      return { success: true, message: 'Passed all tests!', xpGained: 50 };
+      return {
+        success: true,
+        message: isCodeSubmit
+          ? '✓ All standard test cases passed. Run time: 48ms (Beats 92% of Python users)'
+          : '✓ Correct Answer! Logic mapping confirmed.',
+        xpGained,
+        runtime: '48ms',
+        beatsPercent: '92%',
+      };
     },
+
 
     // Profile & Settings per user
     async getProfile(userId) {
       const data = read();
       const user = getUserRecord(data, userId);
-      return user.profile;
+      const profile = user.profile || {};
+      const merged = {
+        ...defaultProfileData,
+        ...profile,
+        name: profile.name && profile.name !== 'User' ? profile.name : defaultProfileData.name,
+        title: profile.title || defaultProfileData.title,
+        avatarUrl: profile.avatarUrl || defaultProfileData.avatarUrl,
+        experiences: profile.experiences?.length ? profile.experiences : defaultProfileData.experiences,
+        education: profile.education?.length ? profile.education : defaultProfileData.education,
+        projects: profile.projects?.length ? profile.projects : defaultProfileData.projects,
+        skills: profile.skills?.length ? profile.skills : defaultProfileData.skills,
+        skillsActive: profile.skillsActive?.length ? profile.skillsActive : defaultProfileData.skillsActive,
+        targetRoles: profile.targetRoles?.length ? profile.targetRoles : defaultProfileData.targetRoles,
+        dreamCompanies: profile.dreamCompanies?.length ? profile.dreamCompanies : defaultProfileData.dreamCompanies,
+        aiSuggestion: profile.aiSuggestion || defaultProfileData.aiSuggestion,
+      };
+      if ((!profile.experiences || !profile.experiences.length) && user) {
+        user.profile = merged;
+        write(data);
+      }
+      return merged;
     },
 
     async updateProfile(userId, profilePatch) {
@@ -486,6 +646,7 @@ export function createStore(filePath = path.join(process.cwd(), 'backend', 'data
       write(data);
       return user.profile;
     },
+
 
     async getSettings(userId) {
       const data = read();
