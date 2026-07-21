@@ -210,6 +210,89 @@
         },
         "theme": "Light"
       }
+    },
+    "usr_1784643012655": {
+      "userId": "usr_1784643012655",
+      "profile": {
+        "name": "User",
+        "email": "sanju@gmail.com",
+        "title": "",
+        "skills": [],
+        "about": "",
+        "metrics": [],
+        "focusAreas": [],
+        "recruiterSnapshot": ""
+      },
+      "analytics": {
+        "codingXP": 0,
+        "careerReadiness": 0,
+        "resumeScore": "Not Generated",
+        "interviewRank": "--",
+        "weeklyActivity": [
+          {
+            "day": "Mon",
+            "count": 0
+          },
+          {
+            "day": "Tue",
+            "count": 0
+          },
+          {
+            "day": "Wed",
+            "count": 0
+          },
+          {
+            "day": "Thu",
+            "count": 0
+          },
+          {
+            "day": "Fri",
+            "count": 0
+          },
+          {
+            "day": "Sat",
+            "count": 0
+          },
+          {
+            "day": "Sun",
+            "count": 0
+          }
+        ],
+        "activityLog": [],
+        "practiceStats": {
+          "questionsCompleted": 0,
+          "accuracy": 0
+        },
+        "streak": 0
+      },
+      "goals": [],
+      "resume": {
+        "suggestions": [],
+        "missingSkills": [],
+        "resumeText": "",
+        "versions": []
+      },
+      "roadmap": {
+        "bannerTitle": "Target Transition",
+        "bannerSubtitle": "Not Set",
+        "bannerMeta": "No roadmap generated yet. Generate a roadmap to map your transition.",
+        "milestones": [],
+        "focusAreas": []
+      },
+      "notifications": [],
+      "practiceTracks": [],
+      "interviews": [],
+      "jdAnalyses": [],
+      "chatHistory": [],
+      "badges": [],
+      "settings": {
+        "preferences": {
+          "email": true,
+          "reminders": true,
+          "insights": false
+        },
+        "theme": "Light"
+      }
     }
   },
   "globalUsersList": [
