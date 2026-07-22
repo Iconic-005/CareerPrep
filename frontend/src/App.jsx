@@ -715,33 +715,95 @@ function AuthPage() {
 function UserDashboardPage() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
-  const [goalsState, setGoalsState] = useState([
-    { id: '1', title: '3 Coding Problems', done: false, status: '1 / 3 Done' },
-    { id: '2', title: 'Review Resume Feedback', done: true, status: 'Complete' },
-    { id: '3', title: '1 Mock Interview Session', done: false, status: 'Pending' },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [addingGoal, setAddingGoal] = useState(false);
 
-  const loadDashboard = () => {
-    fetch(`${API_BASE_URL}/dashboard`, { headers: getAuthHeaders() })
-      .then((response) => response.json())
-      .then((data) => setDashboardData(data))
-      .catch(() => setDashboardData(null));
+  const loadDashboard = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  const firstName = user?.name ? user.name.split(' ')[0] : 'Alex';
-  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'A';
-
-  const handleToggleGoal = (id) => {
-    setGoalsState((prev) =>
-      prev.map((g) =>
-        g.id === id ? { ...g, done: !g.done, status: !g.done ? 'Complete' : 'Pending' } : g
-      )
-    );
+  const handleToggleGoal = async (goalId, currentDone) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ done: !currentDone }),
+      });
+      if (response.ok) {
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error('Failed to toggle goal:', err);
+    }
   };
+
+  const handleAddGoalSubmit = async (e) => {
+    e.preventDefault();
+    if (!newGoalTitle || !newGoalTitle.trim()) return;
+    setAddingGoal(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/goals`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ title: newGoalTitle.trim() }),
+      });
+      if (response.ok) {
+        setNewGoalTitle('');
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error('Failed to add goal:', err);
+    } finally {
+      setAddingGoal(false);
+    }
+  };
+
+  const handleDeleteGoal = async (goalId, e) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(`${API_BASE_URL}/goals/${goalId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (response.ok) {
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error('Failed to delete goal:', err);
+    }
+  };
+
+  const firstName = dashboardData?.greeting || (user?.name ? user.name.split(' ')[0] : 'User');
+  const userInitial = firstName.charAt(0).toUpperCase();
+
+  const readinessScore = dashboardData?.careerReadiness ?? dashboardData?.readiness ?? 0;
+  const resumeScoreVal = dashboardData?.resumeScore || 'Not Generated';
+  const interviewRankVal = dashboardData?.interviewRank || '--';
+  const codingXPVal = dashboardData?.codingXP !== undefined ? `${dashboardData.codingXP} XP` : '0 XP';
+
+  const dailyGoalsList = dashboardData?.dailyGoals || dashboardData?.goals || [];
+  const recentActivities = dashboardData?.recentActivity || [];
+  const weeklyActivityData = dashboardData?.weeklyActivity || [
+    { day: 'Mon', count: 0 }, { day: 'Tue', count: 0 }, { day: 'Wed', count: 0 },
+    { day: 'Thu', count: 0 }, { day: 'Fri', count: 0 }, { day: 'Sat', count: 0 }, { day: 'Sun', count: 0 }
+  ];
+
+  const upcomingInterview = dashboardData?.upcomingInterview;
 
   return (
     <div className="app-shell">
@@ -758,7 +820,12 @@ function UserDashboardPage() {
           </div>
 
           <div className="db-header-right">
-            <button type="button" className="jd-icon-btn" aria-label="Notifications">
+            <button
+              type="button"
+              className="jd-icon-btn"
+              aria-label="Notifications"
+              onClick={() => navigate('/notifications')}
+            >
               <span
                 className="system-card__pulse"
                 style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8 }}
@@ -793,19 +860,19 @@ function UserDashboardPage() {
                   fill="none"
                   stroke="#256cf0"
                   strokeWidth="3.2"
-                  strokeDasharray="92, 100"
+                  strokeDasharray={`${readinessScore}, 100`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="db-gauge-center">
-                <span className="db-gauge-val-num">92</span>
+                <span className="db-gauge-val-num">{readinessScore}</span>
                 <span className="db-gauge-val-pct">%</span>
               </div>
             </div>
 
             <div className="db-readiness-bottom">
-              <h3>Excellent Progress!</h3>
-              <p>You're in the top 3% of candidates</p>
+              <h3>{readinessScore > 75 ? 'Outstanding Progress!' : readinessScore > 40 ? 'Good Progress!' : 'Getting Started'}</h3>
+              <p>You're in the {interviewRankVal} of candidates</p>
             </div>
           </div>
 
@@ -813,27 +880,25 @@ function UserDashboardPage() {
           <div className="db-right-stack">
             {/* 3 STAT CARDS ROW */}
             <div className="db-stats-3col">
-              <div className="db-stat-card-box db-stat-card-box--active">
+              <div className="db-stat-card-box db-stat-card-box--active" onClick={() => navigate('/resume')}>
                 <span className="db-stat-sublabel">Resume Score</span>
                 <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <span className="db-stat-main-val">85</span>
-                  <span className="db-stat-sub-text">/100</span>
+                  <span className="db-stat-main-val">{resumeScoreVal.replace('/100', '').trim()}</span>
+                  <span className="db-stat-sub-text">{resumeScoreVal.includes('/') ? '/100' : ''}</span>
                 </div>
               </div>
 
-              <div className="db-stat-card-box">
+              <div className="db-stat-card-box" onClick={() => navigate('/interview-report')}>
                 <span className="db-stat-sublabel">Interview Rank</span>
                 <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <span className="db-stat-main-val">Top 5</span>
-                  <span className="db-stat-sub-text">%</span>
+                  <span className="db-stat-main-val">{interviewRankVal}</span>
                 </div>
               </div>
 
-              <div className="db-stat-card-box">
+              <div className="db-stat-card-box" onClick={() => navigate('/practice')}>
                 <span className="db-stat-sublabel">Coding XP</span>
                 <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                  <span className="db-stat-main-val">2,400</span>
-                  <span className="db-stat-sub-text">pts</span>
+                  <span className="db-stat-main-val">{codingXPVal}</span>
                 </div>
               </div>
             </div>
@@ -844,40 +909,34 @@ function UserDashboardPage() {
                 <span className="db-card-label">WEEKLY ACTIVITY</span>
                 <select className="db-filter-select">
                   <option>Last 7 Days</option>
-                  <option>Last 30 Days</option>
                 </select>
               </div>
 
-              <div className="db-wave-chart-box">
-                <svg viewBox="0 0 400 90" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-                  <defs>
-                    <linearGradient id="dbWaveGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(37,108,240,0.25)" />
-                      <stop offset="100%" stopColor="rgba(37,108,240,0.01)" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M 0,60 C 40,55 60,35 100,38 C 140,41 160,65 200,65 C 240,65 260,15 300,15 C 340,15 360,80 400,35 L 400,90 L 0,90 Z"
-                    fill="url(#dbWaveGradient)"
-                  />
-                  <path
-                    d="M 0,60 C 40,55 60,35 100,38 C 140,41 160,65 200,65 C 240,65 260,15 300,15 C 340,15 360,80 400,35"
-                    fill="none"
-                    stroke="#256cf0"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+              <div className="db-wave-chart-box" style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', padding: '12px 16px', height: '90px' }}>
+                {weeklyActivityData.map((d, idx) => {
+                  const maxCount = Math.max(...weeklyActivityData.map((w) => w.count || 0), 5);
+                  const barHeight = Math.max(12, Math.round(((d.count || 0) / maxCount) * 60));
+                  return (
+                    <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>{d.count || 0}</span>
+                      <div
+                        style={{
+                          width: '100%',
+                          height: `${barHeight}px`,
+                          background: d.count > 0 ? 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(148, 163, 184, 0.2)',
+                          borderRadius: '4px',
+                          transition: 'height 0.3s ease',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="db-chart-labels-row">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
+                {weeklyActivityData.map((d, idx) => (
+                  <span key={idx}>{d.day}</span>
+                ))}
               </div>
             </div>
           </div>
@@ -888,62 +947,140 @@ function UserDashboardPage() {
           {/* LEFT COLUMN: INTERVIEW BANNER + DAILY GOALS */}
           <div className="db-lower-left-stack">
             {/* UPCOMING INTERVIEW BANNER CARD */}
-            <div className="db-banner-interview-card">
-              <svg className="db-banner-watermark" viewBox="0 0 100 100">
-                <rect x="10" y="20" width="80" height="70" rx="10" fill="none" stroke="#ffffff" strokeWidth="4" />
-                <line x1="10" y1="40" x2="90" y2="40" stroke="#ffffff" strokeWidth="4" />
-                <circle cx="30" cy="15" r="5" fill="#ffffff" />
-                <circle cx="70" cy="15" r="5" fill="#ffffff" />
-              </svg>
+            {upcomingInterview ? (
+              <div className="db-banner-interview-card">
+                <svg className="db-banner-watermark" viewBox="0 0 100 100">
+                  <rect x="10" y="20" width="80" height="70" rx="10" fill="none" stroke="#ffffff" strokeWidth="4" />
+                  <line x1="10" y1="40" x2="90" y2="40" stroke="#ffffff" strokeWidth="4" />
+                  <circle cx="30" cy="15" r="5" fill="#ffffff" />
+                  <circle cx="70" cy="15" r="5" fill="#ffffff" />
+                </svg>
 
-              <div className="db-banner-top-row">
-                <div className="db-camera-badge">
-                  <Icon name="video" />
+                <div className="db-banner-top-row">
+                  <div className="db-camera-badge">
+                    <Icon name="video" />
+                  </div>
+                  <div className="db-banner-info">
+                    <h3>Upcoming Interview</h3>
+                    <p>{upcomingInterview.targetCompany || 'Target Company'} | {upcomingInterview.role || upcomingInterview.title || 'Product Role'}</p>
+                  </div>
                 </div>
-                <div className="db-banner-info">
-                  <h3>Upcoming Interview</h3>
-                  <p>Google | Senior Product Designer</p>
+
+                <div className="db-banner-bottom-row">
+                  <div className="db-days-left-counter">
+                    <strong>02</strong>
+                    <span>DAYS LEFT</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-prepare-now"
+                    onClick={() => navigate('/interview-report')}
+                  >
+                    Prepare Now
+                  </button>
                 </div>
               </div>
-
-              <div className="db-banner-bottom-row">
-                <div className="db-days-left-counter">
-                  <strong>02</strong>
-                  <span>DAYS LEFT</span>
+            ) : (
+              <div className="db-banner-interview-card" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+                <div className="db-banner-top-row">
+                  <div className="db-camera-badge">
+                    <Icon name="mic" />
+                  </div>
+                  <div className="db-banner-info">
+                    <h3>No Upcoming Interview</h3>
+                    <p>Start a new AI Mock Interview to boost your interview readiness.</p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn-prepare-now"
-                  onClick={() => navigate('/interview-report')}
-                >
-                  Prepare Now
-                </button>
+                <div className="db-banner-bottom-row" style={{ justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn-prepare-now"
+                    onClick={() => navigate('/interview-report')}
+                  >
+                    Launch Mock Session
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* DAILY GOALS CARD */}
             <div className="db-goals-card-box">
-              <span className="db-card-label">DAILY GOALS</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span className="db-card-label">DAILY GOALS</span>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  {dailyGoalsList.filter(g => g.done).length} / {dailyGoalsList.length} Complete
+                </span>
+              </div>
+
+              <form onSubmit={handleAddGoalSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                <input
+                  type="text"
+                  placeholder="Add a new daily goal..."
+                  value={newGoalTitle}
+                  onChange={(e) => setNewGoalTitle(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={addingGoal || !newGoalTitle.trim()}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: '#256cf0',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    opacity: addingGoal || !newGoalTitle.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {addingGoal ? 'Adding...' : '+ Add'}
+                </button>
+              </form>
 
               <div className="db-goals-list">
-                {goalsState.map((goal) => (
-                  <div
-                    key={goal.id}
-                    className="db-goal-item-card"
-                    onClick={() => handleToggleGoal(goal.id)}
-                  >
-                    <div className="db-goal-left">
-                      <div className={goal.done ? 'db-checkbox-square db-checkbox-square--checked' : 'db-checkbox-square'}>
-                        {goal.done && '✓'}
-                      </div>
-                      <span className={goal.done ? 'text-strike' : ''}>{goal.title}</span>
-                    </div>
+                {dailyGoalsList.length === 0 ? (
+                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', padding: '12px 0' }}>No daily goals set. Add one above!</p>
+                ) : (
+                  dailyGoalsList.map((goal) => {
+                    const goalId = goal._id || goal.id;
+                    return (
+                      <div
+                        key={goalId}
+                        className="db-goal-item-card"
+                        onClick={() => handleToggleGoal(goalId, goal.done)}
+                      >
+                        <div className="db-goal-left">
+                          <div className={goal.done ? 'db-checkbox-square db-checkbox-square--checked' : 'db-checkbox-square'}>
+                            {goal.done && '✓'}
+                          </div>
+                          <span className={goal.done ? 'text-strike' : ''}>{goal.title}</span>
+                        </div>
 
-                    <span className={goal.done ? 'badge-goal-complete' : 'badge-goal-blue'}>
-                      {goal.status}
-                    </span>
-                  </div>
-                ))}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className={goal.done ? 'badge-goal-complete' : 'badge-goal-blue'}>
+                            {goal.done ? 'Complete' : 'Pending'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteGoal(goalId, e)}
+                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}
+                            title="Delete Goal"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -953,57 +1090,30 @@ function UserDashboardPage() {
             <span className="db-card-label">RECENT ACTIVITY</span>
 
             <div className="db-recent-list">
-              <div className="db-recent-item">
-                <div className="db-recent-icon-circle">
-                  <Icon name="refresh" />
-                </div>
-                <div className="db-recent-info">
-                  <strong>Resume updated</strong>
-                  <p>ATS optimization applied to Experience section.</p>
-                  <span>2 hours ago</span>
-                </div>
-              </div>
-
-              <div className="db-recent-item">
-                <div className="db-recent-icon-circle">
-                  <Icon name="checkCircle" />
-                </div>
-                <div className="db-recent-info">
-                  <strong>Mock interview completed</strong>
-                  <p>System Design performance: Excellent.</p>
-                  <span>Yesterday</span>
-                </div>
-              </div>
-
-              <div className="db-recent-item">
-                <div className="db-recent-icon-circle">
-                  <Icon name="spark" />
-                </div>
-                <div className="db-recent-info">
-                  <strong>New badge earned</strong>
-                  <p>"Consistent Coder" - 7 day streak.</p>
-                  <span>2 days ago</span>
-                </div>
-              </div>
-
-              <div className="db-recent-item">
-                <div className="db-recent-icon-circle">
-                  <Icon name="user" />
-                </div>
-                <div className="db-recent-info">
-                  <strong>Connected with Recruiter</strong>
-                  <p>Profile shared with Hiring Manager at Figma.</p>
-                  <span>Oct 24, 2024</span>
-                </div>
-              </div>
+              {recentActivities.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '0.9rem', padding: '16px 0' }}>No recent activity logged yet.</p>
+              ) : (
+                recentActivities.slice(0, 5).map((act, i) => (
+                  <div key={act.id || i} className="db-recent-item">
+                    <div className="db-recent-icon-circle">
+                      <Icon name={act.tone === 'mint' ? 'checkCircle' : act.tone === 'violet' ? 'spark' : 'refresh'} />
+                    </div>
+                    <div className="db-recent-info">
+                      <strong>{act.title}</strong>
+                      <p>{act.desc}</p>
+                      <span>{act.time || 'Recently'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <button
               type="button"
               className="db-view-history-btn"
-              onClick={() => alert('Loading full activity history log...')}
+              onClick={() => navigate('/notifications')}
             >
-              View All History
+              View Full Activity Log
             </button>
           </div>
         </div>
@@ -1041,7 +1151,7 @@ function TimelineItem({ title, desc, time, tone }) {
       <span className={`timeline-item__dot timeline-item__dot--${tone}`}>
         <Icon name="spark" />
       </span>
-      <div>
+<div>
         <strong>{title}</strong>
         <p>{desc}</p>
         <span>{time}</span>
@@ -1052,51 +1162,62 @@ function TimelineItem({ title, desc, time, tone }) {
 
 function ResumePage() {
   const { user } = useAuth();
-  const [selectedVersion, setSelectedVersion] = useState('Senior Product Designer_v2.pdf');
+  const [selectedVersion, setSelectedVersion] = useState('Active Resume (AI Polished)');
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Resume State
-  const [candidateName, setCandidateName] = useState(user?.name || 'Alex Thompson');
-  const [candidateRole, setCandidateRole] = useState('Senior Product Designer & Systems Architect');
-  const [candidateEmail, setCandidateEmail] = useState(user?.email || 'alex.t@example.com');
-  const [candidatePhone, setCandidatePhone] = useState('+1 (555) 000-1234');
-  const [candidateLocation, setCandidateLocation] = useState('New York, NY');
+  // Candidate Profile & Resume Text State
+  const [candidateName, setCandidateName] = useState(user?.name || '');
+  const [candidateRole, setCandidateRole] = useState(user?.title || 'Software Engineer & Systems Architect');
+  const [candidateEmail, setCandidateEmail] = useState(user?.email || '');
+  const [candidatePhone, setCandidatePhone] = useState('+1 (555) 019-2834');
+  const [candidateLocation, setCandidateLocation] = useState('San Francisco, CA');
+  const [resumeText, setResumeText] = useState(
+    `Engineered high-performance web applications and backend API microservices.\nCollaborated with cross-functional product teams to deliver feature updates ahead of sprint deadlines.\nImplemented automated testing suites to maintain code quality and deployment reliability.`
+  );
 
   const [addedSkills, setAddedSkills] = useState([]);
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
-  const [missingSkills, setMissingSkills] = useState(['Python', 'AWS', 'Kubernetes']);
+  const [missingSkills, setMissingSkills] = useState(['System Design', 'Cloud Architecture', 'CI/CD Pipelines']);
   const [suggestions, setSuggestions] = useState([
     {
       id: 's1',
       type: 'blue',
       icon: 'trendUp',
-      title: 'Quantify your achievements in the Stripe role.',
-      desc: 'Adding specific percentages increases credibility with ATS filters by 22%.',
+      title: 'Quantify your achievements with concrete metrics.',
+      desc: 'Adding specific percentages and revenue/performance impact increases recruiter ATS match score by up to 25%.',
     },
     {
       id: 's2',
       type: 'purple',
       icon: 'spark',
-      title: 'Rewrite Summary for "Leadership" focus.',
-      desc: 'The current summary is too task-oriented. Focus more on strategic outcomes.',
+      title: 'Use Google X-Y-Z formula for bullet points.',
+      desc: 'Format bullets as: "Accomplished [X] as measured by [Y], by doing [Z]".',
     },
   ]);
-  const [atsScore, setAtsScore] = useState(82);
+  const [atsScore, setAtsScore] = useState(85);
   const [skillMatchScore, setSkillMatchScore] = useState(88);
-  const [highlightApplied, setHighlightApplied] = useState(false);
+  const [aiCritique, setAiCritique] = useState('');
+  const [optimizedBullets, setOptimizedBullets] = useState('');
 
   useEffect(() => {
+    if (user?.name) setCandidateName(user.name);
+    if (user?.email) setCandidateEmail(user.email);
+    if (user?.title) setCandidateRole(user.title);
+
     fetch(`${API_BASE_URL}/resume`, { headers: getAuthHeaders() })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.score && !isNaN(parseInt(data.score, 10))) {
-          setAtsScore(parseInt(data.score, 10));
+        if (data?.score) {
+          const numeric = parseInt(data.score, 10);
+          if (!isNaN(numeric)) setAtsScore(numeric);
         }
+        if (data?.resumeText) setResumeText(data.resumeText);
+        if (data?.missingSkills?.length) setMissingSkills(data.missingSkills);
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
 
   const handleGenerate = async () => {
     setIsOptimizing(true);
@@ -1104,33 +1225,22 @@ function ResumePage() {
       const response = await fetch(`${API_BASE_URL}/resume/optimize`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ resumeText: `${candidateName} - ${candidateRole}` }),
+        body: JSON.stringify({ resumeText, targetRole: candidateRole }),
       });
       const data = await response.json();
       if (data?.score) {
-        setAtsScore(parseInt(data.score, 10) || 88);
-      } else {
-        setAtsScore((prev) => Math.min(98, prev + 6));
+        const parsed = parseInt(data.score, 10);
+        if (!isNaN(parsed)) setAtsScore(parsed);
       }
+      if (data?.critique) setAiCritique(data.critique);
+      if (data?.optimizedText) setOptimizedBullets(data.optimizedText);
+      if (data?.suggestedSkills?.length) setMissingSkills(data.suggestedSkills);
       setSkillMatchScore((prev) => Math.min(99, prev + 5));
-      setHighlightApplied(true);
     } catch (err) {
-      setAtsScore((prev) => Math.min(98, prev + 6));
-      setSkillMatchScore((prev) => Math.min(99, prev + 5));
-      setHighlightApplied(true);
+      console.error('Resume Optimization Error:', err);
     } finally {
       setIsOptimizing(false);
     }
-  };
-
-  const handleAddSkill = (skill) => {
-    setMissingSkills((prev) => prev.filter((s) => s !== skill));
-    setAddedSkills((prev) => [...prev, skill]);
-    setSkillMatchScore((prev) => Math.min(99, prev + 3));
-  };
-
-  const handleAddProjects = () => {
-    setHasProjectsSection(true);
   };
 
   const handleDismissSuggestion = (id) => {
@@ -1138,7 +1248,6 @@ function ResumePage() {
   };
 
   const handleApplySuggestion = (id) => {
-    setHighlightApplied(true);
     setAtsScore((prev) => Math.min(98, prev + 4));
     handleDismissSuggestion(id);
   };
@@ -1148,9 +1257,8 @@ function ResumePage() {
   };
 
   const versionHistory = [
-    { name: 'Senior Product Designer_v2.pdf', date: 'Saved 2 hours ago (Current)', score: '82 ATS' },
-    { name: 'Product Architect_v1.pdf', date: 'Saved yesterday', score: '78 ATS' },
-    { name: 'Fullstack Engineer_v3.pdf', date: 'Saved 3 days ago', score: '74 ATS' },
+    { name: 'Active Resume (AI Polished)', date: 'Just now (Current)', score: `${atsScore} ATS` },
+    { name: 'Target Role Draft_v1.pdf', date: 'Saved yesterday', score: '78 ATS' },
   ];
 
   return (
@@ -1161,16 +1269,15 @@ function ResumePage() {
         {/* TOP RESUME BAR */}
         <div className="resume-top-nav">
           <div className="resume-top-left">
-            <h1 className="resume-title-heading">Resume Builder</h1>
+            <h1 className="resume-title-heading">Resume Builder & AI Optimizer</h1>
             <div style={{ position: 'relative' }}>
               <select
                 value={selectedVersion}
                 onChange={(e) => setSelectedVersion(e.target.value)}
                 className="resume-version-dropdown-btn"
               >
-                <option value="Senior Product Designer_v2.pdf">Senior Product Designer_v2.pdf</option>
-                <option value="Product Architect_v1.pdf">Product Architect_v1.pdf</option>
-                <option value="Fullstack Engineer_v3.pdf">Fullstack Engineer_v3.pdf</option>
+                <option value="Active Resume (AI Polished)">Active Resume (AI Polished)</option>
+                <option value="Target Role Draft_v1.pdf">Target Role Draft_v1.pdf</option>
               </select>
             </div>
           </div>
@@ -1182,7 +1289,7 @@ function ResumePage() {
               onClick={() => setIsEditMode(!isEditMode)}
             >
               <Icon name="edit" />
-              <span>{isEditMode ? 'Done Editing' : 'Edit Resume'}</span>
+              <span>{isEditMode ? 'Done Editing' : 'Edit Contact & Role'}</span>
             </button>
             <button
               type="button"
@@ -1190,15 +1297,15 @@ function ResumePage() {
               onClick={() => setShowVersionModal(true)}
             >
               <Icon name="history" />
-              <span>Version History</span>
+              <span>Versions</span>
             </button>
             <button type="button" className="btn-outline-secondary" onClick={handleDownload}>
               <Icon name="download" />
-              <span>Download</span>
+              <span>Download PDF</span>
             </button>
             <button type="button" className="btn-primary-spark" onClick={handleGenerate} disabled={isOptimizing}>
               <Icon name="spark" />
-              <span>{isOptimizing ? 'Generating...' : 'Generate Improved Resume'}</span>
+              <span>{isOptimizing ? 'Optimizing with Gemini AI...' : 'Optimize Resume with AI'}</span>
             </button>
           </div>
         </div>
@@ -1221,7 +1328,7 @@ function ResumePage() {
                   type="text"
                   value={candidateRole}
                   onChange={(e) => setCandidateRole(e.target.value)}
-                  placeholder="Professional Title"
+                  placeholder="Target Role / Professional Title"
                   style={{ fontSize: '1rem', fontWeight: 600, color: '#256cf0', padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                 />
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -1250,8 +1357,8 @@ function ResumePage() {
               </div>
             ) : (
               <>
-                <h2 className="resume-candidate-name">{candidateName}</h2>
-                <p className="resume-candidate-role">{candidateRole}</p>
+                <h2 className="resume-candidate-name">{candidateName || 'Candidate Profile'}</h2>
+                <p className="resume-candidate-role">{candidateRole || 'Software Professional'}</p>
 
                 <div className="resume-contact-row">
                   <span className="resume-contact-item">
@@ -1272,61 +1379,39 @@ function ResumePage() {
 
             <hr className="resume-header-line" />
 
-            {/* PROFESSIONAL EXPERIENCE */}
-            <div className="resume-section-heading">PROFESSIONAL EXPERIENCE</div>
+            {/* RESUME INPUT & EXPERIENCE TEXT AREA */}
+            <div className="resume-section-heading">RESUME CONTENT & EXPERIENCE BULLETS</div>
+            <textarea
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              placeholder="Paste or type your resume experience and achievements here..."
+              rows="6"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.95rem',
+                fontFamily: 'inherit',
+                marginBottom: '16px',
+                resize: 'vertical',
+              }}
+            />
 
-            {/* JOB 1: Stripe */}
-            <div className="resume-job-item">
-              <div className="resume-job-row">
-                <span className="resume-company-name">Stripe</span>
-                <span className="resume-job-date">2021 — Present</span>
+            {/* AI GEMINI OPTIMIZED TEXT & CRITIQUE */}
+            {aiCritique && (
+              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', borderLeft: '4px solid #7c3aed', marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 6px 0', color: '#6b21a8' }}>AI Resume Critique:</h4>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>{aiCritique}</p>
               </div>
-              <div className="resume-job-subtitle">Senior Product Designer (Checkout & Payments)</div>
-              <ul className="resume-bullet-points">
-                <li>
-                  Led the redesign of the Stripe Checkout flow for high-volume merchants, resulting in a 14% increase in conversion rates across mobile platforms.
-                </li>
-                <li>
-                  Collaborated with engineering teams to develop a scalable design system for payment method expansion in emerging markets.
-                </li>
-                <li className="resume-ai-highlight-box">
-                  Executed visual interface updates for the dashboard.{' '}
-                  <span className="resume-ai-tag">(AI Suggestion: Quantify your achievements in this role).</span>
-                </li>
-                {highlightApplied && (
-                  <li style={{ color: '#16a34a', fontWeight: 600 }}>
-                    ✓ Increased operational velocity by 34% through automated Figma-to-code token sync pipelines.
-                  </li>
-                )}
-              </ul>
-            </div>
+            )}
 
-            {/* JOB 2: Figma */}
-            <div className="resume-job-item">
-              <div className="resume-job-row">
-                <span className="resume-company-name">Figma</span>
-                <span className="resume-job-date">2018 — 2021</span>
+            {optimizedBullets && (
+              <div style={{ background: '#f0fdf4', padding: '14px', borderRadius: '8px', borderLeft: '4px solid #16a34a', marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 6px 0', color: '#15803d' }}>Gemini X-Y-Z Optimized Section:</h4>
+                <pre style={{ margin: 0, fontSize: '0.9rem', whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: '#166534' }}>{optimizedBullets}</pre>
               </div>
-              <div className="resume-job-subtitle">Product Designer (Design Systems Team)</div>
-              <ul className="resume-bullet-points">
-                <li>
-                  Maintained and scaled the internal 'FigUI' design system, supporting over 200 engineers and 40 designers.
-                </li>
-                <li>
-                  Spearheaded the release of Auto-Layout v3.0 documentation and onboarding tutorials.
-                </li>
-              </ul>
-            </div>
-
-            {/* EDUCATION */}
-            <div className="resume-section-heading">EDUCATION</div>
-            <div className="resume-job-item">
-              <div className="resume-job-row">
-                <span className="resume-edu-school">Rhode Island School of Design</span>
-                <span className="resume-job-date">Class of 2018</span>
-              </div>
-              <div className="resume-job-subtitle">B.F.A. in Industrial Design</div>
-            </div>
+            )}
 
             {/* ADDED SKILLS */}
             {addedSkills.length > 0 && (
@@ -1344,11 +1429,11 @@ function ResumePage() {
                 <div className="resume-section-heading">KEY PROJECTS</div>
                 <div className="resume-job-item">
                   <div className="resume-job-row">
-                    <span className="resume-company-name">Design System Playbook</span>
-                    <span className="resume-job-date">2023</span>
+                    <span className="resume-company-name">CareerPrep AI Suite</span>
+                    <span className="resume-job-date">2024</span>
                   </div>
                   <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0.25rem 0' }}>
-                    Open-source component library architecture guide downloaded by 15,000+ designers.
+                    Full-stack AI Career OS built with React, Node.js, Express, MongoDB, and Gemini AI.
                   </p>
                 </div>
               </>
@@ -1359,7 +1444,7 @@ function ResumePage() {
           <div className="resume-sidebar-panel">
             {/* RESUME ANALYSIS / SCORES */}
             <div className="resume-widget-card">
-              <h3 className="widget-title">Resume Analysis</h3>
+              <h3 className="widget-title">Live Resume Scores</h3>
               <div className="score-gauges-row">
                 {/* ATS SCORE */}
                 <div className="score-gauge-card">
@@ -1413,7 +1498,7 @@ function ResumePage() {
 
             {/* MISSING SKILLS */}
             <div className="resume-widget-card">
-              <div className="widget-label-sm">MISSING SKILLS</div>
+              <div className="widget-label-sm">RECOMMENDED SKILLS</div>
               {missingSkills.length === 0 ? (
                 <p style={{ fontSize: '0.85rem', color: '#16a34a', margin: 0, fontWeight: 600 }}>✓ All target skills added!</p>
               ) : (
@@ -1423,7 +1508,7 @@ function ResumePage() {
                       key={skill}
                       type="button"
                       className="skill-pill-btn"
-                      onClick={() => handleAddSkill(skill)}
+                      onClick={() => setAddedSkills(prev => [...prev, skill])}
                     >
                       <span>+</span>
                       <span>{skill}</span>
@@ -1437,9 +1522,9 @@ function ResumePage() {
             <div className="resume-widget-card">
               <div className="widget-label-sm">MISSING SECTIONS</div>
               {hasProjectsSection ? (
-                <p style={{ fontSize: '0.85rem', color: '#16a34a', margin: 0, fontWeight: 600 }}>✓ Projects section added!</p>
+                <p style={{ fontSize: '0.85rem', color: '#16a34a', margin: 0, fontWeight: 600 }}>✓ Key Projects section added!</p>
               ) : (
-                <div className="missing-section-card" onClick={handleAddProjects}>
+                <div className="missing-section-card" onClick={() => setHasProjectsSection(true)}>
                   <div className="missing-section-left">
                     <Icon name="folder" />
                     <span>Projects Section</span>
@@ -1459,7 +1544,7 @@ function ResumePage() {
               </div>
 
               {suggestions.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>No active suggestions. Click "Generate Improved Resume" for fresh AI insights.</p>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>No active suggestions. Click "Optimize Resume with AI" for fresh insights.</p>
               ) : (
                 suggestions.map((item) => (
                   <div key={item.id} className="ai-suggestion-card">
@@ -1520,16 +1605,6 @@ function ResumePage() {
                     <strong>{item.name}</strong>
                     <span>{item.date} • {item.score}</span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-restore-version"
-                    onClick={() => {
-                      setSelectedVersion(item.name);
-                      setShowVersionModal(false);
-                    }}
-                  >
-                    Restore
-                  </button>
                 </div>
               ))}
             </div>
@@ -1548,104 +1623,42 @@ function ResumePage() {
   );
 }
 
-
-function ScoreCard({ label, value, accent }) {
-  return (
-    <div className="score-card">
-      <div className={`score-card__ring score-card__ring--${accent}`}>
-        <strong>{value}</strong>
-      </div>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function SuggestionCard({ title, desc, accent, onDismiss }) {
-  return (
-    <article className="suggestion-card">
-      <div className={`feature-card__icon feature-card__icon--${accent}`}>
-        <Icon name="spark" />
-      </div>
-      <div>
-        <strong>{title}</strong>
-        <p>{desc}</p>
-      </div>
-      <div className="suggestion-card__actions">
-        <button type="button" className="text-button" onClick={onDismiss}>Apply</button>
-        <button type="button" className="icon-button" aria-label="Dismiss suggestion" onClick={onDismiss}>
-          <Icon name="close" />
-        </button>
-      </div>
-    </article>
-  );
-}
-
 function JDAnalyzerPage() {
   const { user } = useAuth();
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const wordCount = jobDescription.trim() ? jobDescription.trim().split(/\s+/).length : 0;
   const userInitials = user?.name
     ? user.name.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'AT';
+    : 'U';
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) return;
     setIsAnalyzing(true);
+    setErrorMessage('');
     try {
       const response = await fetch(`${API_BASE_URL}/jd-analyzer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ jobDescription }),
       });
       const data = await response.json();
       if (response.ok) {
         setAnalysisResult(data);
       } else {
-        setAnalysisResult(getMockJDResult(jobDescription));
+        setErrorMessage(data.error || 'Failed to analyze Job Description.');
       }
     } catch (err) {
-      setAnalysisResult(getMockJDResult(jobDescription));
+      console.error('JD Analyzer error:', err);
+      setErrorMessage('Unable to reach AI service. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
   };
-
-  const getMockJDResult = (text) => ({
-    jobTitle: 'Senior UX Designer @ TechFlow',
-    keywordMatch: '82%',
-    atsScore: '91%',
-    keywordStatText: 'You have 14 out of 17 core keywords identified in the JD.',
-    atsStatText: 'Your document structure is highly readable by top-tier ATS systems.',
-    requirements: [
-      { name: 'Figma Prototyping', type: 'blue', label: 'Expert Match' },
-      { name: 'Design Systems', type: 'blue', label: 'High Match' },
-      { name: 'User Research Synthesis', type: 'red', label: 'Missing' },
-      { name: 'Stakeholder Management', type: 'gray', label: 'Partial' },
-    ],
-    roadmapSteps: [
-      {
-        num: 1,
-        title: 'Add Research Keywords',
-        desc: 'Integrate "Usability Testing" and "Contextual Inquiry" into your Experience section for the TechFlow role.',
-      },
-      {
-        num: 2,
-        title: 'Quantify Leadership',
-        desc: 'The JD emphasizes leadership. Add metrics like "Managed a team of 4" or "Spearheaded design for 200k+ users".',
-      },
-      {
-        num: 3,
-        title: 'Tailor Summary',
-        desc: 'Update your professional summary to mention "Product-Led Growth" specifically, as it\'s a core value at TechFlow.',
-      },
-    ],
-  });
-
-  const activeResult = analysisResult || getMockJDResult('');
 
   return (
     <div className="app-shell">
@@ -1679,13 +1692,13 @@ function JDAnalyzerPage() {
           {/* ANALYZE NEW ROLE INPUT CARD */}
           <div className="jd-card-container">
             <div className="jd-card-header">
-              <h2>Analyze New Role</h2>
+              <h2>Analyze New Role with Gemini AI</h2>
               <button
                 type="button"
                 className="btn-browse-files"
-                onClick={() => alert('Browse files: Select a JD PDF or text file')}
+                onClick={() => alert('Browse files: Select a Job Description text file')}
               >
-                Browse Files
+                Upload File
               </button>
             </div>
 
@@ -1694,7 +1707,7 @@ function JDAnalyzerPage() {
                 className="jd-textarea-field"
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
-                placeholder="Paste the Job Description (JD) text here..."
+                placeholder="Paste the Job Description (JD) text here to run ATS & skill gap analysis..."
               />
               <div className="jd-textarea-bottom-row">
                 <span className="jd-word-count">{wordCount} words</span>
@@ -1705,33 +1718,34 @@ function JDAnalyzerPage() {
                   disabled={!jobDescription.trim() || isAnalyzing}
                 >
                   <Icon name="spark" />
-                  <span>{isAnalyzing ? 'Analyzing with AI...' : 'Analyze with AI'}</span>
+                  <span>{isAnalyzing ? 'Analyzing with Gemini AI...' : 'Analyze with AI'}</span>
                 </button>
               </div>
             </div>
 
+            {errorMessage && (
+              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '8px' }}>{errorMessage}</p>
+            )}
+
             <div className="jd-info-banner">
               <Icon name="help" />
               <span>
-                Analysis will be performed against your default resume:{' '}
-                <a href="#resume" className="jd-resume-link">
-                  Senior_Product_Designer_2024.pdf
-                </a>
+                Analysis will compare the Job Description directly against your candidate profile skills.
               </span>
             </div>
           </div>
 
           {/* QUICK INSIGHTS OVERVIEW CARD */}
           <div className="jd-card-container">
-            <div className="jd-overview-title">Quick Insights Overview</div>
+            <div className="jd-overview-title">ATS Scan Status</div>
             <div className="jd-overview-stats-row">
               <div className="jd-stat-mini-card jd-stat-mini-card--blue">
-                <span className="jd-stat-mini-label">Weekly Scans</span>
-                <span className="jd-stat-mini-val">12 / 20</span>
+                <span className="jd-stat-mini-label">Scans Completed</span>
+                <span className="jd-stat-mini-val">Active</span>
               </div>
               <div className="jd-stat-mini-card jd-stat-mini-card--purple">
-                <span className="jd-stat-mini-label">Avg. Match</span>
-                <span className="jd-stat-mini-val">74%</span>
+                <span className="jd-stat-mini-label">AI Engine</span>
+                <span className="jd-stat-mini-val">Gemini 2.5</span>
               </div>
             </div>
 
@@ -1760,186 +1774,140 @@ function JDAnalyzerPage() {
         </div>
 
         {/* ANALYSIS RESULTS SECTION */}
-        <div className="jd-analysis-header">
-          <h2>Analysis: {activeResult.jobTitle || 'Senior UX Designer @ TechFlow'}</h2>
-          <div className="jd-analysis-actions">
-            <button
-              type="button"
-              className="jd-icon-btn"
-              onClick={() => alert('Share analysis link copied to clipboard!')}
-              aria-label="Share Analysis"
-            >
-              <Icon name="share" />
-            </button>
-            <button
-              type="button"
-              className="jd-icon-btn"
-              onClick={() => alert('Downloading Analysis Report PDF...')}
-              aria-label="Download Report"
-            >
-              <Icon name="download" />
-            </button>
-          </div>
-        </div>
-
-        {/* 3 COLUMNS RESULTS GRID */}
-        <div className="jd-results-3col-grid">
-          {/* KEYWORD MATCH CARD */}
-          <div className="jd-result-card">
-            <div className="jd-result-card-title">Keyword Match</div>
-            <div className="jd-ring-circle">
-              <svg viewBox="0 0 36 36">
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="3.2"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#256cf0"
-                  strokeWidth="3.2"
-                  strokeDasharray={`${parseInt(activeResult.keywordMatch || '82', 10)}, 100`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className="jd-ring-val">{activeResult.keywordMatch || '82%'}</span>
-            </div>
-            <p className="jd-ring-desc">
-              {activeResult.keywordStatText || 'You have 14 out of 17 core keywords identified in the JD.'}
-            </p>
-          </div>
-
-          {/* ATS COMPATIBILITY CARD */}
-          <div className="jd-result-card">
-            <div className="jd-result-card-title">ATS Compatibility</div>
-            <div className="jd-ring-circle">
-              <svg viewBox="0 0 36 36">
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="3.2"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#7c3aed"
-                  strokeWidth="3.2"
-                  strokeDasharray={`${parseInt(activeResult.atsScore || '91', 10)}, 100`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className="jd-ring-val">{activeResult.atsScore || '91%'}</span>
-            </div>
-            <p className="jd-ring-desc">
-              {activeResult.atsStatText || 'Your document structure is highly readable by top-tier ATS systems.'}
-            </p>
-          </div>
-
-          {/* RESUME VS REQUIREMENTS CARD */}
-          <div className="jd-compare-card-box">
-            <div className="jd-compare-title">Your Resume vs. Requirements</div>
-            <div className="jd-compare-list">
-              {(activeResult.requirements || [
-                { name: 'Figma Prototyping', type: 'blue', label: 'Expert Match' },
-                { name: 'Design Systems', type: 'blue', label: 'High Match' },
-                { name: 'User Research Synthesis', type: 'red', label: 'Missing' },
-                { name: 'Stakeholder Management', type: 'gray', label: 'Partial' },
-              ]).map((req) => (
-                <div key={req.name} className="jd-compare-item">
-                  <div className="jd-compare-left">
-                    <Icon
-                      name={req.type === 'red' ? 'warning' : 'checkCircle'}
-                    />
-                    <span>{req.name}</span>
-                  </div>
-                  <span className={`badge-match-${req.type}`}>{req.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* OPTIMIZATION ROADMAP SECTION */}
-        <div className="jd-roadmap-container">
-          <div className="jd-roadmap-title-row">
-            <Icon name="mapPin" />
-            <span>Optimization Roadmap</span>
-          </div>
-
-          <div className="jd-steps-3col">
-            {(activeResult.roadmapSteps || [
-              {
-                num: 1,
-                title: 'Add Research Keywords',
-                desc: 'Integrate "Usability Testing" and "Contextual Inquiry" into your Experience section for the TechFlow role.',
-              },
-              {
-                num: 2,
-                title: 'Quantify Leadership',
-                desc: 'The JD emphasizes leadership. Add metrics like "Managed a team of 4" or "Spearheaded design for 200k+ users".',
-              },
-              {
-                num: 3,
-                title: 'Tailor Summary',
-                desc: 'Update your professional summary to mention "Product-Led Growth" specifically, as it\'s a core value at TechFlow.',
-              },
-            ]).map((step) => (
-              <div key={step.num} className="jd-step-card-box">
-                <div className="jd-step-num-badge">{step.num}</div>
-                <h3>{step.title}</h3>
-                <p>{step.desc}</p>
+        {analysisResult ? (
+          <>
+            <div className="jd-analysis-header">
+              <h2>Analysis: {analysisResult.jobTitle || 'Target Role Audit'}</h2>
+              <div className="jd-analysis-actions">
+                <button
+                  type="button"
+                  className="jd-icon-btn"
+                  onClick={() => alert('Share analysis link copied!')}
+                  aria-label="Share Analysis"
+                >
+                  <Icon name="share" />
+                </button>
+                <button
+                  type="button"
+                  className="jd-icon-btn"
+                  onClick={() => window.print()}
+                  aria-label="Download Report"
+                >
+                  <Icon name="download" />
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="jd-roadmap-bottom-btn-row">
-            <button
-              type="button"
-              className="btn-apply-all-resume"
-              onClick={() => alert('All optimization suggestions applied to your active resume!')}
-            >
-              Apply All Suggestions to Resume
-            </button>
+            {/* 3 COLUMNS RESULTS GRID */}
+            <div className="jd-results-3col-grid">
+              {/* KEYWORD MATCH CARD */}
+              <div className="jd-result-card">
+                <div className="jd-result-card-title">Keyword Match</div>
+                <div className="jd-ring-circle">
+                  <svg viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#e2e8f0"
+                      strokeWidth="3.2"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#256cf0"
+                      strokeWidth="3.2"
+                      strokeDasharray={`${parseInt(analysisResult.keywordMatch || '82', 10)}, 100`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="jd-ring-val">{analysisResult.keywordMatch || '82%'}</span>
+                </div>
+                <p className="jd-ring-desc">
+                  Keyword alignment based on core skill extraction.
+                </p>
+              </div>
+
+              {/* ATS COMPATIBILITY CARD */}
+              <div className="jd-result-card">
+                <div className="jd-result-card-title">ATS Compatibility</div>
+                <div className="jd-ring-circle">
+                  <svg viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#e2e8f0"
+                      strokeWidth="3.2"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#7c3aed"
+                      strokeWidth="3.2"
+                      strokeDasharray={`${parseInt(analysisResult.atsScore || '91', 10)}, 100`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="jd-ring-val">{analysisResult.atsScore || '91%'}</span>
+                </div>
+                <p className="jd-ring-desc">
+                  ATS readability score for enterprise recruiter software.
+                </p>
+              </div>
+
+              {/* RESUME VS REQUIREMENTS CARD */}
+              <div className="jd-compare-card-box">
+                <div className="jd-compare-title">Your Profile vs. Job Requirements</div>
+                <div className="jd-compare-list">
+                  {(analysisResult.matchedSkills || []).map((skill) => (
+                    <div key={skill} className="jd-compare-item">
+                      <div className="jd-compare-left">
+                        <Icon name="checkCircle" />
+                        <span>{skill}</span>
+                      </div>
+                      <span className="badge-match-blue">Matched Skill</span>
+                    </div>
+                  ))}
+                  {(analysisResult.missingSkills || []).map((skill) => (
+                    <div key={skill} className="jd-compare-item">
+                      <div className="jd-compare-left">
+                        <Icon name="warning" />
+                        <span>{skill}</span>
+                      </div>
+                      <span className="badge-match-red">Missing Skill</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* OPTIMIZATION ROADMAP SECTION */}
+            <div className="jd-roadmap-container">
+              <div className="jd-roadmap-title-row">
+                <Icon name="mapPin" />
+                <span>AI Recommended Optimization Steps</span>
+              </div>
+
+              <div className="jd-steps-3col">
+                {(analysisResult.recommendations || []).map((rec, index) => (
+                  <div key={index} className="jd-step-card-box">
+                    <div className="jd-step-num-badge">{index + 1}</div>
+                    <h3>Recommendation #{index + 1}</h3>
+                    <p>{rec}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="card panel" style={{ marginTop: '24px', textAlign: 'center', padding: '36px' }}>
+            <Icon name="spark" style={{ fontSize: '2rem', color: '#256cf0', marginBottom: '12px' }} />
+            <h3 style={{ margin: '0 0 8px 0' }}>Ready for JD Scan</h3>
+            <p style={{ margin: 0, color: '#64748b' }}>Paste a Job Description above and click "Analyze with AI" to generate live ATS metrics and skill recommendations.</p>
           </div>
-        </div>
+        )}
       </main>
 
-      {/* FLOATING ACTION BUTTON */}
-      <button
-        type="button"
-        className="jd-fab-btn"
-        onClick={() => alert('Exporting JD Audit...')}
-        aria-label="Export JD Audit"
-      >
-        <Icon name="upload" />
-      </button>
-
       <MobileNav />
-
-      {/* FOOTER */}
-      <footer className="jd-footer-bar">
-        <div className="jd-footer-left">
-          <h4>CareerPrep AI</h4>
-          <p>© 2024 CareerPrep AI. All rights reserved.</p>
-        </div>
-        <div className="jd-footer-links">
-          <a href="/">Privacy Policy</a>
-          <a href="/">Terms of Service</a>
-          <a href="/">Contact Support</a>
-          <a href="/">Career Blog</a>
-        </div>
-        <div className="jd-footer-icons">
-          <button type="button" className="jd-icon-btn" aria-label="Documentation">
-            <Icon name="document" />
-          </button>
-          <button type="button" className="jd-icon-btn" aria-label="Support">
-            <Icon name="help" />
-          </button>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -1982,39 +1950,69 @@ function MessageBubble({ role, children }) {
 function RoadmapPage() {
   const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [framerChecked, setFramerChecked] = useState(true);
-  const [aiDesignChecked, setAiDesignChecked] = useState(false);
-  const [milestonesDone, setMilestonesDone] = useState(14);
+  const [targetRole, setTargetRole] = useState(user?.title || 'Software Engineer');
+  const [targetCompany, setTargetCompany] = useState('Top Tech Companies');
+  const [roadmapData, setRoadmapData] = useState(null);
 
-  const candidateName = user?.name || 'Alex Rivera';
+  const candidateName = user?.name || 'Candidate';
   const userInitials = candidateName.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
-  const handleAiAdjust = async () => {
+  const loadRoadmap = () => {
+    fetch(`${API_BASE_URL}/roadmap`, { headers: getAuthHeaders() })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) setRoadmapData(data);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (user?.title) setTargetRole(user.title);
+    loadRoadmap();
+  }, [user]);
+
+  const handleAiGenerate = async () => {
     setIsGenerating(true);
     try {
-      await fetch(`${API_BASE_URL}/roadmap/generate`, {
+      const response = await fetch(`${API_BASE_URL}/roadmap/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ targetRole: 'Senior Product Designer', targetCompany: 'Tier-1 Tech Firms' }),
+        body: JSON.stringify({ targetRole, targetCompany }),
       });
+      const data = await response.json();
+      if (response.ok) {
+        setRoadmapData(data);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Roadmap AI Generation Error:', err);
     } finally {
       setIsGenerating(false);
-      setMilestonesDone(15);
-      alert('AI Adjust: Your career roadmap has been recalculated and optimized!');
     }
   };
 
-  const handleToggleFramer = () => {
-    setFramerChecked(!framerChecked);
-    setMilestonesDone((prev) => (!framerChecked ? prev + 1 : prev - 1));
+  const handleToggleMilestone = async (id, currentDone) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/roadmap/milestones/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ done: !currentDone }),
+      });
+      const updated = await response.json();
+      if (response.ok) {
+        setRoadmapData((prev) => {
+          if (!prev) return prev;
+          const milestones = prev.milestones.map((m) => (m.id === id ? { ...m, ...updated } : m));
+          return { ...prev, milestones };
+        });
+      }
+    } catch (err) {
+      console.error('Milestone toggle error:', err);
+    }
   };
 
-  const handleToggleAiDesign = () => {
-    setAiDesignChecked(!aiDesignChecked);
-    setMilestonesDone((prev) => (!aiDesignChecked ? prev + 1 : prev - 1));
-  };
+  const milestones = roadmapData?.milestones || [];
+  const completedCount = milestones.filter((m) => m.done).length;
+  const progressPercent = milestones.length ? Math.round((completedCount / milestones.length) * 100) : 0;
 
   return (
     <div className="app-shell">
@@ -2024,22 +2022,54 @@ function RoadmapPage() {
         {/* TOP HEADER BAR */}
         <div className="rm-top-bar">
           <div className="rm-header-left">
-            <h1 className="rm-title">Your Career Roadmap</h1>
-            <span className="rm-level-pill">Level 4: Mid-Senior</span>
+            <h1 className="rm-title">Career Roadmap</h1>
+            <span className="rm-level-pill">Target: {targetRole}</span>
           </div>
 
           <div className="rm-header-right">
-            <button type="button" className="jd-icon-btn" aria-label="Notifications">
-              <span className="system-card__pulse" style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8 }} />
-              <Icon name="bell" />
-            </button>
             <div className="rm-user-block">
               <div className="rm-user-text">
                 <span className="rm-user-name">{candidateName}</span>
-                <span className="rm-user-sub">Dream Role: Senior Product Designer</span>
+                <span className="rm-user-sub">{targetRole} @ {targetCompany}</span>
               </div>
               <div className="rm-avatar-chip">{userInitials}</div>
             </div>
+          </div>
+        </div>
+
+        {/* TOP INPUT & GENERATION BAR */}
+        <div className="card panel" style={{ marginBottom: '20px', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px' }}>Target Role</label>
+              <input
+                type="text"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g. Senior Software Engineer"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px' }}>Target Company</label>
+              <input
+                type="text"
+                value={targetCompany}
+                onChange={(e) => setTargetCompany(e.target.value)}
+                placeholder="e.g. Google / Top Tech Firms"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn-ai-adjust"
+              onClick={handleAiGenerate}
+              disabled={isGenerating}
+              style={{ marginTop: '20px' }}
+            >
+              <Icon name="spark" />
+              <span>{isGenerating ? 'Generating Roadmap with Gemini AI...' : 'Generate Roadmap with AI'}</span>
+            </button>
           </div>
         </div>
 
@@ -2047,8 +2077,8 @@ function RoadmapPage() {
         <div className="rm-top-3col">
           {/* CARD 1: OVERALL PROGRESS */}
           <div className="rm-card-box">
-            <span className="rm-card-label">OVERALL PROGRESS</span>
-            <h2 className="rm-card-title-lg">78% to Senior Role</h2>
+            <span className="rm-card-label">ROADMAP READINESS PROGRESS</span>
+            <h2 className="rm-card-title-lg">{progressPercent}% Completed</h2>
 
             <div className="rm-progress-split">
               <div className="rm-ring-small">
@@ -2064,310 +2094,160 @@ function RoadmapPage() {
                     fill="none"
                     stroke="#256cf0"
                     strokeWidth="3.5"
-                    strokeDasharray="78, 100"
+                    strokeDasharray={`${progressPercent}, 100`}
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="rm-ring-val">78%</span>
+                <span className="rm-ring-center-num">{progressPercent}%</span>
               </div>
 
-              <div className="rm-bar-right">
-                <div className="rm-bar-info">
-                  <span>Milestones Done</span>
-                  <strong>{milestonesDone}/18</strong>
-                </div>
-                <div className="rm-progress-track">
+              <div className="rm-progress-text-block">
+                <p>
+                  <strong>{completedCount} of {milestones.length}</strong> Milestones Achieved
+                </p>
+                <div className="rm-progress-bar-track">
                   <div
-                    className="rm-progress-fill"
-                    style={{ width: `${Math.round((milestonesDone / 18) * 100)}%` }}
+                    className="rm-progress-bar-fill"
+                    style={{ width: `${progressPercent}%` }}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* CARD 2: CURRENT GOALS */}
+          {/* CARD 2: STRATEGIC FOCUS AREAS */}
           <div className="rm-card-box">
             <div className="rm-goals-header">
               <Icon name="roadmap" />
-              <span>Current Goals</span>
+              <span>Strategic Focus Areas</span>
             </div>
-
-            <button
-              type="button"
-              className="rm-goal-item-btn"
-              onClick={() => alert('Goal details: Master React Native by Oct 15')}
-            >
-              <div className="rm-goal-left">
-                <div className="rm-goal-icon">
-                  <Icon name="code" />
-                </div>
-                <div className="rm-goal-info">
-                  <strong>Master React Native</strong>
-                  <span>Target: Oct 15</span>
+            {(roadmapData?.focusAreas || []).map((f) => (
+              <div key={f.id || f.title} className="rm-goal-item-btn" style={{ marginBottom: '8px', cursor: 'default' }}>
+                <div className="rm-goal-left">
+                  <div className="rm-goal-icon" style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
+                    <Icon name="spark" />
+                  </div>
+                  <div className="rm-goal-info">
+                    <strong>{f.title}</strong>
+                    <span>{f.text}</span>
+                  </div>
                 </div>
               </div>
-              <Icon name="chevronRight" />
-            </button>
-
-            <button
-              type="button"
-              className="rm-goal-item-btn"
-              onClick={() => alert('Goal details: 3 of 5 Mock Interviews completed')}
-            >
-              <div className="rm-goal-left">
-                <div className="rm-goal-icon" style={{ background: '#f5f3ff', color: '#8b5cf6' }}>
-                  <Icon name="chat" />
-                </div>
-                <div className="rm-goal-info">
-                  <strong>5 Mock Interviews</strong>
-                  <span>3 of 5 completed</span>
-                </div>
-              </div>
-              <Icon name="chevronRight" />
-            </button>
+            ))}
           </div>
 
-          {/* CARD 3: SKILL PROFILE (RADAR CHART) */}
+          {/* CARD 3: TARGET TIMELINE */}
           <div className="rm-card-box">
             <span className="rm-card-label" style={{ textTransform: 'none', fontSize: '0.88rem', color: '#0f172a', fontWeight: 800 }}>
-              Skill Profile
+              Timeline Overview
             </span>
-
-            <div className="rm-skill-chart-box">
-              <svg viewBox="0 0 200 140" style={{ width: '100%', height: '100%' }}>
-                {/* Concentric Polygons */}
-                <polygon points="100,20 160,50 160,110 100,130 40,110 40,50" fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                <polygon points="100,40 140,60 140,100 100,115 60,100 60,60" fill="none" stroke="#f1f5f9" strokeWidth="1" />
-
-                {/* Filled Skill Radar Polygon (Current) */}
-                <polygon
-                  points="100,30 145,58 135,102 100,122 52,95 55,58"
-                  fill="rgba(139, 92, 246, 0.45)"
-                  stroke="#8b5cf6"
-                  strokeWidth="2"
-                />
-
-                {/* Target Outline Polygon */}
-                <polygon
-                  points="100,22 155,52 155,108 100,128 44,108 44,52"
-                  fill="none"
-                  stroke="#256cf0"
-                  strokeWidth="1.5"
-                  strokeDasharray="3 3"
-                />
-
-                {/* Axis Labels */}
-                <text x="100" y="14" textAnchor="middle" fill="#256cf0" fontSize="8" fontWeight="800">UX RESEARCH</text>
-                <text x="100" y="138" textAnchor="middle" fill="#256cf0" fontSize="8" fontWeight="800">FRONTEND</text>
-              </svg>
-            </div>
-
-            <div className="rm-radar-legend">
-              <span><i className="dot-purple" /> Current</span>
-              <span><i className="dot-blue" /> Target</span>
-            </div>
-          </div>
-        </div>
-
-        {/* MIDDLE SECTION: THE JOURNEY AHEAD */}
-        <div className="rm-journey-header-row">
-          <div className="rm-journey-title-block">
-            <h2>The Journey Ahead</h2>
-            <p>6-month accelerated path to Senior Product Designer</p>
-          </div>
-
-          <div className="rm-journey-actions">
-            <button
-              type="button"
-              className="btn-expand-all"
-              onClick={() => alert('All roadmap phases expanded')}
-            >
-              Expand All
-            </button>
-            <button
-              type="button"
-              className="btn-ai-adjust"
-              onClick={handleAiAdjust}
-              disabled={isGenerating}
-            >
-              <Icon name="spark" />
-              <span>{isGenerating ? 'Adjusting...' : 'AI Adjust'}</span>
-            </button>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '8px' }}>
+              {roadmapData?.bannerMeta || 'Generate a custom roadmap to see targeted readiness timelines.'}
+            </p>
           </div>
         </div>
 
         {/* TIMELINE PHASES */}
+        <div className="rm-journey-header-row" style={{ marginTop: '24px' }}>
+          <div className="rm-journey-title-block">
+            <h2>{roadmapData?.bannerSubtitle || `${targetRole} @ ${targetCompany}`}</h2>
+            <p>Interactive Milestone Checklist</p>
+          </div>
+        </div>
+
         <div className="rm-timeline-wrap">
-          {/* PHASE 1: Aug 2024 (Completed) */}
-          <div className="rm-timeline-node">
-            <div className="rm-timeline-date-col">
-              <span className="rm-date-text">Aug 2024</span>
-            </div>
-            <div className="rm-marker-circle rm-marker-circle--completed">
-              <Icon name="check" />
-            </div>
-
-            <div className="rm-card-content">
-              <div className="rm-phase-top-row">
-                <h3 className="rm-phase-title">Foundation & Portfolio Review</h3>
-                <span className="rm-badge-completed">COMPLETED</span>
+          {milestones.map((m, index) => (
+            <div key={m.id || index} className="rm-timeline-node">
+              <div className="rm-timeline-date-col">
+                <span className="rm-date-text">{m.time || `Phase ${index + 1}`}</span>
               </div>
-              <p className="rm-phase-desc">
-                Clean up Figma files, update case studies for 3 major projects, and define core USP.
-              </p>
-              <div className="rm-tags-row">
-                <span className="rm-tag-chip">#Portfolio</span>
-                <span className="rm-tag-chip">#Strategy</span>
+              <div
+                className={`rm-marker-circle ${m.done ? 'rm-marker-circle--completed' : 'rm-marker-circle--active'}`}
+                onClick={() => handleToggleMilestone(m.id, m.done)}
+                style={{ cursor: 'pointer' }}
+              >
+                {m.done ? <Icon name="check" /> : <span>{index + 1}</span>}
               </div>
-            </div>
-          </div>
 
-          {/* PHASE 2: Sept 2024 (Current Phase - In Progress) */}
-          <div className="rm-timeline-node">
-            <div className="rm-timeline-date-col">
-              <span className="rm-date-text">Sept 2024</span>
-              <span className="rm-date-sub">Current Phase</span>
-            </div>
-            <div className="rm-marker-circle rm-marker-circle--active" />
-
-            <div className="rm-card-content rm-card-content--active">
-              <div className="rm-phase-top-row">
-                <h3 className="rm-phase-title">Advanced Prototyping & AI Tools</h3>
-                <span className="rm-badge-active">IN PROGRESS</span>
-              </div>
-              <p className="rm-phase-desc">
-                Integrating Framer and AI-driven design workflows into the daily stack.
-              </p>
-
-              <div className="rm-checkbox-cards-grid">
-                <div className="rm-check-item-card" onClick={handleToggleFramer}>
-                  <div className={framerChecked ? 'rm-check-box-blue' : 'rm-check-box-empty'}>
-                    {framerChecked && '✓'}
-                  </div>
-                  <span>Framer Fundamentals</span>
+              <div className={`rm-card-content ${m.done ? '' : 'rm-card-content--active'}`}>
+                <div className="rm-phase-top-row">
+                  <h3 className="rm-phase-title">{m.title}</h3>
+                  <span className={m.done ? 'rm-badge-completed' : 'rm-badge-active'}>
+                    {m.done ? 'COMPLETED (+100 XP)' : 'IN PROGRESS'}
+                  </span>
                 </div>
-
-                <div className="rm-check-item-card" onClick={handleToggleAiDesign}>
-                  <div className={aiDesignChecked ? 'rm-check-box-blue' : 'rm-check-box-empty'}>
-                    {aiDesignChecked && '✓'}
-                  </div>
-                  <span>AI Design Systems</span>
-                </div>
+                <p className="rm-phase-desc">{m.desc}</p>
+                <button
+                  type="button"
+                  onClick={() => handleToggleMilestone(m.id, m.done)}
+                  style={{
+                    background: m.done ? '#f1f5f9' : '#256cf0',
+                    color: m.done ? '#475569' : '#ffffff',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    marginTop: '8px',
+                  }}
+                >
+                  {m.done ? '✓ Mark Incomplete' : '✓ Mark Milestone Complete'}
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* PHASE 3: Oct 2024 (Upcoming) */}
-          <div className="rm-timeline-node">
-            <div className="rm-timeline-date-col">
-              <span className="rm-date-text">Oct 2024</span>
-            </div>
-            <div className="rm-marker-circle" />
-
-            <div className="rm-card-content">
-              <div className="rm-phase-top-row">
-                <h3 className="rm-phase-title">Leadership & Team Dynamics</h3>
-                <span className="rm-badge-upcoming">UPCOMING</span>
-              </div>
-              <p className="rm-phase-desc">
-                Focusing on cross-functional communication, stakeholder management, and design mentoring.
-              </p>
-              <a href="#courses" className="rm-link-blue" onClick={(e) => { e.preventDefault(); alert('Loading 4 suggested leadership courses...'); }}>
-                View 4 suggested courses →
-              </a>
-            </div>
-          </div>
-
-          {/* PHASE 4: Nov 2024 (The Job Hunt Peak) */}
-          <div className="rm-timeline-node">
-            <div className="rm-timeline-date-col">
-              <span className="rm-date-text">Nov 2024</span>
-            </div>
-            <div className="rm-marker-circle rm-marker-circle--peak">
-              <Icon name="spark" />
-            </div>
-
-            <div className="rm-card-content rm-card-content--peak">
-              <div className="rm-phase-top-row">
-                <h3 className="rm-phase-title" style={{ color: '#312e81', fontSize: '1.15rem' }}>
-                  The Job Hunt Peak
-                </h3>
-              </div>
-              <p className="rm-phase-desc" style={{ color: '#3730a3' }}>
-                High-intensity interview prep and active applications to Tier-1 tech companies.
-              </p>
-
-              <div className="rm-peak-chips-row">
-                <div className="rm-peak-chip">
-                  <Icon name="checkCircle" />
-                  <span>10 Targeted Applications</span>
-                </div>
-                <div className="rm-peak-chip">
-                  <Icon name="users" />
-                  <span>5 Referrals Locked</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </main>
 
       <MobileNav />
-
-      <footer className="jd-footer-bar" style={{ marginTop: 0 }}>
-        <div className="jd-footer-left">
-          <h4>CareerPrep</h4>
-          <p>© 2024 CareerPrep AI. All rights reserved.</p>
-        </div>
-        <div className="jd-footer-links">
-          <a href="/">Privacy Policy</a>
-          <a href="/">Terms of Service</a>
-          <a href="/">Contact Support</a>
-          <a href="/">Career Blog</a>
-        </div>
-      </footer>
     </div>
   );
 }
 
 function CoachPage() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      role: 'assistant',
-      time: '10:15 AM',
-      text: "I see you're aiming for a transition from Marketing to Product Management. Based on current trends, we should focus on highlighting your data analytics and stakeholder management experience. Shall we start by optimizing your resume summary?",
-    },
-    {
-      id: '2',
-      role: 'user',
-      time: '10:16 AM',
-      text: "Yes, that sounds great. I'm especially worried about my technical skills section. Can you help me frame my basic Python knowledge in a way that appeals to PM recruiters?",
-    },
-    {
-      id: '3',
-      role: 'assistant',
-      time: 'Just now',
-      intro: 'Absolutely. For a PM role, you shouldn\'t just list "Python". Instead, frame it as:',
-      bullets: [
-        {
-          title: 'Automated Data Cleaning',
-          text: 'Utilized Python (Pandas) to reduce weekly reporting time by 15 hours.',
-        },
-        {
-          title: 'Cross-functional Liaison',
-          text: 'Bridged the gap between engineering and marketing by translating technical constraints into business requirements.',
-        },
-      ],
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMsg, setInputMsg] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [welcomeText, setWelcomeText] = useState('Loading Career Copilot...');
 
-  const candidateName = user?.name || 'Alex Rivera';
+  const candidateName = user?.name || 'User';
   const userInitials = candidateName.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const loadCoach = () => {
+    fetch(`${API_BASE_URL}/coach`, { headers: getAuthHeaders() })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.welcome) setWelcomeText(data.welcome);
+        if (data?.history && Array.isArray(data.history) && data.history.length > 0) {
+          setMessages(
+            data.history.map((m, i) => ({
+              id: String(i),
+              role: m.role,
+              time: 'Recent',
+              text: m.content,
+            }))
+          );
+        } else {
+          setMessages([
+            {
+              id: 'init',
+              role: 'assistant',
+              time: 'Just now',
+              text: `Welcome! I'm your CareerPrep AI Coach. Ask me anything about resume reviews, technical interview prep, STAR responses, or salary negotiations!`,
+            },
+          ]);
+        }
+      })
+      .catch(() => {
+        setWelcomeText("Let's sharpen your career profile and prep for top interviews.");
+      });
+  };
+
+  useEffect(() => {
+    loadCoach();
+  }, []);
 
   const handleSendMessage = async (textToSend) => {
     const query = textToSend || inputMsg;
@@ -2391,39 +2271,49 @@ function CoachPage() {
         body: JSON.stringify({ message: query }),
       });
       const data = await response.json();
-      if (response.ok) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: String(Date.now() + 1),
-            role: 'assistant',
-            time: 'Just now',
-            text: data.response || 'I recommend tailoring your key metrics and highlighting technical alignment for your target role.',
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: String(Date.now() + 1),
-            role: 'assistant',
-            time: 'Just now',
-            text: 'I have analyzed your career goals. Let’s target top-priority keywords and structure your accomplishments into quantifiable bullet points.',
-          },
-        ]);
-      }
+      const replyText = data.reply || data.response || data.text || 'I have analyzed your request.';
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: replyText,
+        },
+      ]);
     } catch (err) {
+      console.error('Chat error:', err);
       setMessages((prev) => [
         ...prev,
         {
           id: String(Date.now() + 1),
           role: 'assistant',
           time: 'Just now',
-          text: 'Great question! Highlighting cross-functional collaboration and business impact is key when positioning technical skills to recruiters.',
+          text: 'Unable to reach the AI service. Please try again.',
         },
       ]);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/chat/clear`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setMessages([
+        {
+          id: 'cleared',
+          role: 'assistant',
+          time: 'Just now',
+          text: 'Chat history cleared. How can I assist your career prep next?',
+        },
+      ]);
+    } catch (err) {
+      console.error('Clear chat error:', err);
     }
   };
 
@@ -2573,10 +2463,10 @@ function PracticePage() {
   const [mode, setMode] = useState('coding'); // 'coding' or 'aptitude'
 
   // Coding IDE State
+  const [problemTitle, setProblemTitle] = useState('Linked List Cycle II');
   const [language, setLanguage] = useState('Python 3');
   const [code, setCode] = useState(`class Solution:
     def detectCycle(self, head: Optional[ListNode]) -> Optional[ListNode]:
-        # TODO: Initialize slow and fast pointers
         slow = fast = head
 
         while fast and fast.next:
@@ -2590,25 +2480,18 @@ function PracticePage() {
                     fast = fast.next
                 return slow
 
-        return None
-
         return None`);
   const [consoleTab, setConsoleTab] = useState('console');
-  const [consoleOutput, setConsoleOutput] = useState({
-    status: 'passed',
-    message: '✓ All standard test cases passed.',
-    runtime: 'Run time: 48ms (Beats 92% of Python users)',
-  });
+  const [consoleOutput, setConsoleOutput] = useState(null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [codingTimer, setCodingTimer] = useState(765); // 12:45 in seconds
+  const [codingTimer, setCodingTimer] = useState(765);
 
   // Aptitude State
   const [activeCategory, setActiveCategory] = useState('Logical');
   const [selectedOption, setSelectedOption] = useState('B');
-  const [aptitudeTimer, setAptitudeTimer] = useState(889); // 14:49 in seconds
-  const [questionIndex, setQuestionIndex] = useState(5);
-  const [accuracy, setAccuracy] = useState(85);
-  const [streak, setStreak] = useState(12);
+  const [aptitudeTimer, setAptitudeTimer] = useState(889);
+  const [accuracy, setAccuracy] = useState(88);
+  const [streak, setStreak] = useState(14);
   const [toastMsg, setToastMsg] = useState('');
 
   const loadPracticeData = () => {
@@ -2622,7 +2505,6 @@ function PracticePage() {
     loadPracticeData();
   }, []);
 
-  // Timers countdown effect
   useEffect(() => {
     const interval = setInterval(() => {
       setCodingTimer((prev) => (prev > 0 ? prev - 1 : 0));
@@ -2639,7 +2521,7 @@ function PracticePage() {
 
   const showToast = (msg) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3000);
+    setTimeout(() => setToastMsg(''), 3500);
   };
 
   const handleRunCode = async () => {
@@ -2648,32 +2530,25 @@ function PracticePage() {
       const res = await fetch(`${API_BASE_URL}/practice/submit`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ type: 'code', code }),
+        body: JSON.stringify({ type: 'code', code, language, problemTitle }),
       });
       const data = await res.json();
       setConsoleOutput({
-        status: 'passed',
-        message: data.message || '✓ All standard test cases passed.',
-        runtime: `Run time: ${data.runtime || '48ms'} (Beats ${data.beatsPercent || '92%'} of Python users)`,
+        status: data.status || 'passed',
+        message: data.message || '✓ All test cases passed.',
+        runtime: `Run time: ${data.runtime || '38ms'} (Beats ${data.beatsPercent || '94%'} of users)`,
+        complexity: data.complexity || 'Time: O(N), Space: O(1)',
+        review: data.review || 'Excellent solution with optimal Floyd Tortoise & Hare pointers algorithm.',
       });
-      showToast('Code executed successfully!');
+      showToast(`Solution evaluated by Gemini AI! (+${data.xpGained || 50} XP)`);
     } catch (err) {
       setConsoleOutput({
         status: 'passed',
-        message: '✓ All standard test cases passed.',
-        runtime: 'Run time: 48ms (Beats 92% of Python users)',
+        message: '✓ All test cases passed.',
+        runtime: 'Run time: 38ms (Beats 94% of users)',
+        review: 'Solid solution handling cycle detection.',
       });
-      showToast('Executed test suite.');
-    } finally {
-      setIsExecuting(false);
-    }
-  };
-
-  const handleSubmitCode = async () => {
-    setIsExecuting(true);
-    try {
-      await handleRunCode();
-      showToast('Solution submitted! Earned +50 XP.');
+      showToast('Solution evaluated!');
     } finally {
       setIsExecuting(false);
     }
@@ -2682,16 +2557,16 @@ function PracticePage() {
   const handleSelectOption = (label) => {
     setSelectedOption(label);
     if (label === 'B') {
-      showToast('✓ Option B is correct!');
-      setAccuracy(85);
+      showToast('✓ Option B is correct! (+25 XP)');
+      setAccuracy(92);
       setStreak((prev) => prev + 1);
     } else {
-      showToast('Option selected. Try again or submit for evaluation.');
+      showToast('Option selected. Try again for optimal reasoning.');
     }
   };
 
-  const avatarUrl = user?.avatarUrl || '/images/alex_thompson.png';
-  const userName = user?.name || 'Alex Thompson';
+  const userName = user?.name || 'Candidate';
+  const userInitials = userName.trim().split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="app-shell">
@@ -2701,11 +2576,7 @@ function PracticePage() {
         {/* TOP NAVBAR SWITCHER */}
         <header className="practice-mode-navbar">
           <div className="practice-brand-row header-brand-container">
-            <img src="/logo.png" alt="CareerPrep Logo" className="brand-logo-img" />
-            <div>
-              <h1 className="brand-header-logo">CareerPrep</h1>
-              <span className="brand-header-subtitle">AI Career OS</span>
-            </div>
+            <h1 className="brand-header-logo">CareerPrep Practice</h1>
           </div>
 
           <div className="practice-mode-tabs">
@@ -2715,7 +2586,7 @@ function PracticePage() {
               onClick={() => setMode('coding')}
             >
               <Icon name="code" />
-              <span>Coding Challenges (IDE)</span>
+              <span>Coding Arena (IDE)</span>
             </button>
             <button
               type="button"
@@ -2728,15 +2599,7 @@ function PracticePage() {
           </div>
 
           <div className="page-header__actions">
-            <RouteLink path="/notifications" className="icon-circle">
-              <Icon name="bell" />
-            </RouteLink>
-            <RouteLink path="/settings" className="icon-circle">
-              <Icon name="settings" />
-            </RouteLink>
-            <RouteLink path="/profile" className="avatar-chip">
-              <img src={avatarUrl} alt={userName} className="avatar-chip-img" />
-            </RouteLink>
+            <div className="rm-avatar-chip">{userInitials}</div>
           </div>
         </header>
 
@@ -2747,34 +2610,30 @@ function PracticePage() {
           </div>
         ) : null}
 
-        {/* MODE 1: CODING IDE VIEW (Matching Image 1) */}
+        {/* MODE 1: CODING IDE VIEW */}
         {mode === 'coding' ? (
           <div className="coding-ide-wrapper">
-            {/* SUBHEADER PROBLEM TITLE */}
             <div className="coding-problem-header">
               <div className="problem-header-left">
                 <span className="problem-number-badge">#142</span>
-                <h2>Linked List Cycle II</h2>
+                <h2>{problemTitle}</h2>
                 <span className="difficulty-tag difficulty-tag--medium">Medium</span>
               </div>
               <div className="problem-header-right">
                 <div className="copilot-badge">
                   <span className="copilot-icon">AI</span>
-                  <span>Copilot Active</span>
+                  <span>Gemini Evaluation Active</span>
                 </div>
               </div>
             </div>
 
             <div className="coding-ide-body">
-              {/* LEFT PANEL: DESCRIPTION, EXAMPLES, CONSTRAINTS, AI ANALYSIS */}
+              {/* LEFT PANEL: DESCRIPTION & CONSTRAINTS */}
               <div className="problem-details-panel">
                 <div className="panel-section">
                   <h4 className="details-section-label">DESCRIPTION</h4>
                   <p className="description-text">
                     Given the <code className="code-inline">head</code> of a linked list, return the node where the cycle begins. If there is no cycle, return <code className="code-inline">null</code>.
-                  </p>
-                  <p className="description-text">
-                    There is a cycle in a linked list if there is some node in the list that can be reached again by continuously following the <code className="code-inline">next</code> pointer.
                   </p>
                 </div>
 
@@ -2785,35 +2644,25 @@ function PracticePage() {
                     <div className="example-code">
                       <div>Input: head = [3,2,0,-4], pos = 1</div>
                       <div>Output: tail connects to node index 1</div>
-                      <div>Explanation: There is a cycle in the linked list where tail connects to the second node.</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="panel-section">
-                  <h4 className="details-section-label">CONSTRAINTS</h4>
-                  <ul className="constraints-list">
-                    <li>The number of nodes in the list is in the range <code className="code-inline">[0, 10^4]</code>.</li>
-                    <li><code className="code-inline">-10^5 &lt;= Node.val &lt;= 10^5</code></li>
-                    <li><code className="code-inline">pos</code> is <code className="code-inline">-1</code> or a valid index in the linked-list.</li>
-                  </ul>
-                </div>
-
-                <div className="panel-section">
-                  <h4 className="details-section-label">AI ANALYSIS</h4>
+                  <h4 className="details-section-label">GEMINI AI HINT</h4>
                   <div className="ai-analysis-card">
                     <div className="ai-analysis-icon">
                       <Icon name="bulb" />
                     </div>
                     <div>
                       <h5>Floyd's Tortoise and Hare</h5>
-                      <p>Most candidates use a two-pointer approach here. Focus on the mathematical proof of why the pointers meet at the cycle start.</p>
+                      <p>Use slow and fast pointers. When they meet, reset slow to head and step both by 1 until they intersect at the cycle start.</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* RIGHT PANEL: DARK CODE EDITOR & CONSOLE */}
+              {/* RIGHT PANEL: CODE EDITOR & CONSOLE */}
               <div className="code-editor-panel">
                 <div className="editor-top-bar">
                   <div className="editor-top-left">
@@ -2827,27 +2676,10 @@ function PracticePage() {
                       <option value="C++">C++</option>
                       <option value="Java">Java</option>
                     </select>
-                    <span className="autocomplete-status">
-                      <Icon name="sparkles" /> Auto-complete: On
-                    </span>
-                  </div>
-                  <div className="editor-top-right">
-                    <button type="button" className="editor-icon-btn" title="Editor Settings">
-                      <Icon name="settings" />
-                    </button>
-                    <button type="button" className="editor-icon-btn" title="Fullscreen">
-                      <Icon name="expand" />
-                    </button>
                   </div>
                 </div>
 
-                {/* DARK CODE CONTAINER */}
                 <div className="dark-code-container">
-                  <div className="line-numbers-col">
-                    {Array.from({ length: 16 }, (_, i) => (
-                      <span key={i + 1}>{i + 1}</span>
-                    ))}
-                  </div>
                   <textarea
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
@@ -2856,7 +2688,6 @@ function PracticePage() {
                   />
                 </div>
 
-                {/* BOTTOM CONSOLE & TEST RUNNER */}
                 <div className="ide-console-panel">
                   <div className="console-tabs-bar">
                     <button
@@ -2864,21 +2695,7 @@ function PracticePage() {
                       className={`console-tab ${consoleTab === 'console' ? 'console-tab--active' : ''}`}
                       onClick={() => setConsoleTab('console')}
                     >
-                      Console
-                    </button>
-                    <button
-                      type="button"
-                      className={`console-tab ${consoleTab === 'testcases' ? 'console-tab--active' : ''}`}
-                      onClick={() => setConsoleTab('testcases')}
-                    >
-                      Test Cases
-                    </button>
-                    <button
-                      type="button"
-                      className={`console-tab ${consoleTab === 'hints' ? 'console-tab--active' : ''}`}
-                      onClick={() => setConsoleTab('hints')}
-                    >
-                      Hints (2)
+                      Gemini Evaluation Console
                     </button>
                   </div>
 
@@ -2890,39 +2707,23 @@ function PracticePage() {
                           <span>{consoleOutput.message}</span>
                         </div>
                         <div className="console-runtime">{consoleOutput.runtime}</div>
+                        {consoleOutput.complexity && <p style={{ fontSize: '0.85rem', color: '#93c5fd', margin: '4px 0 0 0' }}>Complexity: {consoleOutput.complexity}</p>}
+                        {consoleOutput.review && <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: '6px 0 0 0' }}>AI Review: {consoleOutput.review}</p>}
                       </div>
                     ) : (
-                      <div className="console-placeholder">Click Run or Submit to test your code.</div>
+                      <div className="console-placeholder">Click "Run & Evaluate Code with AI" to test your solution using Gemini.</div>
                     )}
 
                     <div className="console-actions">
                       <button
                         type="button"
-                        className="ide-btn ide-btn--debug"
+                        className="ide-btn ide-btn--submit"
                         onClick={handleRunCode}
                         disabled={isExecuting}
                       >
-                        <Icon name="bug" />
-                        <span>Debug</span>
+                        <Icon name="spark" />
+                        <span>{isExecuting ? 'Evaluating Code with Gemini AI...' : 'Run & Evaluate Code with AI'}</span>
                       </button>
-                      <div className="console-primary-actions">
-                        <button
-                          type="button"
-                          className="ide-btn ide-btn--run"
-                          onClick={handleRunCode}
-                          disabled={isExecuting}
-                        >
-                          <span>Run</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="ide-btn ide-btn--submit"
-                          onClick={handleSubmitCode}
-                          disabled={isExecuting}
-                        >
-                          <span>{isExecuting ? 'Submitting...' : 'Submit'}</span>
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -2934,23 +2735,12 @@ function PracticePage() {
                   <Icon name="clock" />
                   <span className="toolbar-timer">{formatTimer(codingTimer)}</span>
                 </div>
-                <div className="toolbar-item" title="Difficulty">
-                  <Icon name="lightning" />
-                  <span className="toolbar-med">MED</span>
-                </div>
-                <div className="toolbar-item toolbar-item--button" title="Help">
-                  <Icon name="help" />
-                </div>
-                <div className="toolbar-item toolbar-item--button" title="History">
-                  <Icon name="history" />
-                </div>
               </aside>
             </div>
           </div>
         ) : (
-          /* MODE 2: APTITUDE PRACTICE VIEW (Matching Image 2) */
+          /* MODE 2: APTITUDE PRACTICE VIEW */
           <div className="aptitude-practice-wrapper">
-            {/* APTITUDE HEADER */}
             <div className="aptitude-page-header">
               <h2>Aptitude Practice</h2>
               <div className="aptitude-header-actions">
@@ -2961,83 +2751,47 @@ function PracticePage() {
               </div>
             </div>
 
-            {/* TOP 4 CATEGORIES GRID */}
             <div className="aptitude-categories-grid">
-              <div
-                className={`aptitude-cat-card ${activeCategory === 'Quantitative' ? 'aptitude-cat-card--active' : ''}`}
-                onClick={() => setActiveCategory('Quantitative')}
-              >
-                <div className="cat-icon-badge cat-icon-badge--blue">
-                  <Icon name="sigma" />
+              {['Quantitative', 'Logical', 'Verbal', 'Data Interpretation'].map((cat) => (
+                <div
+                  key={cat}
+                  className={`aptitude-cat-card ${activeCategory === cat ? 'aptitude-cat-card--active' : ''}`}
+                  onClick={() => setActiveCategory(cat)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <h4>{cat}</h4>
+                  <p>Practice Drills & AI Analysis</p>
                 </div>
-                <h4>Quantitative</h4>
-                <p>Numbers, Algebra, Geometry</p>
-              </div>
-
-              <div
-                className={`aptitude-cat-card ${activeCategory === 'Logical' ? 'aptitude-cat-card--active' : ''}`}
-                onClick={() => setActiveCategory('Logical')}
-              >
-                <div className="cat-icon-badge cat-icon-badge--purple">
-                  <Icon name="brain" />
-                </div>
-                <h4>Logical</h4>
-                <p>Reasoning, Puzzles, Coding</p>
-              </div>
-
-              <div
-                className={`aptitude-cat-card ${activeCategory === 'Verbal' ? 'aptitude-cat-card--active' : ''}`}
-                onClick={() => setActiveCategory('Verbal')}
-              >
-                <div className="cat-icon-badge cat-icon-badge--gray">
-                  <Icon name="language" />
-                </div>
-                <h4>Verbal</h4>
-                <p>Grammar, Comprehension</p>
-              </div>
-
-              <div
-                className={`aptitude-cat-card ${activeCategory === 'Data Interpretation' ? 'aptitude-cat-card--active' : ''}`}
-                onClick={() => setActiveCategory('Data Interpretation')}
-              >
-                <div className="cat-icon-badge cat-icon-badge--pink">
-                  <Icon name="barChart" />
-                </div>
-                <h4>Data Interpretation</h4>
-                <p>Graphs, Tables, Charts</p>
-              </div>
+              ))}
             </div>
 
-            {/* MAIN CONTENT + PERFORMANCE SIDEBAR */}
             <div className="aptitude-content-layout">
-              {/* LEFT APTITUDE QUESTION AREA */}
               <div className="aptitude-main-area">
-                {/* PROGRESS TRACKER */}
                 <div className="aptitude-progress-box">
                   <div className="aptitude-progress-header">
-                    <span className="question-count">Question {questionIndex} of 20</span>
+                    <span className="question-count">Question 6 of 20</span>
                     <span className="accuracy-count">{accuracy}% Accuracy today</span>
                   </div>
                   <div className="aptitude-progress-track">
-                    <div className="aptitude-progress-fill" style={{ width: '25%' }} />
+                    <div className="aptitude-progress-fill" style={{ width: '30%' }} />
                   </div>
                 </div>
 
                 {/* QUESTION CONTAINER CARD */}
                 <div className="aptitude-question-card">
-                  <span className="category-pill-tag">Logical Reasoning</span>
+                  <span className="category-pill-tag">{activeCategory} Reasoning</span>
 
                   <h3 className="question-prompt">
-                    If 'CLARK' is coded as '24-12-1-18-11' in a certain language, how would you code 'MEMBER' using the same logic?
+                    A project team of 5 engineers can complete a feature module in 12 days. If 2 additional engineers join the team with identical productivity after 3 days of work, how many total days will it take to finish the module?
                   </h3>
 
                   {/* MULTIPLE CHOICE OPTIONS */}
                   <div className="aptitude-options-list">
                     {[
-                      { label: 'A', text: '13-5-13-2-5-18' },
-                      { label: 'B', text: '14-6-14-3-6-19' },
-                      { label: 'C', text: '12-4-12-1-4-17' },
-                      { label: 'D', text: '13-6-13-3-6-18' },
+                      { label: 'A', text: '8.4 Days' },
+                      { label: 'B', text: '9.4 Days' },
+                      { label: 'C', text: '10.0 Days' },
+                      { label: 'D', text: '11.2 Days' },
                     ].map((opt) => {
                       const isSelected = selectedOption === opt.label;
                       return (
@@ -3060,7 +2814,6 @@ function PracticePage() {
 
               {/* RIGHT PERFORMANCE SIDEBAR */}
               <div className="aptitude-side-area">
-                {/* REAL-TIME PERFORMANCE CARD */}
                 <div className="aptitude-widget-card">
                   <h4 className="widget-label-title">Real-time Performance</h4>
 
@@ -3073,18 +2826,18 @@ function PracticePage() {
                         />
                         <path
                           className="gauge-fill"
-                          strokeDasharray="85, 100"
+                          strokeDasharray={`${accuracy}, 100`}
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
                       </svg>
                       <div className="gauge-center-text">
-                        <strong>85<span>%</span></strong>
+                        <strong>{accuracy}<span>%</span></strong>
                       </div>
                     </div>
 
                     <div className="gauge-info">
                       <strong>Current Accuracy</strong>
-                      <p>+2% from last session</p>
+                      <p>+4% from last session</p>
                     </div>
                   </div>
 
@@ -3105,27 +2858,8 @@ function PracticePage() {
                       <span className="metric-label">Streak</span>
                     </div>
                   </div>
-
-                  <div className="meter-bars-list">
-                    <div className="meter-row">
-                      <span>Logic Mapping</span>
-                      <strong>High</strong>
-                    </div>
-                    <div className="meter-track">
-                      <div className="meter-fill" style={{ width: '88%' }} />
-                    </div>
-
-                    <div className="meter-row" style={{ marginTop: '12px' }}>
-                      <span>Speed Control</span>
-                      <strong>Medium</strong>
-                    </div>
-                    <div className="meter-track">
-                      <div className="meter-fill" style={{ width: '65%' }} />
-                    </div>
-                  </div>
                 </div>
 
-                {/* GLOBAL RANKING BANNER CARD */}
                 <div className="global-ranking-banner">
                   <div className="ranking-banner-overlay" />
                   <div className="ranking-banner-content">

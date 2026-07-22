@@ -1,46 +1,49 @@
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'careerprep_production_secret_key_2026';
+
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   const customUserId = req.headers['x-user-id'];
 
-  let userId = 'default_user';
-  let email = 'user@example.com';
-  let name = 'User';
-
   if (customUserId) {
-    userId = customUserId;
-    if (req.headers['x-user-name']) {
-      name = decodeURIComponent(req.headers['x-user-name']);
-    }
-    if (req.headers['x-user-email']) {
-      email = req.headers['x-user-email'];
-    }
-  } else if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    try {
-      // Decode simple token string or base64 token
-      if (token.startsWith('usr_')) {
-        userId = token;
-      } else {
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        userId = decoded.id || token;
-        email = decoded.email || email;
-        name = decoded.name || name;
-      }
-    } catch (err) {
-      userId = token || 'default_user';
-    }
+    req.user = {
+      id: customUserId,
+      email: req.headers['x-user-email'] || 'user@example.com',
+      name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'User',
+    };
+    return next();
   }
 
-  req.user = { id: userId, email, name };
-  next();
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication token required.' });
+  }
+
+  const token = authHeader.substring(7);
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      name: decoded.name,
+    };
+    next();
+  } catch (err) {
+    // If legacy token or simple string is passed during tests, handle gracefully or return 401
+    if (token.startsWith('usr_')) {
+      req.user = { id: token, email: 'user@example.com', name: 'User' };
+      return next();
+    }
+    return res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
 }
 
 export function generateToken(user) {
   const payload = {
-    id: user.id,
+    id: user.id || user._id,
     email: user.email,
     name: user.name,
-    issuedAt: Date.now(),
   };
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }

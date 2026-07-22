@@ -3,8 +3,10 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   addGoalData,
   analyzeJobDescriptionData,
+  clearCoachHistoryData,
   deleteGoalData,
   deleteNotificationData,
+  evaluateInterviewSessionData,
   generateRoadmapData,
   getAdminData,
   getCoachData,
@@ -19,6 +21,7 @@ import {
   getSettingsData,
   handleChatRequest,
   optimizeResumeData,
+  startInterviewSession,
   submitAuthRequest,
   submitPracticeData,
   updateGoalData,
@@ -144,6 +147,15 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+router.delete('/chat/clear', async (req, res) => {
+  try {
+    const result = await clearCoachHistoryData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Roadmap
 router.get('/roadmap', async (req, res) => {
   res.json(await getRoadmapData(req.user.id));
@@ -181,9 +193,27 @@ router.post('/practice/submit', async (req, res) => {
   }
 });
 
-// Mock Interview Report
+// Mock Interview Session & Report
 router.get('/interview-report', async (req, res) => {
   res.json(await getInterviewReportData(req.user.id));
+});
+
+router.post('/interview/start', async (req, res) => {
+  try {
+    const result = await startInterviewSession(req.user.id, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/interview/evaluate', async (req, res) => {
+  try {
+    const result = await evaluateInterviewSessionData(req.user.id, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 

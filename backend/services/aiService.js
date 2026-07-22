@@ -43,7 +43,7 @@ Help users with:
 - Salary Negotiation
 - Cover Letters
 
-Always provide personalized, professional, and actionable responses.
+Always provide personalized, professional, and actionable responses. Format output cleanly in Markdown.
 Never output placeholder or template replies. Be specific, realistic, and direct.`;
 
   const model = getModel(systemInstruction);
@@ -82,7 +82,7 @@ Ensure suggestions are concrete, and draft an optimized markdown text using the 
 
 Provide a valid JSON response strictly matching this schema:
 {
-  "score": "string (e.g., '82/100')",
+  "score": "string (e.g., '88/100')",
   "critique": "string (detailed resume critique)",
   "optimizedText": "string (polished markdown resume section)",
   "suggestedSkills": ["array of 4 missing skills to add"]
@@ -118,8 +118,8 @@ Determine the target role title, calculate keyword match score, calculate overal
 Provide a valid JSON response strictly matching this schema:
 {
   "jobTitle": "string (e.g. 'Senior Product Manager')",
-  "keywordMatch": "string (e.g. '75%')",
-  "atsScore": "string (e.g. '80%')",
+  "keywordMatch": "string (e.g. '82%')",
+  "atsScore": "string (e.g. '88%')",
   "matchedSkills": ["array of strings"],
   "missingSkills": ["array of strings"],
   "recommendations": ["array of 3 recommendation strings"]
@@ -182,5 +182,136 @@ Provide a valid JSON response strictly matching this schema:
 
   const data = JSON.parse(result.response.text());
   console.log('[DEBUG] Gemini roadmap result:', data);
+  return data;
+}
+
+/**
+ * Generates dynamic mock interview questions based on role, company, difficulty & category
+ */
+export async function generateMockInterviewQuestions(role, company, difficulty, category) {
+  console.log('[DEBUG] Generating mock interview questions for:', role, company, category);
+
+  if (!genAI) {
+    throw new Error('Gemini API is not configured. Please set GEMINI_API_KEY in your .env file.');
+  }
+
+  const prompt = `Generate 4 realistic interview questions for a candidate interviewing for the position of "${role}" at "${company}" (${difficulty} level, category: "${category}").
+
+Provide a valid JSON response strictly matching this schema:
+{
+  "questions": [
+    {
+      "id": "string (e.g. 'q1')",
+      "question": "string (interview question text)",
+      "category": "string (e.g. 'System Design' or 'Behavioral')",
+      "hint": "string (brief hint for candidate)"
+    }
+  ]
+}`;
+
+  const model = getModel('You are a Principal Hiring Manager conducting interviews.');
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' },
+  });
+
+  const data = JSON.parse(result.response.text());
+  return data.questions || [];
+}
+
+/**
+ * Evaluates candidate responses from a full mock interview session
+ */
+export async function evaluateInterviewSession(role, company, difficulty, qnaList = []) {
+  console.log('[DEBUG] Evaluating mock interview session for:', role, company);
+
+  if (!genAI) {
+    throw new Error('Gemini API is not configured. Please set GEMINI_API_KEY in your .env file.');
+  }
+
+  const prompt = `Evaluate this completed mock interview session for a candidate applying for "${role}" at "${company}" (${difficulty} level).
+Analyze the candidate's answers for technical accuracy, communication skills, STAR framework usage, and confidence.
+
+Q&A Transcript:
+${JSON.stringify(qnaList, null, 2)}
+
+Provide a valid JSON response strictly matching this schema:
+{
+  "score": number (out of 10, e.g. 8.5),
+  "maxScore": 10,
+  "headline": "string (e.g. 'Strong Performance with Technical Depth')",
+  "percentileText": "string (e.g. 'Top 10% of candidate pool')",
+  "skillsRadar": {
+    "Technical": number (0-100),
+    "Communication": number (0-100),
+    "Grammar": number (0-100),
+    "Behavioral": number (0-100),
+    "Confidence": number (0-100)
+  },
+  "strengths": [
+    {
+      "title": "string",
+      "desc": "string"
+    }
+  ],
+  "improvements": [
+    {
+      "title": "string",
+      "desc": "string"
+    }
+  ],
+  "nextSteps": [
+    {
+      "title": "string",
+      "text": "string"
+    }
+  ]
+}`;
+
+  const model = getModel('You are a Senior Bar Raiser & Hiring Director evaluating interview performance.');
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' },
+  });
+
+  const data = JSON.parse(result.response.text());
+  console.log('[DEBUG] Gemini interview evaluation result:', data);
+  return data;
+}
+
+/**
+ * Evaluates user's code submission via Gemini AI
+ */
+export async function evaluateCodeSubmission(problemTitle, code, language = 'Python') {
+  console.log('[DEBUG] Evaluating code submission for problem:', problemTitle);
+
+  if (!genAI) {
+    throw new Error('Gemini API is not configured. Please set GEMINI_API_KEY in your .env file.');
+  }
+
+  const prompt = `Evaluate this code submission for the problem "${problemTitle || 'Coding Challenge'}" written in ${language}.
+Check for syntax errors, algorithm correctness, edge case handling, and Big O time/space complexity.
+
+Code Submission:
+${code}
+
+Provide a valid JSON response strictly matching this schema:
+{
+  "status": "passed | failed",
+  "message": "string (e.g. '✓ All test cases passed successfully')",
+  "runtime": "string (e.g. '34ms')",
+  "beatsPercent": "string (e.g. '94%')",
+  "complexity": "string (e.g. 'Time: O(N), Space: O(1)')",
+  "review": "string (constructive code review feedback)"
+}`;
+
+  const model = getModel('You are a Principal Software Engineer evaluating code submissions.');
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' },
+  });
+
+  const data = JSON.parse(result.response.text());
+  console.log('[DEBUG] Gemini code evaluation result:', data);
   return data;
 }
