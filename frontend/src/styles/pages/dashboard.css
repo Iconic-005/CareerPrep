@@ -1,0 +1,168 @@
+/* =============================================================================
+   DASHBOARD PAGE
+   ============================================================================= */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.3fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.dashboard-grid__stack,
+.dashboard-lower__main,
+.timeline,
+.goal-list,
+.suggestion-list,
+.toggle-list,
+.message-list,
+.step-grid,
+.theme-grid { display: grid; gap: 1rem; }
+
+.dashboard-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+
+.stat-icon { width: 3.55rem; height: 3.55rem; display: grid; place-items: center; border-radius: 1rem; }
+.stat-icon--blue   { color: var(--blue);   background: var(--blue-soft); }
+.stat-icon--violet { color: var(--violet); background: var(--violet-soft); }
+.stat-icon--slate  { color: var(--slate);  background: var(--slate-soft); }
+.stat-icon--sky    { color: var(--sky);    background: var(--sky-soft); }
+
+.stat-change { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 1.1rem; font-weight: 800; }
+.stat-change svg { width: 1rem; height: 1rem; }
+.stat-change--up   { color: var(--green); }
+.stat-change--down { color: #e11d48; }
+
+.stat-card__label { margin: 0; color: var(--slate-700); font-size: 1.1rem; font-weight: 500; }
+.stat-card h3 { margin-top: 0.9rem; font-size: clamp(2rem, 2vw, 2.6rem); color: var(--heading); }
+
+/* ── Readiness Card (ring display) ── */
+.readiness-card { display: grid; place-items: center; text-align: center; padding: 1.25rem; min-height: 0; }
+.readiness-card p:last-child { max-width: 16rem; }
+
+.dashboard-grid .readiness-card h3 { margin: 0.15rem 0 0; font-size: 1.1rem; }
+.dashboard-grid .readiness-card p:last-child { margin: 0.45rem 0 0; font-size: 0.88rem; }
+
+/* ── Ring (circular progress) ── */
+.ring {
+  width: 9rem;
+  height: 9rem;
+  margin: 0.75rem 0;
+  padding: 0.65rem;
+  border-radius: var(--radius-full);
+  background: conic-gradient(var(--blue) 0 92%, #e8edf4 92% 100%);
+}
+.ring--small  { width: 6.25rem; height: 6.25rem; background: conic-gradient(var(--blue) 0 82%, #e8edf4 82% 100%); }
+.ring--violet { background: conic-gradient(var(--violet) 0 91%, #e8edf4 91% 100%); }
+.ring--slate  { background: conic-gradient(var(--slate) 0 84%, #e8edf4 84% 100%); }
+
+.ring__inner,
+.score-card__ring { width: 100%; height: 100%; border-radius: var(--radius-full); background: var(--panel-strong); display: grid; place-items: center; text-align: center; }
+
+.ring__inner strong,
+.score-card__ring strong,
+.mini-stat strong,
+.metric-panel strong { font-family: 'Manrope', sans-serif; font-size: 1.5rem; color: var(--heading); }
+
+/* ── Mini Stats ── */
+.mini-stats      { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.mini-stats--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mini-stat { padding: 1rem; }
+.mini-stat__head { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.9rem; color: var(--muted); }
+.mini-stat--blue   .mini-stat__head svg { color: var(--blue); }
+.mini-stat--violet .mini-stat__head svg { color: var(--violet); }
+.mini-stat--slate  .mini-stat__head svg { color: var(--slate); }
+
+.dashboard-grid .mini-stat        { padding: 1rem; }
+.dashboard-grid .mini-stat strong { font-size: 1.35rem; }
+
+/* ── Chart Card ── */
+.chart-card     { min-height: 15rem; }
+.chart          { margin-top: 1rem; }
+.chart svg      { width: 100%; height: 8rem; }
+.chart__labels  { display: flex; justify-content: space-between; color: #98a2b3; font-size: 0.78rem; font-weight: 700; }
+
+.dashboard-grid .chart-card { min-height: 0; padding: 1.15rem; }
+
+/* ── Spotlight Card ── */
+.spotlight-card { padding: 1.25rem; color: #fff; background: linear-gradient(135deg, #6154f6, #4b41e1); }
+.spotlight-card h3,
+.spotlight-card p,
+.spotlight-card strong,
+.spotlight-card span  { color: #fff; }
+.spotlight-card__icon { background: rgba(255,255,255,0.14); color: #fff; }
+.spotlight-card__footer strong { display: block; font-size: 2rem; }
+.spotlight-card__footer span   { opacity: 0.8; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; }
+.dashboard-lower .spotlight-card { min-height: 0; padding: 1.15rem; }
+.dashboard-lower .spotlight-card__footer strong { font-size: 2rem; }
+
+/* ── Goal Item ── */
+.goal-item { padding: 1rem; border-radius: 1rem; background: #f9fbff; border: 1px solid rgba(219, 227, 240, 0.9); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.goal-item__title { display: flex; align-items: center; gap: 0.7rem; }
+
+/* ── Notification Row ── */
+.notification-row { grid-template-columns: auto 1fr auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+/* ── Reports Card ── */
+.reports-card { position: relative; overflow: hidden; }
+.reports-card__mark { position: absolute; top: 1rem; right: 1rem; color: rgba(16, 24, 40, 0.09); }
+.reports-card__mark svg { width: 4.75rem; height: 4.75rem; }
+.reports-card__metrics { display: grid; gap: 2rem; margin-top: 1.5rem; }
+.reports-card__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.reports-card__row strong { font-size: 1.1rem; color: var(--blue); }
+.reports-card__tags { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(219, 227, 240, 0.9); }
+.reports-card__tags p { margin: 0 0 1rem; font-size: 0.88rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #344054; }
+
+/* ── Resource Panel ── */
+.resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.resource-panel__header h3 { display: inline-flex; align-items: center; gap: 0.7rem; }
+.resource-panel__items { display: grid; gap: 1rem; margin-top: 1.2rem; }
+.resource-item { padding: 1.1rem 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid rgba(219, 227, 240, 0.9); background: #f9fbff; transition: var(--t-fast); }
+.resource-item h4 { margin: 0; font-size: 1rem; }
+.resource-item p  { margin: 0.35rem 0 0; color: var(--muted); }
+
+/* ── System Card (AI) ── */
+.system-card {
+  padding: 1.75rem;
+  border-radius: var(--radius-xl);
+  color: #f8fafc;
+  background: radial-gradient(circle at top right, rgba(87, 242, 159, 0.08), transparent 26%),
+              linear-gradient(180deg, #1d2025 0%, #181b20 100%);
+  box-shadow: 0 28px 60px rgba(10, 12, 16, 0.28);
+}
+.system-card__title { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.5rem; }
+.system-card__title p { margin: 0; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.84; }
+.system-card__pulse { width: 0.7rem; height: 0.7rem; border-radius: var(--radius-full); background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); animation: pulse 1.9s infinite; }
+.system-card__button { width: 100%; margin-top: 2rem; min-height: 3rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.09); color: #fff; font-weight: 800; }
+.system-card__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+/* ── AI Suggestion Card ── */
+.suggestion-card { padding: 1rem; display: grid; grid-template-columns: auto 1fr auto; gap: 0.8rem; align-items: start; }
+.suggestion-card p { margin: 0.35rem 0 0; }
+.suggestion-card__actions { display: flex; align-items: center; gap: 0.4rem; }
+
+/* ── Content Grid (admin/dashboard secondary layout) ── */
+.content-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(310px, 0.9fr); gap: 1rem; }
+.content-grid__main,
+.content-grid__side { display: grid; gap: 1.5rem; }
+
+/* ── Responsive ── */
+@media (max-width: 1280px) {
+  .dashboard-grid, .dashboard-lower, .content-grid, .stats-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mini-stats, .resource-grid, .score-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,1 @@
+function i(t){const r=Math.floor(t/60),o=t%60;return`${r}:${o<10?"0":""}${o}`}function n(t,r=2){return(t||"").trim().split(" ").map(o=>o[0]).filter(Boolean).join("").slice(0,r).toUpperCase()}export{i as f,n as g};

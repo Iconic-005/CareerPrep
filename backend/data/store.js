@@ -29,11 +29,17 @@ export function createStore() {
     async getResume(userId) {
       return mongoStore.getResume(userId);
     },
+    async updateResume(userId, payload) {
+      return mongoStore.updateResume(userId, payload);
+    },
     async optimizeResume(userId, resumeText, targetRole) {
       return mongoStore.optimizeResume(userId, resumeText, targetRole);
     },
     async analyzeJD(userId, jobDescription) {
       return mongoStore.analyzeJD(userId, jobDescription);
+    },
+    async getLatestJDAnalysis(userId) {
+      return mongoStore.getLatestJDAnalysis(userId);
     },
     async handleChat(userId, userMessage) {
       return mongoStore.handleChat(userId, userMessage);
@@ -55,6 +61,9 @@ export function createStore() {
     },
     async deleteNotification(userId, id) {
       return mongoStore.deleteNotification(userId, id);
+    },
+    async clearAllNotifications(userId) {
+      return mongoStore.clearAllNotifications(userId);
     },
     async getPractice(userId) {
       return mongoStore.getPractice(userId);

@@ -877,6 +877,34 @@ export async function clearChatHistory(userId) {
   return { success: true, message: 'Chat history cleared.' };
 }
 
+export async function getChatHistory(userId) {
+  await ensureUserInitialized(userId);
+  const chatHistoryDoc = await AIChatHistoryModel.findOne({ userId });
+  if (!chatHistoryDoc || !chatHistoryDoc.messages) return [];
+  return chatHistoryDoc.messages.map((m) => ({ role: m.role, content: m.content }));
+}
+
+export async function saveChatMessages(userId, userMessage, assistantReply) {
+  await ensureUserInitialized(userId);
+  let chatHistoryDoc = await AIChatHistoryModel.findOne({ userId });
+  if (!chatHistoryDoc) {
+    chatHistoryDoc = await AIChatHistoryModel.create({ userId, messages: [] });
+  }
+
+  chatHistoryDoc.messages.push({ role: 'user', content: userMessage });
+  chatHistoryDoc.messages.push({ role: 'assistant', content: assistantReply });
+  await chatHistoryDoc.save();
+
+  const analytics = await AnalyticsModel.findOne({ userId });
+  if (analytics) {
+    analytics.codingXP += 10;
+    await analytics.save();
+  }
+
+  await logActivity(userId, 'Consulted AI Career Coach', `Prompt: "${userMessage.slice(0, 30)}..." (+10 XP)`, 'violet');
+  await computeCalculatedMetrics(userId);
+}
+
 export async function getInterviewReport(userId) {
   await ensureUserInitialized(userId);
   const interview = await MockInterviewModel.findOne({ userId }).sort({ createdAt: -1 });
@@ -913,6 +941,52 @@ export async function deleteNotification(userId, id) {
     await NotificationModel.deleteOne({ id, userId });
   }
   return { success: true, id };
+}
+
+export async function clearAllNotifications(userId) {
+  await ensureUserInitialized(userId);
+  await NotificationModel.deleteMany({ userId });
+  return { success: true, message: 'All notifications cleared.' };
+}
+
+export async function getLatestJDAnalysis(userId) {
+  await ensureUserInitialized(userId);
+  const jdDoc = await JDAnalysisModel.findOne({ userId }).sort({ createdAt: -1 });
+  if (!jdDoc) return null;
+  return {
+    id: jdDoc._id.toString(),
+    jobTitle: jdDoc.jobTitle,
+    keywordMatch: jdDoc.keywordMatch,
+    atsScore: jdDoc.atsScore,
+    matchedSkills: jdDoc.matchedSkills,
+    missingSkills: jdDoc.missingSkills,
+    recommendations: jdDoc.recommendations,
+    jobDescription: jdDoc.jobDescription,
+    createdAt: jdDoc.createdAt,
+  };
+}
+
+export async function updateResume(userId, payload = {}) {
+  await ensureUserInitialized(userId);
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) {
+    resume = new ResumeModel({ userId });
+  }
+
+  if (payload.resumeText !== undefined) resume.resumeText = payload.resumeText;
+  if (payload.suggestions !== undefined) resume.suggestions = payload.suggestions;
+  if (payload.missingSkills !== undefined) resume.missingSkills = payload.missingSkills;
+  if (payload.score !== undefined) resume.score = payload.score;
+  if (payload.versions !== undefined) resume.versions = payload.versions;
+
+  await resume.save();
+  return {
+    suggestions: resume.suggestions || [],
+    missingSkills: resume.missingSkills || [],
+    resumeText: resume.resumeText || '',
+    score: resume.score || '85 / 100',
+    versions: resume.versions || [],
+  };
 }
 
 // Profile

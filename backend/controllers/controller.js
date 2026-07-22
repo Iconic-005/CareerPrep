@@ -1,4 +1,5 @@
 import * as mongoStore from '../data/mongoStore.js';
+import { generateChatReplyStream, generateFollowUpSuggestions } from '../services/aiService.js';
 import { generateToken } from '../middleware/authMiddleware.js';
 
 export async function getDashboardData(userId) {
@@ -21,6 +22,10 @@ export async function getResumeData(userId) {
   return mongoStore.getResume(userId);
 }
 
+export async function updateResumeData(userId, payload = {}) {
+  return mongoStore.updateResume(userId, payload);
+}
+
 export async function optimizeResumeData(userId, payload = {}) {
   const { resumeText, targetRole } = payload;
   return mongoStore.optimizeResume(userId, resumeText, targetRole);
@@ -32,6 +37,10 @@ export async function analyzeJobDescriptionData(userId, payload = {}) {
     throw new Error('Job description text is required for analysis');
   }
   return mongoStore.analyzeJD(userId, jobDescription);
+}
+
+export async function getLatestJDAnalysisData(userId) {
+  return mongoStore.getLatestJDAnalysis(userId);
 }
 
 export async function getCoachData(userId) {
@@ -53,6 +62,10 @@ export async function getNotificationsData(userId) {
 
 export async function deleteNotificationData(userId, id) {
   return mongoStore.deleteNotification(userId, id);
+}
+
+export async function clearAllNotificationsData(userId) {
+  return mongoStore.clearAllNotifications(userId);
 }
 
 export async function getProfileData(userId) {
@@ -106,6 +119,56 @@ export async function evaluateInterviewSessionData(userId, payload = {}) {
 
 export async function clearCoachHistoryData(userId) {
   return mongoStore.clearChatHistory(userId);
+}
+
+export async function handleChatStreamRequest(userId, payload, res) {
+  const { message } = payload;
+  if (!message || !message.trim()) {
+    throw new Error('Message is required');
+  }
+
+  // Get chat history
+  const history = await mongoStore.getChatHistory(userId);
+
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  let fullReply = '';
+
+  try {
+    const stream = await generateChatReplyStream(history, message);
+
+    for await (const chunk of stream) {
+      const text = chunk.text();
+      if (text) {
+        fullReply += text;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
+      }
+    }
+
+    // Save messages to DB after streaming completes
+    await mongoStore.saveChatMessages(userId, message, fullReply);
+
+    // Generate and send follow-up suggestions
+    try {
+      const suggestions = await generateFollowUpSuggestions(history, fullReply);
+      res.write(`data: ${JSON.stringify({ type: 'suggestions', suggestions })}\n\n`);
+    } catch (e) {
+      // Non-critical — silently skip suggestions
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.end();
+  } catch (err) {
+    console.error('Stream error:', err.message);
+    res.write(`data: ${JSON.stringify({ type: 'error', message: 'Unable to reach AI Coach. Please try again.' })}\n\n`);
+    res.end();
+  }
 }
 
 export async function getAdminData() {

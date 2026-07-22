@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   addGoalData,
   analyzeJobDescriptionData,
+  clearAllNotificationsData,
   clearCoachHistoryData,
   deleteGoalData,
   deleteNotificationData,
@@ -13,6 +14,7 @@ import {
   getCurrentUser,
   getDashboardData,
   getInterviewReportData,
+  getLatestJDAnalysisData,
   getNotificationsData,
   getPracticeData,
   getProfileData,
@@ -20,6 +22,7 @@ import {
   getRoadmapData,
   getSettingsData,
   handleChatRequest,
+  handleChatStreamRequest,
   optimizeResumeData,
   startInterviewSession,
   submitAuthRequest,
@@ -27,6 +30,7 @@ import {
   updateGoalData,
   updateMilestoneData,
   updateProfileData,
+  updateResumeData,
   updateSettingsData,
 } from '../controllers/controller.js';
 
@@ -114,6 +118,15 @@ router.get('/resume', async (req, res) => {
   res.json(await getResumeData(req.user.id));
 });
 
+router.put('/resume', async (req, res) => {
+  try {
+    const result = await updateResumeData(req.user.id, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.post('/resume/optimize', async (req, res) => {
   try {
     const result = await optimizeResumeData(req.user.id, req.body);
@@ -124,6 +137,15 @@ router.post('/resume/optimize', async (req, res) => {
 });
 
 // JD Analyzer
+router.get('/jd-analyzer', async (req, res) => {
+  try {
+    const result = await getLatestJDAnalysisData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.post('/jd-analyzer', async (req, res) => {
   try {
     const result = await analyzeJobDescriptionData(req.user.id, req.body);
@@ -144,6 +166,20 @@ router.post('/chat', async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/chat/stream', async (req, res) => {
+  try {
+    await handleChatStreamRequest(req.user.id, req.body, res);
+  } catch (error) {
+    // If headers haven't been sent yet, send error as JSON
+    if (!res.headersSent) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -220,6 +256,15 @@ router.post('/interview/evaluate', async (req, res) => {
 // Notifications
 router.get('/notifications', async (req, res) => {
   res.json(await getNotificationsData(req.user.id));
+});
+
+router.delete('/notifications', async (req, res) => {
+  try {
+    const result = await clearAllNotificationsData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.delete('/notifications/:id', async (req, res) => {
