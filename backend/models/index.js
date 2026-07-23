@@ -267,14 +267,28 @@ const mockInterviewSchema = new mongoose.Schema(
 const roadmapSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, unique: true, index: true },
+    targetRole: { type: String, default: '' },
+    targetCompany: { type: String, default: '' },
     bannerTitle: { type: String, default: 'Target Transition' },
     bannerSubtitle: { type: String, default: 'Not Set' },
     bannerMeta: { type: String, default: 'No roadmap generated yet. Generate a roadmap to map your transition.' },
+    estimatedDuration: { type: String, default: '' },
+    generatedAt: { type: Date, default: null },
     milestones: [
       { id: String, title: String, desc: String, time: String, tone: String, done: Boolean }
     ],
     focusAreas: [
       { id: String, title: String, text: String }
+    ],
+    timeline: [
+      { id: String, phase: String, title: String, description: String, weeks: String }
+    ],
+    resources: [
+      { id: String, category: String, title: String, url: String, resourceType: String }
+    ],
+    skillPriority: [{ type: String }],
+    interviewStrategy: [
+      { id: String, title: String, description: String }
     ],
   },
   { timestamps: true }

@@ -57,6 +57,7 @@ export function usePractice() {
     }
   });
   const [submissionHistory, setSubmissionHistory] = useState([]);
+  const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
 
   // ----------------------------------------------------
   // APTITUDE PRACTICE STATE
@@ -448,6 +449,13 @@ export function usePractice() {
     fetchCodingQuestions();
   };
 
+  const handleCopySolutionToEditor = (solCode) => {
+    if (!solCode) return;
+    setCode(solCode);
+    setIsSolutionModalOpen(false);
+    showToast('Copied full solution to code editor!');
+  };
+
   return {
     selectedCareerTrack,
     setSelectedCareerTrack: handleSelectCareerTrack,
@@ -489,6 +497,9 @@ export function usePractice() {
     lastAutoSave,
     bookmarks,
     submissionHistory,
+    isSolutionModalOpen,
+    setIsSolutionModalOpen,
+    handleCopySolutionToEditor,
     handleNextCodingQuestion,
     handlePrevCodingQuestion,
     handleRandomCodingQuestion,

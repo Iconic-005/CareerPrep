@@ -908,8 +908,11 @@ export async function getRoadmap(userId) {
 export async function generateRoadmap(userId, targetRole, targetCompany) {
   await ensureUserInitialized(userId);
   const profile = await ProfileModel.findOne({ userId });
-  const role = targetRole || profile?.title || 'Target Role';
+  const role = targetRole || profile?.title || 'Software Engineer';
   const company = targetCompany || 'Top Tech Companies';
+
+  if (!role.trim()) throw new Error('Target role is required.');
+  if (!company.trim()) throw new Error('Target company is required.');
 
   try {
     const roadmapData = await aiGenerateRoadmap(role, company);
@@ -919,9 +922,14 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
       roadmap = new RoadmapModel({ userId });
     }
 
+    roadmap.targetRole = role;
+    roadmap.targetCompany = company;
     roadmap.bannerTitle = roadmapData.bannerTitle || 'Target Transition';
     roadmap.bannerSubtitle = roadmapData.bannerSubtitle || `${role} @ ${company}`;
-    roadmap.bannerMeta = roadmapData.bannerMeta || 'Projected 8-week readiness roadmap.';
+    roadmap.bannerMeta = roadmapData.bannerMeta || 'Projected 4-5 month readiness roadmap.';
+    roadmap.estimatedDuration = roadmapData.estimatedDuration || '4-5 months';
+    roadmap.generatedAt = new Date();
+
     roadmap.milestones = (roadmapData.milestones || []).map((m, i) => ({
       id: `m_${Date.now()}_${i}`,
       title: m.title,
@@ -930,10 +938,35 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
       tone: m.tone || 'slate',
       done: Boolean(m.done),
     }));
+
     roadmap.focusAreas = (roadmapData.focusAreas || []).map((f, i) => ({
       id: `f_${Date.now()}_${i}`,
       title: f.title,
       text: f.text,
+    }));
+
+    roadmap.timeline = (roadmapData.timeline || []).map((t, i) => ({
+      id: `t_${Date.now()}_${i}`,
+      phase: t.phase,
+      title: t.title,
+      description: t.description,
+      weeks: t.weeks || '',
+    }));
+
+    roadmap.resources = (roadmapData.resources || []).map((r, i) => ({
+      id: `r_${Date.now()}_${i}`,
+      category: r.category,
+      title: r.title,
+      url: r.url || 'N/A',
+      resourceType: r.type || r.resourceType || 'free',
+    }));
+
+    roadmap.skillPriority = roadmapData.skillPriority || [];
+
+    roadmap.interviewStrategy = (roadmapData.interviewStrategy || []).map((s, i) => ({
+      id: `s_${Date.now()}_${i}`,
+      title: s.title,
+      description: s.description,
     }));
 
     await roadmap.save();
@@ -942,8 +975,8 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
 
     return roadmap;
   } catch (err) {
-    console.error('Gemini API Roadmap error:', err.message);
-    throw new Error('Unable to generate roadmap. Please try again.');
+    console.error('[ROADMAP] Generation error:', err.message);
+    throw new Error(err.message || 'Unable to generate roadmap. Please try again.');
   }
 }
 

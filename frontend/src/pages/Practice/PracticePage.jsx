@@ -48,6 +48,9 @@ export default function PracticePage() {
     lastAutoSave,
     bookmarks,
     submissionHistory,
+    isSolutionModalOpen,
+    setIsSolutionModalOpen,
+    handleCopySolutionToEditor,
     handleNextCodingQuestion,
     handlePrevCodingQuestion,
     handleRandomCodingQuestion,
@@ -232,6 +235,15 @@ export default function PracticePage() {
                     <div className="problem-header-right">
                       {/* BUTTON CONTROLS */}
                       <div className="nav-controls">
+                        <button
+                          type="button"
+                          className="nav-btn"
+                          onClick={() => setIsSolutionModalOpen(true)}
+                          style={{ background: '#1e293b', color: '#f59e0b', borderColor: '#f59e0b' }}
+                          title="View Solution"
+                        >
+                          💡 View Solution
+                        </button>
                         <button
                           type="button"
                           className="nav-btn"
@@ -750,6 +762,71 @@ export default function PracticePage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* SOLUTION MODAL OVERLAY */}
+        {isSolutionModalOpen && currentCodingQuestion && (
+          <div className="career-modal-backdrop" style={{ zIndex: 1100 }}>
+            <div className="career-modal-card" style={{ maxWidth: '680px', width: '90%', background: '#0d1117', color: '#f0f6fc', border: '1px solid #30363d', borderRadius: '16px', padding: '1.5rem' }}>
+              <div className="modal-header" style={{ borderBottom: '1px solid #30363d', paddingBottom: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#58a6ff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>💡 Optimal Solution</span>
+                    <span style={{ fontSize: '0.8rem', background: '#21262d', padding: '2px 8px', borderRadius: '12px', color: '#8b949e' }}>
+                      {language}
+                    </span>
+                  </h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#8b949e' }}>
+                    {currentCodingQuestion.title}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSolutionModalOpen(false)}
+                  style={{ background: 'transparent', border: 'none', color: '#8b949e', fontSize: '1.4rem', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div style={{ marginBottom: '12px', background: '#161b22', padding: '10px 14px', borderRadius: '8px', borderLeft: '3px solid #388bfd' }}>
+                  <strong style={{ color: '#79c0ff', fontSize: '0.85rem' }}>APPROACH & COMPLEXITY:</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#c9d1d9' }}>
+                    {currentCodingQuestion.solution || 'Optimal O(N) solution using efficient algorithm design.'}
+                  </p>
+                </div>
+
+                <div style={{ background: '#161b22', borderRadius: '8px', padding: '12px', border: '1px solid #30363d', maxHeight: '320px', overflowY: 'auto' }}>
+                  <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.88rem', color: '#79c0ff', whiteSpace: 'pre-wrap' }}>
+                    {currentCodingQuestion.solutionCode?.[language] ||
+                      currentCodingQuestion.solutionCode?.['Python'] ||
+                      currentCodingQuestion.starterCode?.[language] ||
+                      '// Solution available for Python & JavaScript.'}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: '16px', display: 'flex', gap: '12px', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid #30363d' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSolutionModalOpen(false)}
+                  style={{ background: '#21262d', color: '#c9d1d9', border: '1px solid #30363d', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCopySolutionToEditor(
+                    currentCodingQuestion.solutionCode?.[language] || currentCodingQuestion.solutionCode?.['Python']
+                  )}
+                  style={{ background: '#238636', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  📋 Copy Solution to Editor
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
