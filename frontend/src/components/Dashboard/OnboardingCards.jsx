@@ -31,7 +31,7 @@ export function OnboardingCardsGrid() {
         </button>
       </div>
 
-      <div className="db-onboarding-card" onClick={() => navigate('/interview-report')}>
+      <div className="db-onboarding-card" onClick={() => navigate('/mock-interviews')}>
         <div className="db-onboarding-card-icon icon--violet">
           <Icon name="mic" />
         </div>
@@ -89,7 +89,7 @@ export function EmptyUpcomingInterview() {
         <button
           type="button"
           className="btn-prepare-now"
-          onClick={() => navigate('/interview-report')}
+          onClick={() => navigate('/mock-interviews')}
         >
           Launch Mock Session
         </button>

@@ -1,7 +1,11 @@
 import { API_BASE_URL, getAuthHeaders } from './api.js';
 
-export async function getInterviewReport() {
-  const res = await fetch(`${API_BASE_URL}/interview-report`, { headers: getAuthHeaders() });
+export async function getInterviewReport(interviewId) {
+  if (!interviewId) return null;
+  const res = await fetch(`${API_BASE_URL}/interview-report?interviewId=${encodeURIComponent(interviewId)}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) return null;
   return res.json();
 }
 

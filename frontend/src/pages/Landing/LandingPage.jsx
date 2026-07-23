@@ -55,7 +55,7 @@ export default function LandingPage() {
             <RouteLink path="/resume" className="hero-btn-primary">
               Build Resume <Icon name="arrowRight" />
             </RouteLink>
-            <RouteLink path="/interview-report" className="hero-btn-secondary">
+            <RouteLink path="/mock-interviews" className="hero-btn-secondary">
               Mock Interview
             </RouteLink>
           </div>

@@ -34,6 +34,7 @@ const routes = {
   '/coach':             CoachPage,
   '/roadmap':           RoadmapPage,
   '/practice':          PracticePage,
+  '/mock-interviews':   InterviewReportPage,
   '/interview-report':  InterviewReportPage,
   '/notifications':     NotificationsPage,
   '/profile':           ProfilePage,

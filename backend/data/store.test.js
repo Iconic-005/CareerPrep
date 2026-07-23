@@ -77,3 +77,42 @@ test('activity log filtering and pagination', async () => {
   assert.ok(Array.isArray(activityData.activities));
   assert.ok(activityData.categories.includes('Resume Builder'));
 });
+
+test('getInterviewReport returns null when interviewId is missing, invalid, or uncompleted', async () => {
+  const store = createStore();
+  const testEmail = `rep_${Date.now()}@example.com`;
+  const user = await store.registerUser({ name: 'Report User', email: testEmail, password: 'password123' });
+
+  // Missing interviewId
+  const noIdReport = await store.getInterviewReport(user.id);
+  assert.equal(noIdReport, null);
+
+  // Invalid interviewId
+  const invalidIdReport = await store.getInterviewReport(user.id, '507f1f77bcf86cd799439011');
+  assert.equal(invalidIdReport, null);
+});
+
+test('evaluateMockInterview successfully generates evaluation report and saves completed interview', async () => {
+  const store = createStore();
+  const testEmail = `eval_${Date.now()}@example.com`;
+  const user = await store.registerUser({ name: 'Eval User', email: testEmail, password: 'password123' });
+
+  const result = await store.evaluateMockInterview(user.id, {
+    role: 'Product Manager',
+    company: 'Google',
+    difficulty: 'Mid-Level',
+    qnaList: [{ question: 'Sample Q', answer: 'Sample A' }],
+  });
+
+  assert.ok(result.id);
+  assert.equal(result.status, 'completed');
+  assert.ok(typeof result.score === 'number');
+
+  // Verify it can be retrieved via getInterviewReport
+  const fetchedReport = await store.getInterviewReport(user.id, result.id);
+  assert.ok(fetchedReport);
+  assert.equal(fetchedReport.id, result.id);
+  assert.equal(fetchedReport.status, 'completed');
+});
+
+

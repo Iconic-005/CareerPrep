@@ -80,8 +80,11 @@ export function createStore() {
     async submitPractice(userId, payload) {
       return mongoStore.submitPractice(userId, payload);
     },
-    async getInterviewReport(userId) {
-      return mongoStore.getInterviewReport(userId);
+    async getInterviewReport(userId, interviewId) {
+      return mongoStore.getInterviewReport(userId, interviewId);
+    },
+    async evaluateMockInterview(userId, payload) {
+      return mongoStore.evaluateMockInterview(userId, payload);
     },
     async getProfile(userId) {
       return mongoStore.getProfile(userId);

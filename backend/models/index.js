@@ -259,6 +259,8 @@ const mockInterviewSchema = new mongoose.Schema(
       { id: String, title: String, text: String, icon: String }
     ],
     interviewDate: { type: Date, default: Date.now },
+    hintsUsedCount: { type: Number, default: 0 },
+    scoreDeduction: { type: Number, default: 0 },
     status: { type: String, default: 'Upcoming' },
   },
   { timestamps: true }

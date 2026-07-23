@@ -31,8 +31,26 @@ export function useRoadmap(user) {
   }, []);
 
   useEffect(() => {
-    if (user?.title) setTargetRole(user.title);
-    loadRoadmap();
+    const params = new URLSearchParams(window.location.search);
+    const paramRole = params.get('role');
+    const paramCompany = params.get('company');
+
+    if (paramRole && paramCompany) {
+      setTargetRole(paramRole);
+      setTargetCompany(paramCompany);
+      setIsLoading(true);
+      generateRoadmap(paramRole.trim(), paramCompany.trim())
+        .then((data) => {
+          setRoadmapData(data);
+          setSuccessMessage(`Tailored practice roadmap loaded for ${paramRole} @ ${paramCompany}!`);
+          clearMessages();
+        })
+        .catch(() => loadRoadmap())
+        .finally(() => setIsLoading(false));
+    } else {
+      if (user?.title) setTargetRole(user.title);
+      loadRoadmap();
+    }
   }, [user, loadRoadmap]);
 
   const handleAiGenerate = async () => {

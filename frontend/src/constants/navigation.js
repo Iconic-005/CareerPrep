@@ -1,7 +1,7 @@
 export const appNav = [
   { label: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
   { label: 'Resume Builder', path: '/resume', icon: 'document' },
-  { label: 'Mock Interviews', path: '/interview-report', icon: 'mic' },
+  { label: 'Mock Interviews', path: '/mock-interviews', icon: 'mic' },
   { label: 'JD Analyzer', path: '/jd-analyzer', icon: 'analytics' },
   { label: 'Roadmap', path: '/roadmap', icon: 'roadmap' },
   { label: 'Practice', path: '/practice', icon: 'code' },
@@ -11,7 +11,7 @@ export const appNav = [
 export const marketingLinks = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Resume', path: '/resume' },
-  { label: 'Interviews', path: '/interview-report' },
+  { label: 'Interviews', path: '/mock-interviews' },
   { label: 'Roadmap', path: '/roadmap' },
 ];
 

@@ -245,8 +245,8 @@ export async function getAptitudeQuestionsData(query) {
 }
 
 
-export async function getInterviewReportData(userId) {
-  return mongoStore.getInterviewReport(userId);
+export async function getInterviewReportData(userId, interviewId) {
+  return mongoStore.getInterviewReport(userId, interviewId);
 }
 
 export async function startInterviewSession(userId, payload = {}) {

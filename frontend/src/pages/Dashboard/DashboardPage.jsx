@@ -172,7 +172,7 @@ export default function DashboardPage() {
 
                   <div
                     className="db-stat-card-box"
-                    onClick={() => navigate('/interview-report')}
+                    onClick={() => navigate('/mock-interviews')}
                   >
                     <span className="db-stat-sublabel">Interview Rank</span>
                     <div style={{ display: 'flex', alignItems: 'baseline' }}>
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         className="btn-prepare-now"
-                        onClick={() => navigate('/interview-report')}
+                        onClick={() => navigate('/mock-interviews')}
                       >
                         Prepare Now
                       </button>

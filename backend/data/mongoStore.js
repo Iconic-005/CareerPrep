@@ -1375,7 +1375,7 @@ export async function startMockInterview(userId, { role, company, difficulty, ca
   }
 }
 
-export async function evaluateMockInterview(userId, { role, company, difficulty, qnaList } = {}) {
+export async function evaluateMockInterview(userId, { role, company, difficulty, qnaList, hintsUsedCount = 0 } = {}) {
   await ensureUserInitialized(userId);
   const profile = await ProfileModel.findOne({ userId });
   const targetRole = role || profile?.title || 'Software Engineer';
@@ -1383,7 +1383,7 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
   const level = difficulty || 'Mid-Level';
 
   try {
-    const evaluation = await evaluateInterviewSession(targetRole, targetCompany, level, qnaList);
+    const evaluation = await evaluateInterviewSession(targetRole, targetCompany, level, qnaList, hintsUsedCount);
 
     const interviewDoc = await MockInterviewModel.create({
       userId,
@@ -1392,12 +1392,15 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
       difficulty: level,
       score: evaluation.score || 8.5,
       maxScore: 10,
+      hintsUsedCount: evaluation.hintsUsedCount || hintsUsedCount || 0,
+      scoreDeduction: evaluation.scoreDeduction || (hintsUsedCount * 0.5) || 0,
       headline: evaluation.headline || 'Strong Performance',
       percentileText: evaluation.percentileText || 'Top candidate range',
       skillsRadar: evaluation.skillsRadar || { Technical: 85, Communication: 80, Grammar: 85, Behavioral: 85, Confidence: 85 },
-      strengths: (evaluation.strengths || []).map((s, i) => ({ id: `str_${Date.now()}_${i}`, title: s.title, desc: s.desc })),
-      improvements: (evaluation.improvements || []).map((imp, i) => ({ id: `imp_${Date.now()}_${i}`, title: imp.title, desc: imp.desc })),
-      nextSteps: (evaluation.nextSteps || []).map((n, i) => ({ id: `q_${Date.now()}_${i}`, title: n.title, text: n.text, icon: 'chat' })),
+      strengths: (evaluation.strengths || []).map((s, i) => ({ id: `str_${Date.now()}_${i}`, title: s.title || s.name || 'Strength', desc: s.desc || s.description || '' })),
+      improvements: (evaluation.improvements || []).map((imp, i) => ({ id: `imp_${Date.now()}_${i}`, title: imp.title || imp.name || 'Improvement', desc: imp.desc || imp.description || '' })),
+      nextSteps: (evaluation.nextSteps || []).map((n, i) => ({ id: `q_${Date.now()}_${i}`, title: n.title || 'Next Step', text: n.text || n.desc || n.description || '', icon: 'chat' })),
+      status: 'completed',
     });
 
     const analytics = await AnalyticsModel.findOne({ userId });
@@ -1409,9 +1412,19 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
     await logActivity(userId, 'Completed AI Mock Interview', `Session: ${targetRole} @ ${targetCompany} (+75 XP)`, 'mint');
     await computeCalculatedMetrics(userId);
 
+    // Auto-generate tailored practice roadmap for target role & company
+    try {
+      await generateRoadmap(userId, targetRole, targetCompany);
+    } catch (rErr) {
+      console.warn('[mongoStore] Auto roadmap generation note:', rErr.message);
+    }
+
     return {
+      id: interviewDoc._id.toString(),
       score: interviewDoc.score,
       maxScore: interviewDoc.maxScore,
+      hintsUsedCount: interviewDoc.hintsUsedCount,
+      scoreDeduction: interviewDoc.scoreDeduction,
       headline: interviewDoc.headline,
       percentileText: interviewDoc.percentileText,
       targetCompany: interviewDoc.targetCompany,
@@ -1421,6 +1434,7 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
       strengths: interviewDoc.strengths,
       improvements: interviewDoc.improvements,
       nextSteps: interviewDoc.nextSteps,
+      status: interviewDoc.status,
     };
   } catch (err) {
     console.error('Gemini evaluation interview error:', err.message);
@@ -1465,24 +1479,42 @@ export async function saveChatMessages(userId, userMessage, assistantReply) {
   await computeCalculatedMetrics(userId);
 }
 
-export async function getInterviewReport(userId) {
+export async function getInterviewReport(userId, interviewId) {
   await ensureUserInitialized(userId);
-  const interview = await MockInterviewModel.findOne({ userId }).sort({ createdAt: -1 });
 
-  if (interview) {
-    return {
-      score: interview.score,
-      maxScore: interview.maxScore,
-      headline: interview.headline,
-      percentileText: interview.percentileText,
-      targetCompany: interview.targetCompany,
-      role: interview.role,
-      difficulty: interview.difficulty,
-      skillsRadar: interview.skillsRadar,
-      strengths: interview.strengths,
-      improvements: interview.improvements,
-      nextSteps: interview.nextSteps,
-    };
+  if (!interviewId) {
+    return null;
+  }
+
+  try {
+    const interview = await MockInterviewModel.findOne({
+      _id: interviewId,
+      userId,
+      status: 'completed',
+    });
+
+    if (interview) {
+      return {
+        id: interview._id.toString(),
+        userId: interview.userId,
+        status: interview.status,
+        score: interview.score,
+        maxScore: interview.maxScore,
+        headline: interview.headline,
+        percentileText: interview.percentileText,
+        targetCompany: interview.targetCompany,
+        role: interview.role,
+        difficulty: interview.difficulty,
+        hintsUsedCount: interview.hintsUsedCount || 0,
+        scoreDeduction: interview.scoreDeduction || 0,
+        skillsRadar: interview.skillsRadar,
+        strengths: interview.strengths,
+        improvements: interview.improvements,
+        nextSteps: interview.nextSteps,
+      };
+    }
+  } catch (err) {
+    return null;
   }
 
   return null;

@@ -804,38 +804,77 @@ function generateFallbackRoadmap(targetRole, targetCompany) {
  * Generates dynamic mock interview questions based on role, company, difficulty & category.
  */
 export async function generateMockInterviewQuestions(role, company, difficulty, category) {
-  console.log('[DEBUG] Generating mock interview questions for:', role, company, category);
+  console.log('[DEBUG] Generating 10 mock interview questions for:', role, company, category);
+
+  const fallbackQuestions = [
+    {
+      id: "q1",
+      question: `Describe how you would design a scalable solution for ${role || 'Engineering'} challenges at ${company || 'your target company'}.`,
+      category: category || "System Design",
+      hint: "Discuss trade-offs, scalability bottlenecks, and data storage choices."
+    },
+    {
+      id: "q2",
+      question: "Tell me about a time you had a disagreement with a team member or technical lead. How did you resolve it?",
+      category: "Behavioral",
+      hint: "Use the STAR method (Situation, Task, Action, Result) focusing on constructive collaboration."
+    },
+    {
+      id: "q3",
+      question: "How do you optimize an application that is suffering from high latency and slow database queries?",
+      category: "Technical",
+      hint: "Mention indexing, caching (Redis), query optimization, and profiling."
+    },
+    {
+      id: "q4",
+      question: "What strategies do you use to ensure software quality and high test coverage under tight deadlines?",
+      category: "Process",
+      hint: "Discuss CI/CD integration, automated unit testing, and code reviews."
+    },
+    {
+      id: "q5",
+      question: "How do you handle conflicting product priorities or vague requirements from business stakeholders?",
+      category: "Leadership",
+      hint: "Explain data-driven prioritization frameworks (e.g. RICE, MoSCoW) and stakeholder alignment."
+    },
+    {
+      id: "q6",
+      question: "Describe your approach to handling a critical production incident or security vulnerability under pressure.",
+      category: "Problem Solving",
+      hint: "Outline incident response protocols, root cause analysis (RCA), and post-mortem mitigation."
+    },
+    {
+      id: "q7",
+      question: "How do you evaluate and manage technical debt when building new features rapidly?",
+      category: "Architecture",
+      hint: "Discuss code refactoring sprints, architectural trade-offs, and maintainability metrics."
+    },
+    {
+      id: "q8",
+      question: "Give an example of how you used data analytics or telemetry metrics to drive a key technical decision.",
+      category: "Analytics & Strategy",
+      hint: "Mention A/B testing, key performance indicators (KPIs), or observability logging."
+    },
+    {
+      id: "q9",
+      question: "How do you ensure data privacy, security, and compliance when building customer-facing systems?",
+      category: "Security",
+      hint: "Touch upon encryption at rest/in transit, role-based access control (RBAC), and GDPR/SOC2 compliance."
+    },
+    {
+      id: "q10",
+      question: "How do you mentor junior engineers and foster a high-performing engineering culture in your team?",
+      category: "Culture & Mentorship",
+      hint: "Discuss pair programming, code reviews, knowledge sharing, and constructive feedback loops."
+    }
+  ];
 
   if (!genAI) {
-    return [
-      {
-        id: "q1",
-        question: `Describe how you would design a scalable solution for ${role || 'Engineering'} challenges at ${company || 'your target company'}.`,
-        category: category || "System Design",
-        hint: "Discuss trade-offs, scalability bottlenecks, and data storage choices."
-      },
-      {
-        id: "q2",
-        question: "Tell me about a time you had a disagreement with a team member or technical lead. How did you resolve it?",
-        category: "Behavioral",
-        hint: "Use the STAR method (Situation, Task, Action, Result) focusing on constructive collaboration."
-      },
-      {
-        id: "q3",
-        question: "How do you optimize an application that is suffering from high latency and slow database queries?",
-        category: "Technical",
-        hint: "Mention indexing, caching (Redis), query optimization, and profiling."
-      },
-      {
-        id: "q4",
-        question: "What strategies do you use to ensure software quality and high test coverage under tight deadlines?",
-        category: "Process",
-        hint: "Discuss CI/CD integration, automated unit testing, and code reviews."
-      }
-    ];
+    return fallbackQuestions;
   }
 
-  const prompt = `Generate 4 realistic interview questions for a candidate interviewing for the position of "${role}" at "${company}" (${difficulty} level, category: "${category}").
+  try {
+    const prompt = `Generate 10 realistic, challenging interview questions for a candidate interviewing for the position of "${role}" at "${company}" (${difficulty} level, category: "${category}").
 
 Provide a valid JSON response strictly matching this schema:
 {
@@ -849,62 +888,186 @@ Provide a valid JSON response strictly matching this schema:
   ]
 }`;
 
-  const model = getModel('You are a Principal Hiring Manager conducting interviews.');
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: 'application/json' },
+    const model = getModel('You are a Principal Hiring Manager conducting interviews.');
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    let rawText = result.response.text() || '';
+    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const data = JSON.parse(rawText);
+    return data.questions && data.questions.length >= 5 ? data.questions : fallbackQuestions;
+  } catch (err) {
+    console.error('Gemini generate questions error, using 10 fallback questions:', err.message);
+    return fallbackQuestions;
+  }
+}
+
+/**
+ * Computes dynamic, response-driven interview evaluation based on real candidate transcript data.
+ */
+function computeDynamicInterviewEvaluation(role, company, difficulty, qnaList = [], hintsUsedCount = 0) {
+  const totalQuestions = Math.max(1, qnaList.length);
+  let totalWords = 0;
+  let starKeywordsCount = 0;
+  let techKeywordsCount = 0;
+  let metricsKeywordsCount = 0;
+  let emptyAnswersCount = 0;
+
+  const starRegex = /\b(situation|task|action|result|impact|outcome|star|led|resolved|collaborated|managed|delivered|achieved)\b/i;
+  const techRegex = /\b(architecture|scalable|database|latency|cache|redis|api|microservices|system|code|test|design|index|optimization|security|cloud|pipeline|ci\/cd|deployment)\b/i;
+  const metricRegex = /\b(\d+%\b|\d+x\b|\d+ms\b|\$\d+|\bpercent\b|\bmetrics?\b|\bthroughput\b|\bconversion\b|\bgrowth\b)/i;
+
+  qnaList.forEach((item) => {
+    const ans = (item.answer || '').trim();
+    const wordCount = ans ? ans.split(/\s+/).filter(Boolean).length : 0;
+    totalWords += wordCount;
+
+    if (wordCount < 6 || ans.toLowerCase().includes('no answer') || ans.toLowerCase().includes('idk') || ans.toLowerCase().includes('no idea')) {
+      emptyAnswersCount++;
+    }
+
+    if (starRegex.test(ans)) starKeywordsCount++;
+    if (techRegex.test(ans)) techKeywordsCount++;
+    if (metricRegex.test(ans)) metricsKeywordsCount++;
   });
 
-  const data = JSON.parse(result.response.text());
-  return data.questions || [];
+  const avgWords = Math.round(totalWords / totalQuestions);
+
+  // Competency scoring algorithms (0-100) based on actual transcript quality
+  let technicalScore = Math.min(95, Math.max(30, Math.round(avgWords * 1.2 + techKeywordsCount * 8 + (totalQuestions - emptyAnswersCount) * 4)));
+  let communicationScore = Math.min(95, Math.max(30, Math.round(avgWords * 1.1 + (starKeywordsCount > 0 ? 15 : 0) + (totalQuestions - emptyAnswersCount) * 5)));
+  let grammarScore = Math.min(96, Math.max(40, Math.round(75 + (avgWords > 15 ? 15 : -20) - emptyAnswersCount * 8)));
+  let behavioralScore = Math.min(95, Math.max(30, Math.round(35 + starKeywordsCount * 14 + (avgWords > 25 ? 15 : 0))));
+  let confidenceScore = Math.min(95, Math.max(25, Math.round(((totalQuestions - emptyAnswersCount) / totalQuestions) * 70 + (avgWords > 20 ? 20 : 5))));
+
+  // Overall Score (out of 10)
+  const avgCompetency = (technicalScore + communicationScore + grammarScore + behavioralScore + confidenceScore) / 5;
+  const rawScore = Math.round((avgCompetency / 10) * 10) / 10;
+  const deduction = (hintsUsedCount || 0) * 0.5;
+  const finalScore = Math.max(1, Math.min(10, Math.round((rawScore - deduction) * 10) / 10));
+
+  // Dynamic Headline & Percentile based on real performance
+  let headline = "";
+  let percentileText = "";
+  if (finalScore >= 8.5) {
+    headline = "Exceptional Executive Delivery & Strong Technical Depth";
+    percentileText = `Top 5% candidate benchmark for ${role} @ ${company}`;
+  } else if (finalScore >= 7.0) {
+    headline = "Solid Functional Performance with Room for Metric Precision";
+    percentileText = `Top 25% candidate benchmark for ${role} roles`;
+  } else if (finalScore >= 5.0) {
+    headline = "Moderate Competency - Needs Deeper Technical & STAR Structure";
+    percentileText = `Mid-tier candidate benchmark (Top 55%)`;
+  } else {
+    headline = "Requires Significant Practice & Structured Response Preparation";
+    percentileText = `Needs fundamental preparation for ${role} interviews`;
+  }
+
+  // Dynamic Strengths based on actual performance
+  const strengths = [];
+  if (technicalScore >= 60) {
+    strengths.push({
+      title: "Technical Vocabulary & Problem Solving Awareness",
+      desc: `Demonstrated core technical concepts across ${techKeywordsCount} domains with clear problem-solving intent.`
+    });
+  }
+  if (behavioralScore >= 55 || starKeywordsCount > 0) {
+    strengths.push({
+      title: "Structured STAR Storytelling Application",
+      desc: `Applied Situation, Task, Action, and Result structure in behavioral and situational responses.`
+    });
+  }
+  if (confidenceScore >= 65 && emptyAnswersCount === 0) {
+    strengths.push({
+      title: "Full Session Persistence & Answer Coverage",
+      desc: `Completed all ${totalQuestions} interview questions thoroughly without skipping.`
+    });
+  }
+  if (strengths.length === 0) {
+    strengths.push({
+      title: "Mock Interview Initiation & Willingness to Baseline",
+      desc: `Successfully completed a full ${totalQuestions}-question mock interview session to evaluate readiness.`
+    });
+  }
+
+  // Dynamic Improvements based on actual transcript weaknesses
+  const improvements = [];
+  if (emptyAnswersCount > 0) {
+    improvements.push({
+      title: "Eliminate Brief or Skipped Responses",
+      desc: `${emptyAnswersCount} question(s) had very brief or incomplete answers. Practice expanding on key execution details.`
+    });
+  }
+  if (metricsKeywordsCount === 0) {
+    improvements.push({
+      title: "Incorporate Quantified Impact Metrics",
+      desc: `Add concrete numerical metrics (e.g., latency %, throughput gains, revenue impact) to substantiate your claims.`
+    });
+  }
+  if (avgWords < 35) {
+    improvements.push({
+      title: "Increase Response Length & Structural Depth",
+      desc: `Average response length was ${avgWords} words. Aim for 60-120 words per answer to thoroughly address trade-offs.`
+    });
+  }
+  if (improvements.length === 0) {
+    improvements.push({
+      title: "Refine Senior Executive Presence & Edge Case Resilience",
+      desc: `Sharpen failure-mode analysis and senior cross-functional stakeholder alignment.`
+    });
+  }
+
+  // Dynamic Next Steps based on evaluation
+  const nextSteps = [
+    {
+      title: `${role} System Design & Architecture Drills`,
+      text: `Practice distributed system trade-offs, caching, and microservices decoupling for ${company}.`
+    },
+    {
+      title: "STAR Framework Story Bank Builder",
+      text: "Draft 5 reusable STAR stories with quantified metrics (e.g. latency -35%, throughput +2x) for behavioral rounds."
+    }
+  ];
+
+  return {
+    score: finalScore,
+    maxScore: 10,
+    hintsUsedCount,
+    scoreDeduction: deduction,
+    headline,
+    percentileText,
+    skillsRadar: {
+      Technical: technicalScore,
+      Communication: communicationScore,
+      Grammar: grammarScore,
+      Behavioral: behavioralScore,
+      Confidence: confidenceScore,
+    },
+    strengths,
+    improvements,
+    nextSteps,
+  };
 }
 
 /**
  * Evaluates candidate responses from a full mock interview session.
  */
-export async function evaluateInterviewSession(role, company, difficulty, qnaList = []) {
-  console.log('[DEBUG] Evaluating mock interview session for:', role, company);
+export async function evaluateInterviewSession(role, company, difficulty, qnaList = [], hintsUsedCount = 0) {
+  console.log('[DEBUG] Evaluating mock interview session for:', role, company, 'Transcript length:', qnaList.length, 'Hints used:', hintsUsedCount);
+
+  // Compute dynamic response-driven evaluation from real transcript answers
+  const dynamicEval = computeDynamicInterviewEvaluation(role, company, difficulty, qnaList, hintsUsedCount);
 
   if (!genAI) {
-    return {
-      score: 8.5,
-      maxScore: 10,
-      headline: "Strong Technical Performance with Solid Communication",
-      percentileText: "Top 12% candidate benchmark",
-      skillsRadar: {
-        Technical: 88,
-        Communication: 85,
-        Grammar: 90,
-        Behavioral: 82,
-        Confidence: 86
-      },
-      strengths: [
-        {
-          title: "Clear Problem-Solving Structure",
-          desc: "Demonstrated systematic thinking when addressing architecture and implementation trade-offs."
-        },
-        {
-          title: "Effective STAR Method Application",
-          desc: "Structured behavioral answers well with clear context, action steps, and outcomes."
-        }
-      ],
-      improvements: [
-        {
-          title: "Quantify Impact Metrics",
-          desc: "Add specific numerical metrics (e.g., latency percentages, throughput numbers) to reinforce results."
-        }
-      ],
-      nextSteps: [
-        {
-          title: "System Design Deep-Dive",
-          desc: "Practice distributed caching and database sharding patterns for senior technical rounds."
-        }
-      ]
-    };
+    return dynamicEval;
   }
 
-  const prompt = `Evaluate this completed mock interview session for a candidate applying for "${role}" at "${company}" (${difficulty} level).
+  try {
+    const prompt = `Evaluate this completed mock interview session for a candidate applying for "${role}" at "${company}" (${difficulty} level).
 Analyze the candidate's answers for technical accuracy, communication skills, STAR framework usage, and confidence.
+Note: Candidate requested ${hintsUsedCount} interviewer hint(s) during the session (each hint used incurs a 0.5 point deduction).
 
 Q&A Transcript:
 ${JSON.stringify(qnaList, null, 2)}
@@ -942,15 +1105,30 @@ Provide a valid JSON response strictly matching this schema:
   ]
 }`;
 
-  const model = getModel('You are a Senior Bar Raiser & Hiring Director evaluating interview performance.');
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: 'application/json' },
-  });
+    const model = getModel('You are a Senior Bar Raiser & Hiring Director evaluating interview performance.');
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: 'application/json' },
+    });
 
-  const data = JSON.parse(result.response.text());
-  console.log('[DEBUG] Gemini interview evaluation result:', data);
-  return data;
+    let rawText = result.response.text() || '';
+    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const data = JSON.parse(rawText);
+
+    // Apply exact hint deduction to raw evaluation score
+    if (data && typeof data.score === 'number') {
+      const deduction = (hintsUsedCount || 0) * 0.5;
+      data.score = Math.max(1, Math.min(10, Math.round((data.score - deduction) * 10) / 10));
+      data.hintsUsedCount = hintsUsedCount;
+      data.scoreDeduction = deduction;
+    }
+
+    console.log('[DEBUG] Gemini interview evaluation result:', data);
+    return data;
+  } catch (err) {
+    console.error('Gemini evaluation error, using response-driven dynamic evaluation:', err.message);
+    return dynamicEval;
+  }
 }
 
 /**

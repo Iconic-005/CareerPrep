@@ -166,7 +166,7 @@ async function seed() {
       nextSteps: [
         { id: 'q1', title: 'Practice Question 01', text: '"How do you handle scope creep?"', icon: 'chat' },
       ],
-      status: 'Upcoming',
+      status: 'completed',
       interviewDate: new Date(Date.now() + 86400000),
     });
 

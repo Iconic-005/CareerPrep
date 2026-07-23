@@ -476,7 +476,12 @@ router.post('/practice/submit', async (req, res) => {
 
 // Mock Interview Session & Report
 router.get('/interview-report', async (req, res) => {
-  res.json(await getInterviewReportData(req.user.id));
+  try {
+    const { interviewId } = req.query;
+    res.json(await getInterviewReportData(req.user.id, interviewId));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.post('/interview/start', async (req, res) => {
