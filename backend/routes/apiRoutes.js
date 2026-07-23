@@ -3,30 +3,47 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   addGoalData,
   analyzeJobDescriptionData,
+  buildResumeData,
   clearAllNotificationsData,
   clearCoachHistoryData,
   deleteGoalData,
   deleteNotificationData,
   evaluateInterviewSessionData,
   generateRoadmapData,
+  getActivityData,
   getAdminData,
   getCoachData,
+  getChatSessionsData,
+  createChatSessionData,
+  updateChatSessionData,
+  deleteChatSessionData,
   getCurrentUser,
   getDashboardData,
   getInterviewReportData,
   getLatestJDAnalysisData,
   getNotificationsData,
   getPracticeData,
+  submitPracticeData,
+  updateCareerTrackData,
+  getCodingQuestionsData,
+  getCodingTopicsData,
+  getCodingHistoryData,
+  getAptitudeQuestionsData,
+  getUserPracticeStatsData,
+  getRandomCodingQuestionData,
+  getRandomAptitudeQuestionData,
   getProfileData,
   getResumeData,
   getRoadmapData,
   getSettingsData,
   handleChatRequest,
   handleChatStreamRequest,
+  markAllNotificationsReadData,
+  markNotificationReadData,
   optimizeResumeData,
+  restoreResumeVersionData,
   startInterviewSession,
   submitAuthRequest,
-  submitPracticeData,
   updateGoalData,
   updateMilestoneData,
   updateProfileData,
@@ -131,9 +148,24 @@ router.delete('/goals/:id', async (req, res) => {
   }
 });
 
-// Resume & Optimizer
+// Resume & AI Builder
 router.get('/resume', async (req, res) => {
-  res.json(await getResumeData(req.user.id));
+  try {
+    res.json(await getResumeData(req.user.id));
+  } catch (error) {
+    console.error('[GET /resume error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/resume/build', async (req, res) => {
+  try {
+    const result = await buildResumeData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('[POST /resume/build error]:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.put('/resume', async (req, res) => {
@@ -141,6 +173,17 @@ router.put('/resume', async (req, res) => {
     const result = await updateResumeData(req.user.id, req.body);
     res.json(result);
   } catch (error) {
+    console.error('[PUT /resume error]:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/resume/restore-version', async (req, res) => {
+  try {
+    const result = await restoreResumeVersionData(req.user.id, req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('[POST /resume/restore-version error]:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -175,7 +218,44 @@ router.post('/jd-analyzer', async (req, res) => {
 
 // AI Coach & Chat
 router.get('/coach', async (req, res) => {
-  res.json(await getCoachData(req.user.id));
+  try {
+    const { sessionId } = req.query;
+    res.json(await getCoachData(req.user.id, sessionId));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/chat/sessions', async (req, res) => {
+  try {
+    res.json(await getChatSessionsData(req.user.id));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/chat/sessions', async (req, res) => {
+  try {
+    res.json(await createChatSessionData(req.user.id, req.body));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/chat/sessions/:id', async (req, res) => {
+  try {
+    res.json(await updateChatSessionData(req.user.id, req.params.id, req.body));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/chat/sessions/:id', async (req, res) => {
+  try {
+    res.json(await deleteChatSessionData(req.user.id, req.params.id));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.post('/chat', async (req, res) => {
@@ -191,7 +271,6 @@ router.post('/chat/stream', async (req, res) => {
   try {
     await handleChatStreamRequest(req.user.id, req.body, res);
   } catch (error) {
-    // If headers haven't been sent yet, send error as JSON
     if (!res.headersSent) {
       res.status(400).json({ error: error.message });
     } else {
@@ -204,6 +283,76 @@ router.post('/chat/stream', async (req, res) => {
 router.delete('/chat/clear', async (req, res) => {
   try {
     const result = await clearCoachHistoryData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// File Upload & Specialized Analysis
+router.post('/upload', async (req, res) => {
+  try {
+    const { name, type, size, base64, extractedText } = req.body;
+    if (!name || !type) throw new Error('File name and type are required.');
+    if (size && size > 20 * 1024 * 1024) throw new Error('File size exceeds maximum limit of 20MB.');
+
+    const fileObj = {
+      id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name,
+      type,
+      size: size || 0,
+      mimeType: type,
+      base64: base64 || null,
+      extractedText: extractedText || '',
+      uploadedAt: new Date(),
+    };
+
+    res.json({ success: true, file: fileObj });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/resume-review', async (req, res) => {
+  try {
+    const { resumeText, targetRole } = req.body;
+    const prompt = `Review this resume for the role "${targetRole || 'Software Engineer'}". Critique bullet points using the Google X-Y-Z formula and identify missing technical skills.`;
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments: resumeText ? [{ name: 'Resume.txt', extractedText: resumeText }] : [] });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/document-analysis', async (req, res) => {
+  try {
+    const { documentName, documentContent } = req.body;
+    const prompt = `Analyze this document "${documentName || 'Document'}": summarize key takeaways, extract core technical concepts, and provide actionable next steps.`;
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments: [{ name: documentName || 'Doc', extractedText: documentContent }] });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/certificate-analysis', async (req, res) => {
+  try {
+    const { certificateName, issuer, base64, mimeType } = req.body;
+    const prompt = `Analyze this certification "${certificateName || 'Certificate'}" issued by ${issuer || 'issuing body'}. Verify its industry relevance, skills validated, and how to showcase it on LinkedIn/Resume.`;
+    const attachments = base64 ? [{ name: certificateName || 'Cert', base64, mimeType: mimeType || 'image/png' }] : [];
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/image-analysis', async (req, res) => {
+  try {
+    const { imageName, base64, mimeType, userQuery } = req.body;
+    const prompt = userQuery || `Analyze this image "${imageName || 'Screenshot'}". Perform OCR, explain diagrams or code snippets shown, and provide actionable insights.`;
+    const attachments = base64 ? [{ name: imageName || 'Image', base64, mimeType: mimeType || 'image/png' }] : [];
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments });
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -233,9 +382,87 @@ router.put('/roadmap/milestones/:id', async (req, res) => {
   }
 });
 
-// Practice
+// Practice & User Stats
+router.get('/user/practice-stats', async (req, res) => {
+  try {
+    const stats = await getUserPracticeStatsData(req.user.id);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/practice', async (req, res) => {
   res.json(await getPracticeData(req.user.id));
+});
+
+router.put('/practice/career', async (req, res) => {
+  try {
+    const { careerTrack } = req.body;
+    const result = await updateCareerTrackData(req.user.id, careerTrack);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding', async (req, res) => {
+  try {
+    const { career, topic, difficulty, search } = req.query;
+    const result = await getCodingQuestionsData(req.user.id, { career, topic, difficulty, search });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/random', async (req, res) => {
+  try {
+    const { career, topic, difficulty } = req.query;
+    const result = await getRandomCodingQuestionData(req.user.id, { career, topic, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/topics', async (req, res) => {
+  try {
+    const { career } = req.query;
+    const topics = await getCodingTopicsData(career);
+    res.json({ topics });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/history', async (req, res) => {
+  try {
+    const history = await getCodingHistoryData(req.user.id);
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/aptitude', async (req, res) => {
+  try {
+    const { category, difficulty } = req.query;
+    const result = await getAptitudeQuestionsData({ category, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/aptitude/random', async (req, res) => {
+  try {
+    const { category, difficulty } = req.query;
+    const result = await getRandomAptitudeQuestionData({ category, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.post('/practice/submit', async (req, res) => {
@@ -271,9 +498,38 @@ router.post('/interview/evaluate', async (req, res) => {
 });
 
 
+// Activity Log
+router.get('/activity', async (req, res) => {
+  try {
+    const { search, category, page, limit } = req.query;
+    const result = await getActivityData(req.user.id, { search, category, page, limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Notifications
 router.get('/notifications', async (req, res) => {
   res.json(await getNotificationsData(req.user.id));
+});
+
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    const result = await markAllNotificationsReadData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const result = await markNotificationReadData(req.user.id, req.params.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.delete('/notifications', async (req, res) => {

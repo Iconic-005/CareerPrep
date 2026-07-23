@@ -179,3 +179,50 @@
   .score-grid { grid-template-columns: 1fr; }
   .resume-paper { padding: 1.5rem; }
 }
+
+/* ── Print Media Query for PDF Download Export ── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+  .sidebar-shell,
+  aside,
+  header,
+  footer,
+  .mobile-nav,
+  .resume-top-nav,
+  .resume-sidebar-panel,
+  .resume-modal-overlay,
+  button,
+  form {
+    display: none !important;
+  }
+  .main-content--resume {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    min-height: auto !important;
+  }
+  .resume-grid-container {
+    display: block !important;
+  }
+  .resume-paper-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .resume-header-line {
+    background: #256cf0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .resume-section-heading {
+    color: #1e3a8a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

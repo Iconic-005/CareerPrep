@@ -9,20 +9,25 @@ import {
   RoadmapModel,
   NotificationModel,
   JDAnalysisModel,
+  AIChatSessionModel,
   AIChatHistoryModel,
   PracticeHistoryModel,
   BadgeModel,
   UserSettingsModel,
 } from '../models/index.js';
+import { CAREER_TRACKS } from './careerData.js';
+import { CODING_QUESTIONS, generate10AptitudeQuestions } from './questionStore.js';
 import {
   generateChatReply,
   generateOptimizedResume,
+  generateBuildResumeFromProfile,
   generateJDAnalysis,
   generateRoadmap as aiGenerateRoadmap,
   generateMockInterviewQuestions,
   evaluateInterviewSession,
   evaluateCodeSubmission,
 } from '../services/aiService.js';
+
 
 export async function ensureUserInitialized(userId, name = 'User', email = '') {
   let profile = await ProfileModel.findOne({ userId });
@@ -31,66 +36,18 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
       userId,
       name,
       email,
-      title: 'Senior Product Designer @ Fintech Innovations',
-      avatarUrl: '/images/alex_thompson.png',
-      completion: 85,
-      about: 'Passionate about designing human-centered products and scalable design systems.',
-      recruiterSnapshot: 'Experienced designer with strong background in Fintech and React ecosystems.',
-      experiences: [
-        {
-          id: 'exp_1',
-          role: 'Senior Product Designer',
-          company: 'Fintech Innovations',
-          period: 'Jan 2022 — Present',
-          description: 'Leading the design system team for a series-B mobile banking app. Reduced design-to-code latency by 40%.',
-          current: true,
-        },
-        {
-          id: 'exp_2',
-          role: 'UX Designer',
-          company: 'Creativ Studio',
-          period: 'Jun 2019 — Dec 2021',
-          description: 'Designed end-to-end user journeys for high-traffic e-commerce platforms.',
-          current: false,
-        },
-      ],
-      education: [
-        {
-          id: 'edu_1',
-          degree: 'B.S. Interaction Design',
-          institution: 'Stanford University',
-          period: '2015 — 2019',
-          description: 'Focus on Human-Computer Interaction and Cognitive Psychology.',
-        },
-      ],
-      projects: [
-        {
-          id: 'proj_1',
-          title: 'Nexus Wallet',
-          description: 'Crypto asset management redesigned for clarity.',
-          image: '/images/nexus_wallet.png',
-        },
-        {
-          id: 'proj_2',
-          title: 'DataStream Dashboard',
-          description: 'Real-time analytics for enterprise-level logistics.',
-          image: '/images/datastream_dashboard.png',
-        },
-      ],
-      skills: ['Figma', 'UI/UX Design', 'React.js', 'Design Systems', 'Prototyping', 'User Testing', 'Adobe CC'],
-      skillsActive: ['Figma', 'UI/UX Design', 'React.js'],
-      targetRoles: ['Principal Product Designer', 'Design Manager'],
-      dreamCompanies: [
-        { name: 'Stripe', color: '#000000' },
-        { name: 'Linear', color: '#2563eb' },
-        { name: 'Airbnb', color: '#ff385c' },
-      ],
-      aiSuggestion: {
-        targetCompany: 'Stripe',
-        title: 'Optimize for Stripe',
-        description: "Based on your target companies, highlight 'Systems Thinking' in your project descriptions.",
-        buttonLabel: 'Refine Project Text',
-      },
+      title: '',
+      avatarUrl: '',
+      completion: 10,
+      about: '',
+      recruiterSnapshot: '',
+      experiences: [],
+      education: [],
+      projects: [],
+      skills: [],
+      skillsActive: [],
+      targetRoles: [],
+      dreamCompanies: [],
     });
   }
 
@@ -98,24 +55,22 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
   if (!analytics) {
     analytics = await AnalyticsModel.create({
       userId,
-      codingXP: 150,
-      careerReadiness: 65,
-      resumeScore: '85/100',
-      interviewRank: 'Top 10%',
+      codingXP: 0,
+      careerReadiness: 0,
+      resumeScore: 'Not Generated',
+      interviewRank: '--',
       weeklyActivity: [
-        { day: 'Mon', count: 2 },
-        { day: 'Tue', count: 4 },
-        { day: 'Wed', count: 1 },
-        { day: 'Thu', count: 5 },
-        { day: 'Fri', count: 3 },
+        { day: 'Mon', count: 0 },
+        { day: 'Tue', count: 0 },
+        { day: 'Wed', count: 0 },
+        { day: 'Thu', count: 0 },
+        { day: 'Fri', count: 0 },
         { day: 'Sat', count: 0 },
-        { day: 'Sun', count: 2 },
+        { day: 'Sun', count: 0 },
       ],
-      activityLog: [
-        { id: `act_${Date.now()}_1`, title: 'Joined CareerPrep Platform', desc: 'Account created and initialized.', time: 'Recently', tone: 'mint' },
-      ],
-      practiceStats: { questionsCompleted: 4, accuracy: 88 },
-      streak: 3,
+      activityLog: [],
+      practiceStats: { questionsCompleted: 0, accuracy: 0 },
+      streak: 0,
     });
   }
 
@@ -123,12 +78,10 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
   if (!resume) {
     resume = await ResumeModel.create({
       userId,
-      suggestions: [
-        { id: 'sug_1', title: 'Quantify achievements in Stripe role', desc: 'Adding metrics increases ATS score.', accent: 'blue' },
-      ],
-      missingSkills: ['System Architecture', 'GraphQL', 'Kubernetes'],
-      resumeText: 'Senior Product Designer with 5+ years of experience building design systems and scalable apps.',
-      score: '85/100',
+      suggestions: [],
+      missingSkills: [],
+      resumeText: '',
+      score: 'Not Generated',
     });
   }
 
@@ -137,17 +90,10 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
     roadmap = await RoadmapModel.create({
       userId,
       bannerTitle: 'Target Transition',
-      bannerSubtitle: 'Principal Product Designer @ Stripe',
-      bannerMeta: 'Estimated 8 weeks to maximum readiness.',
-      milestones: [
-        { id: 'm_1', title: 'Design System Architecture', desc: 'Master tokenized design components in Figma and React.', time: 'Done', tone: 'mint', done: true },
-        { id: 'm_2', title: 'STAR Behavioral Scenarios', desc: 'Prepare 5 structured leadership anecdotes.', time: 'In progress', tone: 'blue', done: false },
-        { id: 'm_3', title: 'Live System Design Mock', desc: 'Schedule 1-on-1 peer review session.', time: 'Scheduled', tone: 'slate', done: false },
-      ],
-      focusAreas: [
-        { id: 'f_1', title: 'Systems Thinking', text: 'Focus on multi-platform design sync.' },
-        { id: 'f_2', title: 'Cross-functional Communication', text: 'Demonstrate design decisions with data.' },
-      ],
+      bannerSubtitle: 'Not Set',
+      bannerMeta: 'Generate your customized career roadmap to get started.',
+      milestones: [],
+      focusAreas: [],
     });
   }
 
@@ -165,51 +111,6 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
     await AIChatHistoryModel.create({
       userId,
       messages: [],
-    });
-  }
-
-  const existingGoalsCount = await GoalModel.countDocuments({ userId });
-  if (existingGoalsCount === 0) {
-    await GoalModel.create([
-      { userId, title: 'Solve 3 Coding Challenges', done: false, status: 'Pending' },
-      { userId, title: 'Review Resume ATS Recommendations', done: true, status: 'Complete' },
-      { userId, title: 'Complete 1 Mock Interview Scenario', done: false, status: 'Pending' },
-    ]);
-  }
-
-  const existingNotificationCount = await NotificationModel.countDocuments({ userId });
-  if (existingNotificationCount === 0) {
-    await NotificationModel.create([
-      { userId, title: 'Welcome to CareerPrep!', detail: 'Your dynamic career preparation dashboard is fully activated.', time: 'Just now', accent: 'mint', read: false },
-      { userId, title: 'Mock Interview Scheduled', detail: 'System Design practice scheduled for tomorrow at 4 PM.', time: 'Today', accent: 'violet', read: false },
-    ]);
-  }
-
-  const existingInterviewCount = await MockInterviewModel.countDocuments({ userId });
-  if (existingInterviewCount === 0) {
-    await MockInterviewModel.create({
-      userId,
-      title: 'Senior Product Designer Mock Interview',
-      role: 'Principal Product Designer',
-      targetCompany: 'Stripe',
-      difficulty: 'Hard',
-      score: 8.8,
-      maxScore: 10,
-      headline: 'Outstanding Performance!',
-      percentileText: 'You are in the top 5% of candidates for Senior Product Designer roles.',
-      skillsRadar: { Technical: 90, Communication: 85, Grammar: 80, Behavioral: 88, Confidence: 92 },
-      strengths: [
-        { id: 'str_1', title: 'Architectural Depth', desc: 'Excellent explanation of design system tokens and component state.' },
-        { id: 'str_2', title: 'Executive Presence', desc: 'Clear, articulate delivery under scenario pressure.' },
-      ],
-      improvements: [
-        { id: 'imp_1', title: 'Mention Alternatives', desc: 'Discuss trade-offs between custom SVG icons vs font icons.' },
-      ],
-      nextSteps: [
-        { id: 'ns_1', title: 'Practice Leadership Question', text: 'How do you prioritize design debt versus feature output?', icon: 'chat' },
-      ],
-      status: 'Upcoming',
-      interviewDate: new Date(Date.now() + 86400000 * 2),
     });
   }
 
@@ -248,67 +149,73 @@ export async function computeCalculatedMetrics(userId) {
   const resume = await ResumeModel.findOne({ userId });
   const goals = await GoalModel.find({ userId });
   const roadmap = await RoadmapModel.findOne({ userId });
-  const interview = await MockInterviewModel.findOne({ userId }).sort({ createdAt: -1 });
-  const practiceCount = await PracticeHistoryModel.countDocuments({ userId });
+  const interview = await MockInterviewModel.findOne({ userId, score: { $exists: true, $ne: null } }).sort({ createdAt: -1 });
 
   let resumeScoreNum = 0;
-  if (resume && resume.score) {
+  if (resume && resume.score && resume.score !== 'Not Generated') {
     const parsed = parseInt(resume.score, 10);
     if (!isNaN(parsed)) resumeScoreNum = parsed;
   }
 
-  let interviewScoreNum = 75;
+  let interviewScoreNum = 0;
   if (interview && interview.score) {
-    interviewScoreNum = Math.min(100, Math.round((interview.score / interview.maxScore) * 100));
+    interviewScoreNum = Math.min(100, Math.round((interview.score / (interview.maxScore || 10)) * 100));
   }
 
   const completedGoals = goals.filter((g) => g.done).length;
-  const totalGoals = goals.length || 1;
-  const goalProgress = (completedGoals / totalGoals) * 100;
+  const totalGoals = goals.length || 0;
+  const goalProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
 
-  const totalMilestones = roadmap?.milestones?.length || 1;
+  const totalMilestones = roadmap?.milestones?.length || 0;
   const completedMilestones = roadmap?.milestones?.filter((m) => m.done).length || 0;
-  const roadmapProgress = (completedMilestones / totalMilestones) * 100;
+  const roadmapProgress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
 
   const xpProgress = Math.min(100, ((analytics?.codingXP || 0) / 1000) * 100);
 
-  // Calculated Career Readiness Formula:
-  // 30% Resume + 30% Interview + 20% Coding XP + 10% Goals Progress + 10% Roadmap Progress
-  const calculatedReadiness = Math.min(
-    100,
-    Math.round(
-      0.30 * resumeScoreNum +
-      0.30 * interviewScoreNum +
-      0.20 * xpProgress +
-      0.10 * goalProgress +
-      0.10 * roadmapProgress
-    )
-  );
+  const hasActivity = resumeScoreNum > 0 || interviewScoreNum > 0 || (analytics?.codingXP || 0) > 0 || completedGoals > 0;
 
-  // Dynamic Interview Rank across all registered users in MongoDB
+  const calculatedReadiness = hasActivity
+    ? Math.min(
+        100,
+        Math.round(
+          0.30 * resumeScoreNum +
+          0.30 * interviewScoreNum +
+          0.20 * xpProgress +
+          0.10 * goalProgress +
+          0.10 * roadmapProgress
+        )
+      )
+    : 0;
+
   const allAnalytics = await AnalyticsModel.find({}, 'codingXP careerReadiness');
   const userXP = analytics?.codingXP || 0;
-  const lowerUsersCount = allAnalytics.filter((a) => (a.codingXP || 0) < userXP).length;
-  const totalUsersCount = allAnalytics.length || 1;
-  const percentileRank = Math.round(((totalUsersCount - lowerUsersCount) / totalUsersCount) * 100);
+  let interviewRank = '--';
 
-  let interviewRank = 'Top 50%';
-  if (percentileRank <= 3) interviewRank = 'Top 3%';
-  else if (percentileRank <= 8) interviewRank = 'Top 8%';
-  else if (percentileRank <= 15) interviewRank = 'Top 15%';
-  else if (percentileRank <= 30) interviewRank = 'Top 30%';
+  if (hasActivity) {
+    const lowerUsersCount = allAnalytics.filter((a) => (a.codingXP || 0) < userXP).length;
+    const totalUsersCount = allAnalytics.length || 1;
+    const percentileRank = Math.round(((totalUsersCount - lowerUsersCount) / totalUsersCount) * 100);
+
+    interviewRank = 'Top 50%';
+    if (percentileRank <= 3) interviewRank = 'Top 3%';
+    else if (percentileRank <= 8) interviewRank = 'Top 8%';
+    else if (percentileRank <= 15) interviewRank = 'Top 15%';
+    else if (percentileRank <= 30) interviewRank = 'Top 30%';
+  }
+
+  const displayResumeScore = resumeScoreNum > 0 ? `${resumeScoreNum} / 100` : (resume?.score || 'Not Generated');
 
   if (analytics) {
     analytics.careerReadiness = calculatedReadiness;
     analytics.interviewRank = interviewRank;
-    if (resumeScoreNum > 0) analytics.resumeScore = `${resumeScoreNum} / 100`;
+    analytics.resumeScore = displayResumeScore;
     await analytics.save();
   }
 
   return {
     careerReadiness: calculatedReadiness,
     interviewRank,
-    resumeScore: analytics?.resumeScore || '85 / 100',
+    resumeScore: displayResumeScore,
     codingXP: analytics?.codingXP || 0,
   };
 }
@@ -377,7 +284,7 @@ export async function getDashboard(userId) {
       id: userId,
       name: profile?.name || 'User',
       email: profile?.email || '',
-      avatar: profile?.avatarUrl || '/images/alex_thompson.png',
+      avatar: profile?.avatarUrl || '',
     },
     greeting: firstName,
     profile,
@@ -386,7 +293,7 @@ export async function getDashboard(userId) {
     resumeScore: metrics.resumeScore,
     codingXP: metrics.codingXP,
     interviewRank: metrics.interviewRank,
-    streak: analytics?.streak || 1,
+    streak: analytics?.streak || 0,
     stats: [
       { title: 'Resume Score', value: metrics.resumeScore, accent: 'blue', icon: 'document' },
       { title: 'Interview Rank', value: metrics.interviewRank, accent: 'violet', icon: 'mic' },
@@ -478,16 +385,349 @@ export async function deleteGoal(userId, id) {
 }
 
 // Resume
+// Resume ATS Calculator
+export function calculateResumeMetrics(resume = {}) {
+  const contact = resume.contact || {};
+  const summary = resume.summary || '';
+  const experience = resume.experience || [];
+  const education = resume.education || [];
+  const projects = resume.projects || [];
+  const skills = resume.skills || [];
+  const certifications = resume.certifications || [];
+  const achievements = resume.achievements || [];
+
+  // 1. Calculate Real ATS Score (0 - 100)
+  let atsScore = 0;
+
+  // Contact Information Quality (20 pts)
+  if (contact.name && contact.name.trim()) atsScore += 4;
+  if (contact.email && contact.email.trim()) atsScore += 4;
+  if (contact.phone && contact.phone.trim()) atsScore += 4;
+  if (contact.location && contact.location.trim()) atsScore += 4;
+  if ((contact.linkedin && contact.linkedin.trim()) || (contact.github && contact.github.trim()) || (contact.portfolio && contact.portfolio.trim())) atsScore += 4;
+
+  // Summary Quality & Action Keywords (15 pts)
+  if (summary && summary.trim()) {
+    atsScore += 5;
+    const words = summary.trim().split(/\s+/).length;
+    if (words >= 20 && words <= 120) atsScore += 5;
+    else if (words > 10) atsScore += 3;
+
+    const summaryLower = summary.toLowerCase();
+    const actionKeywords = ['lead', 'manage', 'engineer', 'develop', 'design', 'architect', 'deliver', 'optimize', 'scale', 'spearhead', 'implement', 'build', 'results'];
+    if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 2) atsScore += 5;
+    else if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 1) atsScore += 3;
+  }
+
+  // Experience & Metrics / STAR Formula (30 pts)
+  if (experience.length > 0) {
+    atsScore += 5;
+    if (experience.length >= 2) atsScore += 5;
+
+    let totalBullets = 0;
+    let metricBullets = 0;
+    let actionWordBullets = 0;
+
+    const metricRegex = /(\d+|%|\$|\+|\b(reduced|increased|improved|boosted|grew|saved|doubled|tripled)\b)/i;
+    const actionRegex = /^(architected|engineered|developed|led|optimized|implemented|managed|designed|built|delivered|created|spearheaded|crafted|launched|automated|drove|reduced|increased)\b/i;
+
+    experience.forEach((item) => {
+      const bullets = item.bulletPoints || (item.description ? [item.description] : []);
+      totalBullets += bullets.length;
+      bullets.forEach((b) => {
+        if (metricRegex.test(b)) metricBullets++;
+        if (actionRegex.test(b.trim())) actionWordBullets++;
+      });
+    });
+
+    if (totalBullets >= 3) atsScore += 5;
+    if (metricBullets >= 1) atsScore += 5;
+    if (metricBullets >= 3) atsScore += 5;
+    if (actionWordBullets >= 2) atsScore += 5;
+  }
+
+  // Technical & Soft Skills (20 pts)
+  if (skills.length >= 1) atsScore += 5;
+  if (skills.length >= 5) atsScore += 5;
+  if (skills.length >= 8) atsScore += 5;
+  if (skills.length >= 12) atsScore += 5;
+
+  // Education & Credentials (10 pts)
+  if (education.length >= 1) atsScore += 6;
+  if (certifications.length >= 1 || education.length >= 2) atsScore += 4;
+
+  // Projects (5 pts)
+  if (projects.length >= 1) atsScore += 3;
+  if (projects.length >= 2) atsScore += 2;
+
+  atsScore = Math.min(98, Math.max(25, atsScore));
+
+  // 2. Real Skill Match Score (0 - 100)
+  const title = contact.title || '';
+  const titleLower = title.toLowerCase();
+  let benchmarkSkills = ['javascript', 'react', 'node.js', 'html', 'css', 'git', 'sql', 'rest apis'];
+  if (titleLower.includes('design') || titleLower.includes('ui') || titleLower.includes('ux')) {
+    benchmarkSkills = ['figma', 'ui/ux design', 'prototyping', 'design systems', 'user research', 'wireframing', 'adobe cc'];
+  } else if (titleLower.includes('product manager') || titleLower.includes('pm')) {
+    benchmarkSkills = ['product strategy', 'roadmap', 'agile', 'user stories', 'data analytics', 'stakeholder management', 'a/b testing'];
+  } else if (titleLower.includes('python') || titleLower.includes('data')) {
+    benchmarkSkills = ['python', 'pandas', 'sql', 'machine learning', 'data analysis', 'numpy', 'scikit-learn'];
+  }
+
+  const userSkillsLower = skills.map((s) => String(s).toLowerCase().trim());
+  const matchedCount = benchmarkSkills.filter((b) => userSkillsLower.some((u) => u.includes(b) || b.includes(u))).length;
+
+  let skillMatchScore = Math.round((matchedCount / benchmarkSkills.length) * 70) + Math.min(30, userSkillsLower.length * 3);
+  skillMatchScore = Math.min(98, Math.max(35, skillMatchScore));
+
+  // 3. Completeness & Missing Sections
+  const sections = [
+    { name: 'Summary', check: () => Boolean(summary && summary.trim()) },
+    { name: 'Experience', check: () => Boolean(experience && experience.length > 0) },
+    { name: 'Education', check: () => Boolean(education && education.length > 0) },
+    { name: 'Projects', check: () => Boolean(projects && projects.length > 0) },
+    { name: 'Skills', check: () => Boolean(skills && skills.length > 0) },
+    { name: 'Certifications', check: () => Boolean(certifications && certifications.length > 0) },
+    { name: 'Achievements', check: () => Boolean(achievements && achievements.length > 0) },
+  ];
+
+  const presentCount = sections.filter((s) => s.check()).length;
+  const missingSections = sections.filter((s) => !s.check()).map((s) => s.name);
+  const completenessScore = Math.round((presentCount / sections.length) * 100);
+
+  return {
+    atsScore,
+    skillMatchScore,
+    completenessScore,
+    missingSections,
+  };
+}
+
+export async function buildResumeWithAI(userId) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  if (!profile) throw new Error('User profile not found in MongoDB.');
+
+  const profileObj = profile.toObject ? profile.toObject() : profile;
+
+  // Call Gemini API to generate structured resume
+  const aiResult = await generateBuildResumeFromProfile(profileObj);
+
+  const contact = {
+    name: profileObj.name || 'User',
+    email: profileObj.email || '',
+    phone: profileObj.phone || '',
+    location: profileObj.address || 'San Francisco, CA',
+    linkedin: profileObj.linkedin || '',
+    github: profileObj.github || '',
+    portfolio: profileObj.portfolio || '',
+    title: profileObj.title || 'Software Professional',
+  };
+
+  const metrics = calculateResumeMetrics({
+    contact,
+    summary: aiResult.summary,
+    experience: aiResult.experience,
+    education: aiResult.education,
+    projects: aiResult.projects,
+    skills: aiResult.skills,
+    certifications: aiResult.certifications,
+    achievements: aiResult.achievements,
+    languages: aiResult.languages,
+  });
+
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) {
+    resume = new ResumeModel({ userId });
+  }
+
+  resume.contact = contact;
+  resume.summary = aiResult.summary || '';
+  resume.experience = aiResult.experience || [];
+  resume.education = aiResult.education || [];
+  resume.projects = aiResult.projects || [];
+  resume.skills = (aiResult.skills || []).map((s) => (typeof s === 'string' ? s : String(s)));
+  resume.certifications = aiResult.certifications || [];
+  resume.achievements = (aiResult.achievements || []).map((a) => (typeof a === 'string' ? a : a.title || a.description || String(a)));
+  resume.languages = (aiResult.languages || []).map((l) => (typeof l === 'string' ? l : String(l)));
+  resume.interests = (aiResult.interests || []).map((i) => (typeof i === 'string' ? i : String(i)));
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSkills = (aiResult.missingSkills || []).map((s) => (typeof s === 'string' ? s : String(s)));
+  resume.missingSections = metrics.missingSections || [];
+  resume.suggestions = aiResult.suggestions || [];
+  resume.score = `${metrics.atsScore} / 100`;
+
+  // Create version history snapshot
+  const versionEntry = {
+    id: `v_${Date.now()}`,
+    title: `${contact.title || 'Resume'} - AI Build`,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    createdAt: new Date(),
+    resumeData: {
+      contact: { ...contact },
+      summary: aiResult.summary,
+      experience: JSON.parse(JSON.stringify(aiResult.experience || [])),
+      education: JSON.parse(JSON.stringify(aiResult.education || [])),
+      projects: JSON.parse(JSON.stringify(aiResult.projects || [])),
+      skills: [...(aiResult.skills || [])],
+      certifications: JSON.parse(JSON.stringify(aiResult.certifications || [])),
+      achievements: [...(aiResult.achievements || [])],
+      languages: [...(aiResult.languages || [])],
+      atsScore: aiResult.atsScore || 88,
+      skillMatchScore: aiResult.skillMatchScore || 85,
+    },
+  };
+
+  if (!resume.versions) resume.versions = [];
+  resume.versions.unshift(versionEntry);
+
+  await resume.save();
+
+  const analytics = await AnalyticsModel.findOne({ userId });
+  if (analytics) {
+    analytics.codingXP += 50;
+    analytics.resumeScore = `${aiResult.atsScore || 88} / 100`;
+    await analytics.save();
+  }
+
+  await logActivity(userId, 'Built Resume with AI', `Generated complete ATS-friendly resume for ${contact.title} (+50 XP)`, 'violet');
+  await computeCalculatedMetrics(userId);
+
+  return resume.toObject();
+}
+
 export async function getResume(userId) {
   await ensureUserInitialized(userId);
-  const resume = await ResumeModel.findOne({ userId });
+  let resume = await ResumeModel.findOne({ userId });
+  const profile = await ProfileModel.findOne({ userId });
+
+  const hasData = resume && (
+    (resume.summary && resume.summary.trim()) ||
+    (resume.experience && resume.experience.length > 0) ||
+    (resume.contact && resume.contact.name)
+  );
+
+  if (!hasData) {
+    return await buildResumeWithAI(userId);
+  }
+
+  if (profile && (!resume.contact || !resume.contact.name || !resume.contact.email)) {
+    resume.contact = {
+      name: resume.contact?.name || profile.name || 'User',
+      email: resume.contact?.email || profile.email || '',
+      phone: resume.contact?.phone || profile.phone || '',
+      location: resume.contact?.location || profile.address || 'San Francisco, CA',
+      linkedin: resume.contact?.linkedin || profile.linkedin || '',
+      github: resume.contact?.github || profile.github || '',
+      portfolio: resume.contact?.portfolio || profile.portfolio || '',
+      title: resume.contact?.title || profile.title || 'Software Professional',
+    };
+  }
+
+  const metrics = calculateResumeMetrics(resume);
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+  resume.score = `${metrics.atsScore} / 100`;
+  await resume.save();
+
+  return resume.toObject();
+}
+
+export async function updateResume(userId, payload = {}) {
+  await ensureUserInitialized(userId);
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) {
+    resume = new ResumeModel({ userId });
+  }
+
+  if (payload.contact) {
+    resume.contact = { ...resume.contact, ...payload.contact };
+    resume.markModified('contact');
+
+    const profile = await ProfileModel.findOne({ userId });
+    if (profile) {
+      if (payload.contact.name) profile.name = payload.contact.name;
+      if (payload.contact.email) profile.email = payload.contact.email;
+      if (payload.contact.phone) profile.phone = payload.contact.phone;
+      if (payload.contact.location) profile.address = payload.contact.location;
+      if (payload.contact.title) profile.title = payload.contact.title;
+      if (payload.contact.linkedin) profile.linkedin = payload.contact.linkedin;
+      if (payload.contact.github) profile.github = payload.contact.github;
+      if (payload.contact.portfolio) profile.portfolio = payload.contact.portfolio;
+      await profile.save();
+    }
+  }
+
+  if (payload.summary !== undefined) {
+    resume.summary = payload.summary;
+    resume.markModified('summary');
+  }
+  if (payload.experience !== undefined) {
+    resume.experience = payload.experience;
+    resume.markModified('experience');
+  }
+  if (payload.education !== undefined) {
+    resume.education = payload.education;
+    resume.markModified('education');
+  }
+  if (payload.projects !== undefined) {
+    resume.projects = payload.projects;
+    resume.markModified('projects');
+  }
+  if (payload.skills !== undefined) {
+    resume.skills = payload.skills.map((s) => (typeof s === 'string' ? s : String(s)));
+    resume.markModified('skills');
+  }
+  if (payload.certifications !== undefined) {
+    resume.certifications = payload.certifications;
+    resume.markModified('certifications');
+  }
+  if (payload.achievements !== undefined) {
+    resume.achievements = payload.achievements.map((a) => (typeof a === 'string' ? a : a.title || a.description || String(a)));
+    resume.markModified('achievements');
+  }
+  if (payload.languages !== undefined) {
+    resume.languages = payload.languages.map((l) => (typeof l === 'string' ? l : String(l)));
+    resume.markModified('languages');
+  }
+  if (payload.interests !== undefined) {
+    resume.interests = payload.interests.map((i) => (typeof i === 'string' ? i : String(i)));
+    resume.markModified('interests');
+  }
+  if (payload.customSections !== undefined) {
+    resume.customSections = payload.customSections;
+    resume.markModified('customSections');
+  }
+  if (payload.missingSkills !== undefined) {
+    resume.missingSkills = payload.missingSkills;
+    resume.markModified('missingSkills');
+  }
+  if (payload.suggestions !== undefined) {
+    resume.suggestions = payload.suggestions;
+    resume.markModified('suggestions');
+  }
+
+  // Recalculate real ATS metrics dynamically
+  const metrics = calculateResumeMetrics(resume);
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+  resume.score = `${metrics.atsScore} / 100`;
+
+  await resume.save();
+
   const analytics = await AnalyticsModel.findOne({ userId });
-  return {
-    suggestions: resume?.suggestions || [],
-    missingSkills: resume?.missingSkills || [],
-    resumeText: resume?.resumeText || '',
-    score: analytics?.resumeScore || '85 / 100',
-  };
+  if (analytics) {
+    analytics.resumeScore = `${metrics.atsScore} / 100`;
+    await analytics.save();
+  }
+
+  return resume.toObject();
 }
 
 export async function optimizeResume(userId, resumeText, targetRole) {
@@ -526,6 +766,40 @@ export async function optimizeResume(userId, resumeText, targetRole) {
     console.error('Gemini API resume error:', err.message);
     throw new Error('Unable to reach AI Service. Please try again.');
   }
+}
+
+export async function restoreResumeVersion(userId, versionId) {
+  await ensureUserInitialized(userId);
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) throw new Error('Resume not found.');
+
+  const version = (resume.versions || []).find((v) => v.id === versionId || v._id?.toString() === versionId);
+  if (!version || !version.resumeData) {
+    throw new Error('Version not found in history.');
+  }
+
+  const rData = version.resumeData;
+  if (rData.contact) resume.contact = rData.contact;
+  if (rData.summary !== undefined) resume.summary = rData.summary;
+  if (rData.experience) resume.experience = rData.experience;
+  if (rData.education) resume.education = rData.education;
+  if (rData.projects) resume.projects = rData.projects;
+  if (rData.skills) resume.skills = rData.skills;
+  if (rData.certifications) resume.certifications = rData.certifications;
+  if (rData.achievements) resume.achievements = rData.achievements;
+  if (rData.languages) resume.languages = rData.languages;
+  if (rData.atsScore) resume.atsScore = rData.atsScore;
+  if (rData.skillMatchScore) resume.skillMatchScore = rData.skillMatchScore;
+
+  const metrics = calculateResumeMetrics(resume);
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+
+  await resume.save();
+  await logActivity(userId, 'Restored Resume Version', `Restored snapshot: "${version.title}"`, 'blue');
+  await computeCalculatedMetrics(userId);
+
+  return resume.toObject();
 }
 
 // JD Analyzer
@@ -572,51 +846,205 @@ export async function analyzeJD(userId, jobDescription) {
   }
 }
 
-// AI Coach
-export async function getCoachData(userId) {
+// AI Coach Sessions & Chat History
+export async function getChatSessions(userId) {
   await ensureUserInitialized(userId);
-  const profile = await ProfileModel.findOne({ userId });
-  const chatHistory = await AIChatHistoryModel.findOne({ userId });
-  const role = profile?.title || 'your target role';
-  const firstName = (profile?.name || 'there').split(' ')[0];
+  const sessions = await AIChatSessionModel.find({ userId }).sort({ isPinned: -1, updatedAt: -1 });
+  return sessions.map((s) => ({
+    id: s.sessionId,
+    title: s.title,
+    isPinned: s.isPinned,
+    updatedAt: s.updatedAt,
+    messageCount: s.messages.length,
+    lastMessage: s.messages.length > 0 ? s.messages[s.messages.length - 1].content.slice(0, 60) : '',
+  }));
+}
 
+export async function createChatSession(userId, title = 'New Conversation') {
+  await ensureUserInitialized(userId);
+  const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const session = await AIChatSessionModel.create({
+    userId,
+    sessionId,
+    title,
+    isPinned: false,
+    messages: [],
+  });
   return {
-    userName: firstName,
-    welcome: `I reviewed your career profile. Let's sharpen your profile for ${role}.`,
-    starterPrompts: ['Review my resume', 'Prep for interview', 'Find skill gaps'],
-    history: chatHistory?.messages || [],
+    id: session.sessionId,
+    title: session.title,
+    isPinned: session.isPinned,
+    createdAt: session.createdAt,
+    messages: [],
   };
 }
 
-export async function handleChat(userId, userMessage) {
+export async function updateChatSession(userId, sessionId, patch = {}) {
   await ensureUserInitialized(userId);
-  let chatHistoryDoc = await AIChatHistoryModel.findOne({ userId });
-  if (!chatHistoryDoc) {
-    chatHistoryDoc = await AIChatHistoryModel.create({ userId, messages: [] });
+  const session = await AIChatSessionModel.findOne({ userId, sessionId });
+  if (!session) throw new Error('Session not found');
+
+  if (typeof patch.title === 'string' && patch.title.trim()) {
+    session.title = patch.title.trim();
+  }
+  if (typeof patch.isPinned === 'boolean') {
+    session.isPinned = patch.isPinned;
+  }
+  await session.save();
+  return {
+    id: session.sessionId,
+    title: session.title,
+    isPinned: session.isPinned,
+    updatedAt: session.updatedAt,
+  };
+}
+
+export async function deleteChatSession(userId, sessionId) {
+  await ensureUserInitialized(userId);
+  await AIChatSessionModel.deleteOne({ userId, sessionId });
+  return { success: true, message: 'Session deleted' };
+}
+
+export async function getCoachData(userId, sessionId = null) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  const role = profile?.title || 'Software Engineer';
+  const targetCompany = profile?.company || 'Top Tech Companies';
+  const firstName = (profile?.name || 'Candidate').split(' ')[0];
+
+  let sessions = await AIChatSessionModel.find({ userId }).sort({ isPinned: -1, updatedAt: -1 });
+  
+  // If user has no sessions yet, migrate legacy AIChatHistory or create first session
+  if (sessions.length === 0) {
+    const legacyHistory = await AIChatHistoryModel.findOne({ userId });
+    const initialMessages = legacyHistory?.messages?.map((m, idx) => ({
+      id: `msg-legacy-${idx}`,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt || new Date(),
+    })) || [];
+
+    const defaultSession = await AIChatSessionModel.create({
+      userId,
+      sessionId: `session-default-${Date.now()}`,
+      title: 'Career Coaching & Resume Prep',
+      isPinned: false,
+      messages: initialMessages,
+    });
+    sessions = [defaultSession];
   }
 
-  try {
-    const history = chatHistoryDoc.messages.map((m) => ({ role: m.role, content: m.content }));
-    const result = await generateChatReply(history, userMessage);
+  const activeSessionId = sessionId || sessions[0]?.sessionId;
+  const activeSession = sessions.find((s) => s.sessionId === activeSessionId) || sessions[0];
 
-    chatHistoryDoc.messages.push({ role: 'user', content: userMessage });
-    chatHistoryDoc.messages.push({ role: 'assistant', content: result.reply });
-    await chatHistoryDoc.save();
+  return {
+    userName: firstName,
+    targetRole: role,
+    targetCompany: targetCompany,
+    welcome: `Hello ${firstName}! I am your AI Career Coach. How can I assist with your ${role} preparation today?`,
+    sessions: sessions.map((s) => ({
+      id: s.sessionId,
+      title: s.title,
+      isPinned: s.isPinned,
+      updatedAt: s.updatedAt,
+      messageCount: s.messages.length,
+      lastMessage: s.messages.length > 0 ? s.messages[s.messages.length - 1].content.slice(0, 60) : '',
+    })),
+    activeSessionId: activeSession.sessionId,
+    history: activeSession.messages || [],
+  };
+}
 
-    const analytics = await AnalyticsModel.findOne({ userId });
-    if (analytics) {
-      analytics.codingXP += 10;
-      await analytics.save();
-    }
+export async function handleChat(userId, payload = {}) {
+  await ensureUserInitialized(userId);
+  const { message, attachments = [], sessionId: requestedSessionId } = payload;
+  const userMessage = (message || '').trim();
 
-    await logActivity(userId, 'Consulted AI Career Coach', `Prompt: "${userMessage.slice(0, 30)}..." (+10 XP)`, 'violet');
-    await computeCalculatedMetrics(userId);
-
-    return { reply: result.reply, model: result.model };
-  } catch (err) {
-    console.error('Gemini API Chat error:', err.message);
-    throw new Error('Unable to reach AI Coach. Please try again.');
+  if (!userMessage && attachments.length === 0) {
+    throw new Error('Message or attachment is required');
   }
+
+  // Find or create session
+  let session;
+  if (requestedSessionId) {
+    session = await AIChatSessionModel.findOne({ userId, sessionId: requestedSessionId });
+  }
+  if (!session) {
+    session = await AIChatSessionModel.findOne({ userId }).sort({ updatedAt: -1 });
+  }
+  if (!session) {
+    const newSessionId = `session-${Date.now()}`;
+    session = await AIChatSessionModel.create({
+      userId,
+      sessionId: newSessionId,
+      title: userMessage ? userMessage.slice(0, 30) : 'Document Analysis',
+      messages: [],
+    });
+  }
+
+  // Auto-generate session title if first message
+  if (session.messages.length === 0 && userMessage) {
+    session.title = userMessage.slice(0, 35) + (userMessage.length > 35 ? '...' : '');
+  }
+
+  const history = session.messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+    attachments: m.attachments || [],
+  }));
+
+  const profile = await ProfileModel.findOne({ userId });
+  const userContext = {
+    userName: profile?.name || 'Candidate',
+    targetRole: profile?.title || 'Software Engineer',
+    targetCompany: profile?.company || 'Top Tech Companies',
+    skills: profile?.skills || [],
+    bio: profile?.bio || '',
+  };
+
+  const result = await generateChatReply(history, userMessage, attachments, userContext);
+
+  // Save user & assistant messages to session
+  const userMsgObj = {
+    id: `msg-user-${Date.now()}`,
+    role: 'user',
+    content: userMessage,
+    attachments,
+    createdAt: new Date(),
+  };
+  const botMsgObj = {
+    id: `msg-bot-${Date.now()}`,
+    role: 'assistant',
+    content: result.reply,
+    createdAt: new Date(),
+  };
+
+  session.messages.push(userMsgObj);
+  session.messages.push(botMsgObj);
+  await session.save();
+
+  // Also sync to legacy history for backward compatibility
+  await AIChatHistoryModel.updateOne(
+    { userId },
+    { $push: { messages: [{ role: 'user', content: userMessage }, { role: 'assistant', content: result.reply }] } },
+    { upsert: true }
+  );
+
+  const analytics = await AnalyticsModel.findOne({ userId });
+  if (analytics) {
+    analytics.codingXP += 10;
+    await analytics.save();
+  }
+
+  await logActivity(userId, 'Consulted AI Career Coach', `Prompt: "${(userMessage || 'Attachment').slice(0, 30)}..." (+10 XP)`, 'violet');
+  await computeCalculatedMetrics(userId);
+
+  return {
+    reply: result.reply,
+    suggestions: result.suggestions || ['Review my resume', 'Prep for interview', 'Find skill gaps'],
+    model: result.model,
+    sessionId: session.sessionId,
+  };
 }
 
 // Roadmap
@@ -635,8 +1063,11 @@ export async function getRoadmap(userId) {
 export async function generateRoadmap(userId, targetRole, targetCompany) {
   await ensureUserInitialized(userId);
   const profile = await ProfileModel.findOne({ userId });
-  const role = targetRole || profile?.title || 'Target Role';
+  const role = targetRole || profile?.title || 'Software Engineer';
   const company = targetCompany || 'Top Tech Companies';
+
+  if (!role.trim()) throw new Error('Target role is required.');
+  if (!company.trim()) throw new Error('Target company is required.');
 
   try {
     const roadmapData = await aiGenerateRoadmap(role, company);
@@ -646,9 +1077,14 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
       roadmap = new RoadmapModel({ userId });
     }
 
+    roadmap.targetRole = role;
+    roadmap.targetCompany = company;
     roadmap.bannerTitle = roadmapData.bannerTitle || 'Target Transition';
     roadmap.bannerSubtitle = roadmapData.bannerSubtitle || `${role} @ ${company}`;
-    roadmap.bannerMeta = roadmapData.bannerMeta || 'Projected 8-week readiness roadmap.';
+    roadmap.bannerMeta = roadmapData.bannerMeta || 'Projected 4-5 month readiness roadmap.';
+    roadmap.estimatedDuration = roadmapData.estimatedDuration || '4-5 months';
+    roadmap.generatedAt = new Date();
+
     roadmap.milestones = (roadmapData.milestones || []).map((m, i) => ({
       id: `m_${Date.now()}_${i}`,
       title: m.title,
@@ -657,10 +1093,35 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
       tone: m.tone || 'slate',
       done: Boolean(m.done),
     }));
+
     roadmap.focusAreas = (roadmapData.focusAreas || []).map((f, i) => ({
       id: `f_${Date.now()}_${i}`,
       title: f.title,
       text: f.text,
+    }));
+
+    roadmap.timeline = (roadmapData.timeline || []).map((t, i) => ({
+      id: `t_${Date.now()}_${i}`,
+      phase: t.phase,
+      title: t.title,
+      description: t.description,
+      weeks: t.weeks || '',
+    }));
+
+    roadmap.resources = (roadmapData.resources || []).map((r, i) => ({
+      id: `r_${Date.now()}_${i}`,
+      category: r.category,
+      title: r.title,
+      url: r.url || 'N/A',
+      resourceType: r.type || r.resourceType || 'free',
+    }));
+
+    roadmap.skillPriority = roadmapData.skillPriority || [];
+
+    roadmap.interviewStrategy = (roadmapData.interviewStrategy || []).map((s, i) => ({
+      id: `s_${Date.now()}_${i}`,
+      title: s.title,
+      description: s.description,
     }));
 
     await roadmap.save();
@@ -669,8 +1130,8 @@ export async function generateRoadmap(userId, targetRole, targetCompany) {
 
     return roadmap;
   } catch (err) {
-    console.error('Gemini API Roadmap error:', err.message);
-    throw new Error('Unable to generate roadmap. Please try again.');
+    console.error('[ROADMAP] Generation error:', err.message);
+    throw new Error(err.message || 'Unable to generate roadmap. Please try again.');
   }
 }
 
@@ -705,41 +1166,132 @@ export async function updateMilestone(userId, id, patch) {
   return milestone;
 }
 
-// Practice
-export async function getPractice(userId) {
+// Practice & Career Track Management
+export async function getUserPracticeStats(userId) {
   await ensureUserInitialized(userId);
   const analytics = await AnalyticsModel.findOne({ userId });
-  const history = await PracticeHistoryModel.find({ userId }).sort({ createdAt: -1 });
+  const history = await PracticeHistoryModel.find({ userId });
+
+  const solved = history.filter(h => h.type === 'code' && (h.score >= 25 || (h.accuracy && h.accuracy >= 70))).length;
+  const attempted = history.length;
+  const correctCount = history.filter(h => (h.accuracy && h.accuracy >= 70) || h.score >= 25).length;
+  const accuracy = attempted > 0 ? Math.round((correctCount / attempted) * 100) : 0;
+  const streak = analytics?.streak || 0;
+  const xp = analytics?.codingXP || 0;
 
   return {
-    codingProblem: {
-      id: '142',
-      title: 'Linked List Cycle II',
-      difficulty: 'Medium',
-      description: 'Given the head of a linked list, return the node where the cycle begins. If there is no cycle, return null.',
-      examples: [
-        { id: 'ex_1', input: 'head = [3,2,0,-4], pos = 1', output: 'tail connects to node index 1', explanation: 'There is a cycle in the linked list where tail connects to the second node.' },
-      ],
-      constraints: ['The number of nodes in the list is in the range [0, 10^4].', '-10^5 <= Node.val <= 10^5'],
-      aiAnalysis: {
-        algorithm: "Floyd's Tortoise and Hare",
-        text: 'Most candidates use a two-pointer approach here.',
-      },
-      starterCode: `class Solution:\n    def detectCycle(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        # TODO: Initialize slow and fast pointers\n        slow = fast = head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if slow == fast:\n                slow = head\n                while slow != fast:\n                    slow = slow.next\n                    fast = fast.next\n                return slow\n        return None`,
-    },
+    solved,
+    attempted,
+    accuracy,
+    streak,
+    xp,
+  };
+}
+
+export async function getRandomCodingQuestion(userId, query = {}) {
+  await ensureUserInitialized(userId);
+  const { career, topic, difficulty } = query;
+  let pool = [...CODING_QUESTIONS];
+
+  if (career && career !== 'All') {
+    pool = pool.filter(q => !q.careers || q.careers.includes(career) || career === 'Software Engineer');
+  }
+  if (topic && topic !== 'All') {
+    pool = pool.filter(q => q.topic.toLowerCase() === topic.toLowerCase());
+  }
+  if (difficulty && difficulty !== 'All') {
+    pool = pool.filter(q => q.difficulty.toLowerCase() === difficulty.toLowerCase());
+  }
+
+  if (pool.length === 0) pool = [...CODING_QUESTIONS];
+  const question = pool[Math.floor(Math.random() * pool.length)];
+  return { question };
+}
+
+export async function getRandomAptitudeQuestion(query = {}) {
+  const { category = 'Logical Reasoning', difficulty = 'Medium' } = query;
+  const questions = generate10AptitudeQuestions(category, difficulty);
+  const question = questions[Math.floor(Math.random() * questions.length)];
+  return { question };
+}
+
+export async function updateCareerTrack(userId, careerTrack) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  if (profile) {
+    profile.selectedCareerTrack = careerTrack;
+    profile.title = careerTrack;
+    await profile.save();
+  }
+  await logActivity(userId, 'Changed Career Track', `Switched active focus track to ${careerTrack}`, 'blue');
+  return { success: true, careerTrack };
+}
+
+export async function getCodingQuestions(userId, query = {}) {
+  await ensureUserInitialized(userId);
+  const { career, topic, difficulty, search } = query;
+  
+  let questions = [...CODING_QUESTIONS];
+
+  if (career && career !== 'All') {
+    questions = questions.filter(q => !q.careers || q.careers.includes(career) || career === 'Software Engineer');
+  }
+
+  if (topic && topic !== 'All') {
+    questions = questions.filter(q => q.topic.toLowerCase() === topic.toLowerCase());
+  }
+
+  if (difficulty && difficulty !== 'All') {
+    questions = questions.filter(q => q.difficulty.toLowerCase() === difficulty.toLowerCase());
+  }
+
+  if (search) {
+    const term = search.toLowerCase();
+    questions = questions.filter(q => q.title.toLowerCase().includes(term) || q.description.toLowerCase().includes(term));
+  }
+
+  return { questions, total: questions.length };
+}
+
+export async function getCodingTopics(career) {
+  const track = CAREER_TRACKS.find(t => t.name.toLowerCase() === (career || '').toLowerCase());
+  if (track) return track.codingTopics;
+  return ['Arrays', 'Strings', 'Linked Lists', 'Trees', 'Graphs', 'Dynamic Programming', 'SQL', 'OOP', 'DBMS', 'OS', 'Networking', 'System Design'];
+}
+
+export async function getCodingHistory(userId) {
+  await ensureUserInitialized(userId);
+  return PracticeHistoryModel.find({ userId, type: 'code' }).sort({ createdAt: -1 });
+}
+
+export async function getAptitudeQuestions(query = {}) {
+  const { category = 'Logical Reasoning', difficulty = 'Medium' } = query;
+  const questions = generate10AptitudeQuestions(category, difficulty);
+  return { questions, total: questions.length, category };
+}
+
+export async function getPractice(userId) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  const analytics = await AnalyticsModel.findOne({ userId });
+  const history = await PracticeHistoryModel.find({ userId }).sort({ createdAt: -1 });
+  const selectedCareerTrack = profile?.selectedCareerTrack || profile?.title || 'Software Engineer';
+
+  const defaultCoding = CODING_QUESTIONS[0];
+  const defaultAptitude = generate10AptitudeQuestions('Logical Reasoning')[0];
+
+  return {
+    selectedCareerTrack,
+    tracks: CAREER_TRACKS,
+    codingProblem: defaultCoding,
     aptitudeSession: {
-      currentQuestionIndex: 5,
-      totalQuestions: 20,
-      accuracy: 85,
+      currentQuestionIndex: 0,
+      totalQuestions: 10,
+      accuracy: analytics?.practiceStats?.accuracy || 88,
       category: 'Logical Reasoning',
-      questionText: "If 'CLARK' is coded as '24-12-1-18-11', how would you code 'MEMBER'?",
-      options: [
-        { label: 'A', text: '13-5-13-2-5-18' },
-        { label: 'B', text: '14-6-14-3-6-19', isCorrect: true },
-        { label: 'C', text: '12-4-12-1-4-17' },
-        { label: 'D', text: '13-6-13-3-6-18' },
-      ],
-      metrics: { avgTime: '42s', streak: 12, logicMapping: 'High', speedControl: 'Medium' },
+      question: defaultAptitude.question,
+      options: defaultAptitude.options,
+      explanation: defaultAptitude.explanation,
     },
     stats: analytics?.practiceStats || { questionsCompleted: history.length, accuracy: 88 },
     history,
@@ -759,31 +1311,36 @@ export async function submitPractice(userId, payload = {}) {
     }
   }
 
-  const xpGained = isCodeSubmit ? 50 : 25;
+  const xpGained = isCodeSubmit ? (evalResult?.status === 'failed' ? 10 : 50) : (payload.isCorrect ? 25 : 5);
 
   await PracticeHistoryModel.create({
     userId,
-    problemId: payload.problemId || '142',
-    title: payload.title || payload.problemTitle || (isCodeSubmit ? 'Linked List Cycle II' : 'Logical Reasoning Drill'),
+    problemId: payload.problemId || 'code-101',
+    title: payload.title || payload.problemTitle || (isCodeSubmit ? 'Coding Challenge' : 'Aptitude Drill'),
     type: isCodeSubmit ? 'code' : 'aptitude',
     score: xpGained,
     runtime: evalResult?.runtime || '38ms',
     beatsPercent: evalResult?.beatsPercent || '94%',
-    accuracy: 90,
+    accuracy: payload.accuracy || 90,
   });
 
   const analytics = await AnalyticsModel.findOne({ userId });
   if (analytics) {
-    analytics.codingXP += xpGained;
-    analytics.practiceStats.questionsCompleted += 1;
-    analytics.practiceStats.accuracy = 88;
+    analytics.codingXP = (analytics.codingXP || 0) + xpGained;
+    analytics.practiceStats.questionsCompleted = (analytics.practiceStats.questionsCompleted || 0) + 1;
+    if (payload.accuracy) {
+      analytics.practiceStats.accuracy = payload.accuracy;
+    }
+    if (analytics.streak !== undefined) {
+      analytics.streak = (analytics.streak || 0) + 1;
+    }
     await analytics.save();
   }
 
   await logActivity(
     userId,
-    isCodeSubmit ? 'Submitted Coding Solution' : 'Answered Aptitude Drill',
-    isCodeSubmit ? `Passed test cases (${evalResult?.runtime || '38ms'}, +${xpGained} XP)` : `Correct answer (+${xpGained} XP)`,
+    isCodeSubmit ? 'Submitted Coding Solution' : 'Answered Aptitude Question',
+    isCodeSubmit ? `Evaluated by Gemini AI (${evalResult?.runtime || '38ms'}, +${xpGained} XP)` : `Completed Drill (+${xpGained} XP)`,
     'blue'
   );
 
@@ -791,12 +1348,12 @@ export async function submitPractice(userId, payload = {}) {
 
   return {
     success: true,
-    message: evalResult?.message || (isCodeSubmit ? '✓ All standard test cases passed.' : '✓ Correct Answer!'),
+    message: evalResult?.message || (isCodeSubmit ? '✓ All test cases passed successfully.' : (payload.isCorrect ? '✓ Correct Answer!' : 'Reviewed Answer.')),
     xpGained,
     runtime: evalResult?.runtime || '38ms',
     beatsPercent: evalResult?.beatsPercent || '94%',
-    complexity: evalResult?.complexity,
-    review: evalResult?.review,
+    complexity: evalResult?.complexity || 'Time: O(N), Space: O(1)',
+    review: evalResult?.review || 'Good attempt!',
   };
 }
 
@@ -874,6 +1431,7 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
 export async function clearChatHistory(userId) {
   await ensureUserInitialized(userId);
   await AIChatHistoryModel.updateOne({ userId }, { $set: { messages: [] } });
+  await AIChatSessionModel.deleteMany({ userId });
   return { success: true, message: 'Chat history cleared.' };
 }
 
@@ -936,6 +1494,23 @@ export async function getNotifications(userId) {
   return NotificationModel.find({ userId }).sort({ createdAt: -1 });
 }
 
+export async function markNotificationRead(userId, id) {
+  await ensureUserInitialized(userId);
+  const notif = await NotificationModel.findOne({ _id: id, userId });
+  if (notif) {
+    notif.read = true;
+    await notif.save();
+    return notif;
+  }
+  return null;
+}
+
+export async function markAllNotificationsRead(userId) {
+  await ensureUserInitialized(userId);
+  await NotificationModel.updateMany({ userId }, { $set: { read: true } });
+  return { success: true, message: 'All notifications marked as read.' };
+}
+
 export async function deleteNotification(userId, id) {
   await ensureUserInitialized(userId);
   const result = await NotificationModel.deleteOne({ _id: id, userId });
@@ -949,6 +1524,54 @@ export async function clearAllNotifications(userId) {
   await ensureUserInitialized(userId);
   await NotificationModel.deleteMany({ userId });
   return { success: true, message: 'All notifications cleared.' };
+}
+
+// Activity Log
+export async function getActivityLog(userId, { search = '', category = 'All', page = 1, limit = 10 } = {}) {
+  await ensureUserInitialized(userId);
+  const analytics = await AnalyticsModel.findOne({ userId });
+  let log = analytics?.activityLog || [];
+
+  const categorizedLog = log.map((item) => {
+    const obj = item.toObject ? item.toObject() : item;
+    let cat = 'System';
+    const titleLower = (obj.title || '').toLowerCase();
+    const descLower = (obj.desc || '').toLowerCase();
+
+    if (titleLower.includes('resume') || descLower.includes('resume')) cat = 'Resume Builder';
+    else if (titleLower.includes('interview') || descLower.includes('interview')) cat = 'Mock Interviews';
+    else if (titleLower.includes('jd') || titleLower.includes('job') || descLower.includes('jd')) cat = 'JD Analyzer';
+    else if (titleLower.includes('coding') || titleLower.includes('problem') || titleLower.includes('solution') || descLower.includes('xp')) cat = 'Coding Practice';
+    else if (titleLower.includes('coach') || titleLower.includes('chat') || descLower.includes('coach')) cat = 'AI Coach';
+    else if (titleLower.includes('profile') || descLower.includes('profile')) cat = 'Profile Updates';
+
+    return { ...obj, category: cat };
+  });
+
+  let filtered = categorizedLog;
+
+  if (category && category !== 'All') {
+    filtered = filtered.filter((item) => item.category === category);
+  }
+
+  if (search && search.trim()) {
+    const q = search.toLowerCase().trim();
+    filtered = filtered.filter((item) => (item.title || '').toLowerCase().includes(q) || (item.desc || '').toLowerCase().includes(q));
+  }
+
+  const total = filtered.length;
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const startIndex = (pageNum - 1) * limitNum;
+  const paginatedItems = filtered.slice(startIndex, startIndex + limitNum);
+
+  return {
+    activities: paginatedItems,
+    total,
+    page: pageNum,
+    totalPages: Math.ceil(total / limitNum) || 1,
+    categories: ['All', 'Resume Builder', 'Mock Interviews', 'JD Analyzer', 'Coding Practice', 'AI Coach', 'Profile Updates'],
+  };
 }
 
 export async function getLatestJDAnalysis(userId) {
@@ -965,29 +1588,6 @@ export async function getLatestJDAnalysis(userId) {
     recommendations: jdDoc.recommendations,
     jobDescription: jdDoc.jobDescription,
     createdAt: jdDoc.createdAt,
-  };
-}
-
-export async function updateResume(userId, payload = {}) {
-  await ensureUserInitialized(userId);
-  let resume = await ResumeModel.findOne({ userId });
-  if (!resume) {
-    resume = new ResumeModel({ userId });
-  }
-
-  if (payload.resumeText !== undefined) resume.resumeText = payload.resumeText;
-  if (payload.suggestions !== undefined) resume.suggestions = payload.suggestions;
-  if (payload.missingSkills !== undefined) resume.missingSkills = payload.missingSkills;
-  if (payload.score !== undefined) resume.score = payload.score;
-  if (payload.versions !== undefined) resume.versions = payload.versions;
-
-  await resume.save();
-  return {
-    suggestions: resume.suggestions || [],
-    missingSkills: resume.missingSkills || [],
-    resumeText: resume.resumeText || '',
-    score: resume.score || '85 / 100',
-    versions: resume.versions || [],
   };
 }
 

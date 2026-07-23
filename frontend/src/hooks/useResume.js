@@ -1,167 +1,455 @@
-import { useState, useEffect } from 'react';
-import { getResume, updateResume, optimizeResume } from '../services/resumeService.js';
+import { useState, useEffect, useCallback } from 'react';
+import { getResume, updateResume, buildResumeWithAI, restoreResumeVersion } from '../services/resumeService.js';
 
 export function useResume(user) {
-  const [selectedVersion, setSelectedVersion] = useState('Active Resume (AI Polished)');
-  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [candidateName, setCandidateName] = useState(user?.name || '');
-  const [candidateRole, setCandidateRole] = useState(user?.title || 'Software Engineer & Systems Architect');
-  const [candidateEmail, setCandidateEmail] = useState(user?.email || '');
-  const [candidatePhone, setCandidatePhone] = useState('+1 (555) 019-2834');
-  const [candidateLocation, setCandidateLocation] = useState('San Francisco, CA');
-  const [resumeText, setResumeText] = useState(
-    `Engineered high-performance web applications and backend API microservices.\nCollaborated with cross-functional product teams to deliver feature updates ahead of sprint deadlines.\nImplemented automated testing suites to maintain code quality and deployment reliability.`
-  );
-  const [addedSkills, setAddedSkills] = useState([]);
-  const [hasProjectsSection, setHasProjectsSection] = useState(false);
-  const [missingSkills, setMissingSkills] = useState(['System Design', 'Cloud Architecture', 'CI/CD Pipelines']);
-  const [suggestions, setSuggestions] = useState([
-    {
-      id: 's1',
-      type: 'blue',
-      icon: 'trendUp',
-      title: 'Quantify your achievements with concrete metrics.',
-      desc: 'Adding specific percentages and revenue/performance impact increases recruiter ATS match score by up to 25%.',
-    },
-    {
-      id: 's2',
-      type: 'purple',
-      icon: 'spark',
-      title: 'Use Google X-Y-Z formula for bullet points.',
-      desc: 'Format bullets as: "Accomplished [X] as measured by [Y], by doing [Z]".',
-    },
-  ]);
-  const [atsScore, setAtsScore] = useState(85);
-  const [skillMatchScore, setSkillMatchScore] = useState(88);
-  const [aiCritique, setAiCritique] = useState('');
-  const [optimizedBullets, setOptimizedBullets] = useState('');
+  const [selectedVersion, setSelectedVersion] = useState('Active Resume (Current)');
+  const [toast, setToast] = useState(null);
+  const [lastSaved, setLastSaved] = useState('');
 
+  // Structured Resume State from MongoDB
+  const [contact, setContact] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    location: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
+    title: user?.title || '',
+  });
+
+  const [summary, setSummary] = useState('');
+  const [experience, setExperience] = useState([]);
+  const [education, setEducation] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [certifications, setCertifications] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [interests, setInterests] = useState([]);
+  const [customSections, setCustomSections] = useState([]);
+
+  // Dynamic Scores & Recommendations
+  const [atsScore, setAtsScore] = useState(85);
+  const [skillMatchScore, setSkillMatchScore] = useState(80);
+  const [completenessScore, setCompletenessScore] = useState(85);
+  const [missingSkills, setMissingSkills] = useState([]);
+  const [missingSections, setMissingSections] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [versionHistory, setVersionHistory] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const populateFromBackend = useCallback((data) => {
+    if (!data) return;
+    if (data.contact) {
+      setContact({
+        name: data.contact.name || user?.name || '',
+        email: data.contact.email || user?.email || '',
+        phone: data.contact.phone || '',
+        location: data.contact.location || '',
+        linkedin: data.contact.linkedin || '',
+        github: data.contact.github || '',
+        portfolio: data.contact.portfolio || '',
+        title: data.contact.title || user?.title || '',
+      });
+    }
+    if (data.summary !== undefined) setSummary(data.summary || '');
+    if (data.experience) setExperience(data.experience || []);
+    if (data.education) setEducation(data.education || []);
+    if (data.projects) setProjects(data.projects || []);
+    if (data.skills) setSkills(data.skills || []);
+    if (data.certifications) setCertifications(data.certifications || []);
+    if (data.achievements) setAchievements(data.achievements || []);
+    if (data.languages) setLanguages(data.languages || []);
+    if (data.interests) setInterests(data.interests || []);
+    if (data.customSections) setCustomSections(data.customSections || []);
+
+    if (data.atsScore !== undefined) setAtsScore(data.atsScore);
+    if (data.skillMatchScore !== undefined) setSkillMatchScore(data.skillMatchScore);
+    if (data.completenessScore !== undefined) setCompletenessScore(data.completenessScore);
+    if (data.missingSkills) setMissingSkills(data.missingSkills || []);
+    if (data.missingSections) setMissingSections(data.missingSections || []);
+    if (data.suggestions) setSuggestions(data.suggestions || []);
+    if (data.versions) setVersionHistory(data.versions || []);
+    if (data.updatedAt) {
+      setLastSaved(new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }
+  }, [user]);
+
+  // Live ATS Score Calculator Algorithm
+  const computeLiveAtsScores = useCallback((cnt, sum, exp, edu, proj, skls, certs, achs) => {
+    let ats = 0;
+
+    // Contact Info Quality (20 pts)
+    if (cnt?.name?.trim()) ats += 4;
+    if (cnt?.email?.trim()) ats += 4;
+    if (cnt?.phone?.trim()) ats += 4;
+    if (cnt?.location?.trim()) ats += 4;
+    if (cnt?.linkedin?.trim() || cnt?.github?.trim() || cnt?.portfolio?.trim()) ats += 4;
+
+    // Summary Quality & Action Keywords (15 pts)
+    if (sum && sum.trim()) {
+      ats += 5;
+      const words = sum.trim().split(/\s+/).length;
+      if (words >= 20 && words <= 120) ats += 5;
+      else if (words > 10) ats += 3;
+
+      const summaryLower = sum.toLowerCase();
+      const actionKeywords = ['lead', 'manage', 'engineer', 'develop', 'design', 'architect', 'deliver', 'optimize', 'scale', 'spearhead', 'implement', 'build', 'results'];
+      if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 2) ats += 5;
+      else if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 1) ats += 3;
+    }
+
+    // Experience & Metrics / STAR Formula (30 pts)
+    if (exp && exp.length > 0) {
+      ats += 5;
+      if (exp.length >= 2) ats += 5;
+
+      let totalBullets = 0;
+      let metricBullets = 0;
+      let actionWordBullets = 0;
+
+      const metricRegex = /(\d+|%|\$|\+|\b(reduced|increased|improved|boosted|grew|saved|doubled|tripled)\b)/i;
+      const actionRegex = /^(architected|engineered|developed|led|optimized|implemented|managed|designed|built|delivered|created|spearheaded|crafted|launched|automated|drove|reduced|increased)\b/i;
+
+      exp.forEach((item) => {
+        const bullets = item.bulletPoints || (item.description ? [item.description] : []);
+        totalBullets += bullets.length;
+        bullets.forEach((b) => {
+          if (metricRegex.test(b)) metricBullets++;
+          if (actionRegex.test(b.trim())) actionWordBullets++;
+        });
+      });
+
+      if (totalBullets >= 3) ats += 5;
+      if (metricBullets >= 1) ats += 5;
+      if (metricBullets >= 3) ats += 5;
+      if (actionWordBullets >= 2) ats += 5;
+    }
+
+    // Technical & Soft Skills (20 pts)
+    if (skls && skls.length >= 1) ats += 5;
+    if (skls && skls.length >= 5) ats += 5;
+    if (skls && skls.length >= 8) ats += 5;
+    if (skls && skls.length >= 12) ats += 5;
+
+    // Education & Credentials (10 pts)
+    if (edu && edu.length >= 1) ats += 6;
+    if ((certs && certs.length >= 1) || (edu && edu.length >= 2)) ats += 4;
+
+    // Projects (5 pts)
+    if (proj && proj.length >= 1) ats += 3;
+    if (proj && proj.length >= 2) ats += 2;
+
+    ats = Math.min(98, Math.max(25, ats));
+
+    // Skill Match Score (0 - 100)
+    const title = cnt?.title || '';
+    const titleLower = title.toLowerCase();
+    let benchmarkSkills = ['javascript', 'react', 'node.js', 'html', 'css', 'git', 'sql', 'rest apis'];
+    if (titleLower.includes('design') || titleLower.includes('ui') || titleLower.includes('ux')) {
+      benchmarkSkills = ['figma', 'ui/ux design', 'prototyping', 'design systems', 'user research', 'wireframing', 'adobe cc'];
+    } else if (titleLower.includes('product manager') || titleLower.includes('pm')) {
+      benchmarkSkills = ['product strategy', 'roadmap', 'agile', 'user stories', 'data analytics', 'stakeholder management', 'a/b testing'];
+    } else if (titleLower.includes('python') || titleLower.includes('data')) {
+      benchmarkSkills = ['python', 'pandas', 'sql', 'machine learning', 'data analysis', 'numpy', 'scikit-learn'];
+    }
+
+    const userSkillsLower = (skls || []).map((s) => String(s).toLowerCase().trim());
+    const matchedCount = benchmarkSkills.filter((b) => userSkillsLower.some((u) => u.includes(b) || b.includes(u))).length;
+
+    let skillMatch = Math.round((matchedCount / benchmarkSkills.length) * 70) + Math.min(30, userSkillsLower.length * 3);
+    skillMatch = Math.min(98, Math.max(35, skillMatch));
+
+    // Completeness & Missing Sections
+    const sections = [
+      { name: 'Summary', check: () => Boolean(sum && sum.trim()) },
+      { name: 'Experience', check: () => Boolean(exp && exp.length > 0) },
+      { name: 'Education', check: () => Boolean(edu && edu.length > 0) },
+      { name: 'Projects', check: () => Boolean(proj && proj.length > 0) },
+      { name: 'Skills', check: () => Boolean(skls && skls.length > 0) },
+      { name: 'Certifications', check: () => Boolean(certs && certs.length > 0) },
+      { name: 'Achievements', check: () => Boolean(achs && achs.length > 0) },
+    ];
+
+    const presentCount = sections.filter((s) => s.check()).length;
+    const missing = sections.filter((s) => !s.check()).map((s) => s.name);
+    const completeness = Math.round((presentCount / sections.length) * 100);
+
+    return {
+      atsScore: ats,
+      skillMatchScore: skillMatch,
+      completenessScore: completeness,
+      missingSections: missing,
+    };
+  }, []);
+
+  // Load real data from MongoDB on mount
   useEffect(() => {
-    if (user?.name) setCandidateName(user.name);
-    if (user?.email) setCandidateEmail(user.email);
-    if (user?.title) setCandidateRole(user.title);
+    let isMounted = true;
+    setLoading(true);
 
     getResume()
       .then((data) => {
-        if (data?.score) {
-          const numeric = parseInt(data.score, 10);
-          if (!isNaN(numeric)) setAtsScore(numeric);
+        if (isMounted) {
+          populateFromBackend(data);
         }
-        if (data?.resumeText) setResumeText(data.resumeText);
-        if (data?.missingSkills?.length) setMissingSkills(data.missingSkills);
-        if (data?.suggestions?.length) setSuggestions(data.suggestions);
       })
-      .catch(() => {});
-  }, [user]);
+      .catch((err) => {
+        if (isMounted) {
+          showToast('Unable to load resume from MongoDB: ' + err.message, 'error');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+  }, [populateFromBackend]);
 
+  // Recalculate Live ATS Scores whenever content changes
+  useEffect(() => {
+    if (!loading) {
+      const live = computeLiveAtsScores(contact, summary, experience, education, projects, skills, certifications, achievements);
+      setAtsScore(live.atsScore);
+      setSkillMatchScore(live.skillMatchScore);
+      setCompletenessScore(live.completenessScore);
+      setMissingSections(live.missingSections);
+    }
+  }, [contact, summary, experience, education, projects, skills, certifications, achievements, loading, computeLiveAtsScores]);
+
+  // Auto-Save function to MongoDB
   const saveResumeToDb = async (patch = {}) => {
+    setIsSaving(true);
     try {
       const payload = {
-        resumeText: patch.resumeText !== undefined ? patch.resumeText : resumeText,
+        contact: patch.contact !== undefined ? patch.contact : contact,
+        summary: patch.summary !== undefined ? patch.summary : summary,
+        experience: patch.experience !== undefined ? patch.experience : experience,
+        education: patch.education !== undefined ? patch.education : education,
+        projects: patch.projects !== undefined ? patch.projects : projects,
+        skills: patch.skills !== undefined ? patch.skills : skills,
+        certifications: patch.certifications !== undefined ? patch.certifications : certifications,
+        achievements: patch.achievements !== undefined ? patch.achievements : achievements,
+        languages: patch.languages !== undefined ? patch.languages : languages,
+        interests: patch.interests !== undefined ? patch.interests : interests,
+        customSections: patch.customSections !== undefined ? patch.customSections : customSections,
+        atsScore: patch.atsScore !== undefined ? patch.atsScore : atsScore,
+        skillMatchScore: patch.skillMatchScore !== undefined ? patch.skillMatchScore : skillMatchScore,
         missingSkills: patch.missingSkills !== undefined ? patch.missingSkills : missingSkills,
         suggestions: patch.suggestions !== undefined ? patch.suggestions : suggestions,
-        score: patch.atsScore !== undefined ? `${patch.atsScore} ATS` : `${atsScore} ATS`,
       };
-      await updateResume(payload);
-    } catch {
-      // silent
-    }
-  };
 
-  const handleGenerate = async () => {
-    setIsOptimizing(true);
-    try {
-      const data = await optimizeResume(resumeText, candidateRole);
-      let newScore = atsScore;
-      if (data?.score) {
-        const parsed = parseInt(data.score, 10);
-        if (!isNaN(parsed)) {
-          setAtsScore(parsed);
-          newScore = parsed;
-        }
+      const updated = await updateResume(payload);
+      if (updated) {
+        if (updated.versions) setVersionHistory(updated.versions);
+        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       }
-      if (data?.critique) setAiCritique(data.critique);
-      if (data?.optimizedText) setOptimizedBullets(data.optimizedText);
-      let newSkills = missingSkills;
-      if (data?.suggestedSkills?.length) {
-        setMissingSkills(data.suggestedSkills);
-        newSkills = data.suggestedSkills;
-      }
-      setSkillMatchScore((prev) => Math.min(99, prev + 5));
-      saveResumeToDb({ atsScore: newScore, missingSkills: newSkills });
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Auto-save error:', err);
     } finally {
-      setIsOptimizing(false);
+      setIsSaving(false);
     }
   };
 
-  const handleDismissSuggestion = (id) => {
-    setSuggestions((prev) => {
-      const updated = prev.filter((s) => s.id !== id);
-      saveResumeToDb({ suggestions: updated });
-      return updated;
-    });
+  // Manual explicit Save All function to MongoDB
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        contact,
+        summary,
+        experience,
+        education,
+        projects,
+        skills,
+        certifications,
+        achievements,
+        languages,
+        interests,
+        customSections,
+        atsScore,
+        skillMatchScore,
+        completenessScore,
+        missingSkills,
+        suggestions,
+      };
+
+      const updated = await updateResume(payload);
+      if (updated) {
+        if (updated.versions) setVersionHistory(updated.versions);
+        setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        showToast('All resume edits saved to MongoDB successfully!', 'success');
+      }
+    } catch (err) {
+      showToast('Failed to save resume edits: ' + err.message, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleApplySuggestion = (id) => {
-    setAtsScore((prev) => {
-      const updatedScore = Math.min(98, prev + 4);
-      setSuggestions((sPrev) => {
-        const updatedS = sPrev.filter((s) => s.id !== id);
-        saveResumeToDb({ atsScore: updatedScore, suggestions: updatedS });
-        return updatedS;
+  // Build Resume with AI Action
+  const handleBuildResumeWithAI = async () => {
+    setIsBuilding(true);
+    try {
+      showToast('Building your professional resume with Gemini AI...', 'info');
+      const newResume = await buildResumeWithAI();
+      populateFromBackend(newResume);
+      showToast('Professional ATS Resume built successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to build resume with AI', 'error');
+    } finally {
+      setIsBuilding(false);
+    }
+  };
+
+  // Add a recommended skill
+  const handleAddRecommendedSkill = (skill) => {
+    if (!skills.includes(skill)) {
+      const updatedSkills = [...skills, skill];
+      const updatedMissing = missingSkills.filter((s) => s !== skill);
+      const newSkillMatch = Math.min(98, skillMatchScore + 4);
+
+      setSkills(updatedSkills);
+      setMissingSkills(updatedMissing);
+      setSkillMatchScore(newSkillMatch);
+
+      saveResumeToDb({
+        skills: updatedSkills,
+        missingSkills: updatedMissing,
+        skillMatchScore: newSkillMatch,
       });
-      return updatedScore;
-    });
+
+      showToast(`Added "${skill}" to resume skills!`, 'success');
+    }
   };
 
-  const handleDownload = () => {
+  // Click on a missing section to add an entry
+  const handleAddMissingSection = (sectionName) => {
+    if (sectionName === 'Projects' && projects.length === 0) {
+      const newProj = [{ id: `proj_${Date.now()}`, title: 'Featured Project', description: 'Full-stack application built with modern architecture.', techStack: ['React', 'Node.js'] }];
+      setProjects(newProj);
+      saveResumeToDb({ projects: newProj });
+    } else if (sectionName === 'Summary' && !summary) {
+      const newSum = `Dedicated ${contact.title || 'Professional'} focused on software engineering excellence and scalable product delivery.`;
+      setSummary(newSum);
+      saveResumeToDb({ summary: newSum });
+    } else if (sectionName === 'Certifications' && certifications.length === 0) {
+      const newCert = [{ id: `cert_${Date.now()}`, name: 'Professional Certification', issuer: 'Industry Authority', year: '2024' }];
+      setCertifications(newCert);
+      saveResumeToDb({ certifications: newCert });
+    } else if (sectionName === 'Languages' && languages.length === 0) {
+      const newLang = ['English (Native / Fluent)'];
+      setLanguages(newLang);
+      saveResumeToDb({ languages: newLang });
+    } else if (sectionName === 'Achievements' && achievements.length === 0) {
+      const newAch = ['Recognized for outstanding technical contribution and team leadership.'];
+      setAchievements(newAch);
+      saveResumeToDb({ achievements: newAch });
+    }
+    setIsEditMode(true);
+  };
+
+  // Dismiss AI Suggestion
+  const handleDismissSuggestion = (id) => {
+    const updated = suggestions.filter((s) => s.id !== id);
+    setSuggestions(updated);
+    saveResumeToDb({ suggestions: updated });
+  };
+
+  // Apply AI Suggestion
+  const handleApplySuggestion = (id) => {
+    const newAts = Math.min(98, atsScore + 3);
+    const updatedSuggestions = suggestions.filter((s) => s.id !== id);
+    setAtsScore(newAts);
+    setSuggestions(updatedSuggestions);
+    saveResumeToDb({ atsScore: newAts, suggestions: updatedSuggestions });
+    showToast('Applied AI suggestion to resume!', 'success');
+  };
+
+  // Restore Version Snapshot
+  const handleRestoreVersion = async (versionId) => {
+    try {
+      const restored = await restoreResumeVersion(versionId);
+      populateFromBackend(restored);
+      setShowVersionModal(false);
+      showToast('Restored resume version successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to restore version', 'error');
+    }
+  };
+
+  // Export PDF Download with dynamic filename
+  const handleDownloadPdf = () => {
+    const originalTitle = document.title;
+    const nameStr = (contact.name || user?.name || 'Candidate').replace(/\s+/g, '_');
+    document.title = `${nameStr}_Resume.pdf`;
+
     window.print();
-  };
 
-  const versionHistory = [
-    { name: 'Active Resume (AI Polished)', date: 'Just now (Current)', score: `${atsScore} ATS` },
-    { name: 'Target Role Draft_v1.pdf', date: 'Saved yesterday', score: '78 ATS' },
-  ];
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
 
   return {
-    selectedVersion,
-    setSelectedVersion,
-    isOptimizing,
+    loading,
+    isBuilding,
+    isSaving,
     showVersionModal,
     setShowVersionModal,
     isEditMode,
     setIsEditMode,
-    candidateName,
-    setCandidateName,
-    candidateRole,
-    setCandidateRole,
-    candidateEmail,
-    setCandidateEmail,
-    candidatePhone,
-    setCandidatePhone,
-    candidateLocation,
-    setCandidateLocation,
-    resumeText,
-    setResumeText,
-    addedSkills,
-    setAddedSkills,
-    hasProjectsSection,
-    setHasProjectsSection,
-    missingSkills,
-    suggestions,
+    selectedVersion,
+    setSelectedVersion,
+    toast,
+    lastSaved,
+    contact,
+    setContact,
+    summary,
+    setSummary,
+    experience,
+    setExperience,
+    education,
+    setEducation,
+    projects,
+    setProjects,
+    skills,
+    setSkills,
+    certifications,
+    setCertifications,
+    achievements,
+    setAchievements,
+    languages,
+    setLanguages,
+    interests,
+    setInterests,
+    customSections,
+    setCustomSections,
     atsScore,
+    setAtsScore,
     skillMatchScore,
-    aiCritique,
-    optimizedBullets,
+    setSkillMatchScore,
+    completenessScore,
+    missingSkills,
+    missingSections,
+    suggestions,
+    versionHistory,
     saveResumeToDb,
-    handleGenerate,
+    handleSaveAll,
+    handleBuildResumeWithAI,
+    handleAddRecommendedSkill,
+    handleAddMissingSection,
     handleDismissSuggestion,
     handleApplySuggestion,
-    handleDownload,
-    versionHistory,
+    handleRestoreVersion,
+    handleDownloadPdf,
   };
 }

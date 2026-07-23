@@ -3,16 +3,23 @@ import { getInterviewReport, startInterview, evaluateInterview } from '../servic
 
 export function useInterview() {
   const [reportData, setReportData] = useState(null);
-  const [view, setView] = useState('report');
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState(() => {
+    return window.location.pathname === '/mock-interviews' ? 'config' : 'report';
+  });
   const [targetCompany, setTargetCompany] = useState('Google');
   const [targetRole, setTargetRole] = useState('Product Manager');
   const [difficulty, setDifficulty] = useState('Mid-Level');
   const [toastMsg, setToastMsg] = useState('');
 
   useEffect(() => {
+    setLoading(true);
     getInterviewReport()
-      .then((data) => setReportData(data))
-      .catch(() => setReportData(null));
+      .then((data) => {
+        setReportData(data);
+      })
+      .catch(() => setReportData(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const showToast = (msg) => {
@@ -44,6 +51,7 @@ export function useInterview() {
   };
 
   return {
+    loading,
     reportData,
     view,
     setView,

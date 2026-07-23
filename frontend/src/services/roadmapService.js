@@ -12,7 +12,8 @@ export async function generateRoadmap(targetRole, targetCompany) {
     body: JSON.stringify({ targetRole, targetCompany }),
   });
   if (response.ok) return response.json();
-  throw new Error('Failed to generate roadmap');
+  const errData = await response.json().catch(() => ({}));
+  throw new Error(errData.error || 'Failed to generate roadmap. Please try again.');
 }
 
 export async function toggleMilestone(id, done) {
