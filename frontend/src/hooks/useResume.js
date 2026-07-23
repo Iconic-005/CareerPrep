@@ -5,9 +5,25 @@ export function useResume(user) {
   const [loading, setLoading] = useState(true);
   const [isBuilding, setIsBuilding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showVersionModal, setShowVersionModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState('Active Resume (Current)');
+  const [selectedRole, setSelectedRole] = useState(user?.title || 'AI Engineer');
+  const [availableRoles, setAvailableRoles] = useState([
+    user?.title || 'AI Engineer',
+    'Software Engineer',
+    'Senior Product Designer',
+    'Product Manager',
+    'Data Scientist',
+  ]);
+  const [roleResumes, setRoleResumes] = useState(() => {
+    try {
+      const stored = localStorage.getItem('careerprep_role_resumes');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [showNewRoleModal, setShowNewRoleModal] = useState(false);
+  const [newRoleInput, setNewRoleInput] = useState('');
   const [toast, setToast] = useState(null);
   const [lastSaved, setLastSaved] = useState('');
 
@@ -206,7 +222,7 @@ export function useResume(user) {
       })
       .catch((err) => {
         if (isMounted) {
-          showToast('Unable to load resume from MongoDB: ' + err.message, 'error');
+          showToast('Unable to load resume: ' + err.message, 'error');
         }
       })
       .finally(() => {
@@ -225,7 +241,7 @@ export function useResume(user) {
     }
   }, [contact, summary, experience, education, projects, skills, certifications, achievements, loading, computeLiveAtsScores]);
 
-  // Auto-Save function to MongoDB
+  // Auto-Save function
   const saveResumeToDb = async (patch = {}) => {
     setIsSaving(true);
     try {
@@ -259,7 +275,7 @@ export function useResume(user) {
     }
   };
 
-  // Manual explicit Save All function to MongoDB
+  // Manual explicit Save All function
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
@@ -286,7 +302,7 @@ export function useResume(user) {
       if (updated) {
         if (updated.versions) setVersionHistory(updated.versions);
         setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        showToast('All resume edits saved to MongoDB successfully!', 'success');
+        showToast('Resume saved successfully!', 'success');
       }
     } catch (err) {
       showToast('Failed to save resume edits: ' + err.message, 'error');
@@ -374,12 +390,86 @@ export function useResume(user) {
     showToast('Applied AI suggestion to resume!', 'success');
   };
 
+  // Select or switch role resume
+  const handleSelectRole = (roleName) => {
+    if (roleName === 'CREATE_NEW_ROLE') {
+      setShowNewRoleModal(true);
+      return;
+    }
+
+    // Save current active snapshot before switching
+    const currentRoleKey = contact.title || selectedRole || 'AI Engineer';
+    const currentSnapshot = {
+      contact,
+      summary,
+      experience,
+      education,
+      projects,
+      skills,
+      certifications,
+      achievements,
+      atsScore,
+      skillMatchScore,
+    };
+
+    const updatedRoleResumes = {
+      ...roleResumes,
+      [currentRoleKey]: currentSnapshot,
+    };
+
+    if (updatedRoleResumes[roleName]) {
+      // Restore saved snapshot for target role
+      const saved = updatedRoleResumes[roleName];
+      setContact(saved.contact || { ...contact, title: roleName });
+      if (saved.summary !== undefined) setSummary(saved.summary);
+      if (saved.experience) setExperience(saved.experience);
+      if (saved.education) setEducation(saved.education);
+      if (saved.projects) setProjects(saved.projects);
+      if (saved.skills) setSkills(saved.skills);
+      if (saved.certifications) setCertifications(saved.certifications);
+      if (saved.achievements) setAchievements(saved.achievements);
+      if (saved.atsScore !== undefined) setAtsScore(saved.atsScore);
+      if (saved.skillMatchScore !== undefined) setSkillMatchScore(saved.skillMatchScore);
+    } else {
+      // Create new role preset
+      const newContact = { ...contact, title: roleName };
+      const newSummary = `Results-driven ${roleName} with hands-on experience building scalable applications, managing component libraries, and optimizing backend performance. Committed to engineering excellence and delivering measurable business impact.`;
+      setContact(newContact);
+      setSummary(newSummary);
+    }
+
+    setSelectedRole(roleName);
+    setRoleResumes(updatedRoleResumes);
+    try {
+      localStorage.setItem('careerprep_role_resumes', JSON.stringify(updatedRoleResumes));
+    } catch {
+      // silent
+    }
+
+    showToast(`Switched resume for role: "${roleName}"`, 'success');
+    saveResumeToDb({ contact: { ...contact, title: roleName } });
+  };
+
+  const handleCreateNewRole = (e) => {
+    e.preventDefault();
+    if (!newRoleInput.trim()) return;
+    const roleName = newRoleInput.trim();
+
+    if (!availableRoles.includes(roleName)) {
+      setAvailableRoles((prev) => [...prev, roleName]);
+    }
+
+    setShowNewRoleModal(false);
+    const createdRole = roleName;
+    setNewRoleInput('');
+    handleSelectRole(createdRole);
+  };
+
   // Restore Version Snapshot
   const handleRestoreVersion = async (versionId) => {
     try {
       const restored = await restoreResumeVersion(versionId);
       populateFromBackend(restored);
-      setShowVersionModal(false);
       showToast('Restored resume version successfully!', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to restore version', 'error');
@@ -390,7 +480,7 @@ export function useResume(user) {
   const handleDownloadPdf = () => {
     const originalTitle = document.title;
     const nameStr = (contact.name || user?.name || 'Candidate').replace(/\s+/g, '_');
-    document.title = `${nameStr}_Resume.pdf`;
+    document.title = `${nameStr}_${(contact.title || 'Resume').replace(/\s+/g, '_')}.pdf`;
 
     window.print();
 
@@ -403,12 +493,17 @@ export function useResume(user) {
     loading,
     isBuilding,
     isSaving,
-    showVersionModal,
-    setShowVersionModal,
     isEditMode,
     setIsEditMode,
-    selectedVersion,
-    setSelectedVersion,
+    selectedRole,
+    setSelectedRole,
+    availableRoles,
+    showNewRoleModal,
+    setShowNewRoleModal,
+    newRoleInput,
+    setNewRoleInput,
+    handleSelectRole,
+    handleCreateNewRole,
     toast,
     lastSaved,
     contact,
@@ -453,3 +548,4 @@ export function useResume(user) {
     handleDownloadPdf,
   };
 }
+

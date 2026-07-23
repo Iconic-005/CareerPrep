@@ -11,12 +11,17 @@ export default function ResumePage() {
     loading,
     isBuilding,
     isSaving,
-    showVersionModal,
-    setShowVersionModal,
     isEditMode,
     setIsEditMode,
-    selectedVersion,
-    setSelectedVersion,
+    selectedRole,
+    setSelectedRole,
+    availableRoles,
+    showNewRoleModal,
+    setShowNewRoleModal,
+    newRoleInput,
+    setNewRoleInput,
+    handleSelectRole,
+    handleCreateNewRole,
     toast,
     lastSaved,
     contact,
@@ -262,29 +267,29 @@ export default function ResumePage() {
               <h1 className="resume-title-heading">AI Resume Builder</h1>
               <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
                 {isSaving ? (
-                  <span style={{ color: '#256cf0', fontWeight: 600 }}>Saving changes to MongoDB...</span>
+                  <span style={{ color: '#256cf0', fontWeight: 600 }}>Saving changes...</span>
                 ) : lastSaved ? (
-                  <span>MongoDB Synced • Last saved at {lastSaved}</span>
+                  <span>Synced • Last saved at {lastSaved}</span>
                 ) : (
-                  <span>Live MongoDB Connection</span>
+                  <span>Auto-Save Active</span>
                 )}
               </div>
             </div>
-            {versionHistory.length > 0 && (
-              <select
-                value={selectedVersion}
-                onChange={(e) => setSelectedVersion(e.target.value)}
-                className="resume-version-dropdown-btn"
-                aria-label="Select Resume Version"
-              >
-                <option value="Active Resume (Current)">Active Resume (Current)</option>
-                {versionHistory.map((v) => (
-                  <option key={v.id || v.title} value={v.id || v.title}>
-                    {v.title} ({v.date})
+            <select
+              value={selectedRole}
+              onChange={(e) => handleSelectRole(e.target.value)}
+              className="resume-version-dropdown-btn"
+              aria-label="Select Target Role Resume"
+            >
+              <optgroup label="Saved Target Role Resumes">
+                {availableRoles.map((r) => (
+                  <option key={r} value={r}>
+                    Target Role: {r} {contact.title === r ? '(Active)' : ''}
                   </option>
                 ))}
-              </select>
-            )}
+              </optgroup>
+              <option value="CREATE_NEW_ROLE">+ Create Resume for New Role...</option>
+            </select>
           </div>
 
           <div className="resume-top-actions">
@@ -297,30 +302,10 @@ export default function ResumePage() {
                 }
                 setIsEditMode(!isEditMode);
               }}
-            >
-              <Icon name="edit" />
-              <span>{isEditMode ? 'Finish Editing & Save' : 'Edit Resume'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn-outline-secondary"
-              onClick={handleSaveAll}
               disabled={isSaving}
-              style={{ borderColor: '#256cf0', color: '#256cf0', background: 'rgba(37,108,240,0.05)', fontWeight: 600 }}
-              title="Save all changes directly to MongoDB"
             >
-              <Icon name="check" />
-              <span>{isSaving ? 'Saving to MongoDB...' : 'Save Resume'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn-outline-secondary"
-              onClick={() => setShowVersionModal(true)}
-            >
-              <Icon name="history" />
-              <span>Version History</span>
+              <Icon name={isEditMode ? "check" : "edit"} />
+              <span>{isSaving ? 'Saving...' : isEditMode ? 'Finish Editing & Save' : 'Edit Resume'}</span>
             </button>
 
             <button type="button" className="btn-outline-secondary" onClick={handleDownloadPdf}>
@@ -370,7 +355,7 @@ export default function ResumePage() {
           <div className="resume-paper-wrapper" id="resume-document-stage">
             {loading ? (
               <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                <p>Loading real resume data from MongoDB...</p>
+                <p>Loading resume data...</p>
               </div>
             ) : (
               <>
@@ -965,51 +950,56 @@ export default function ResumePage() {
 
       <MobileNav />
 
-      {/* VERSION HISTORY MODAL */}
-      {showVersionModal && (
-        <div className="resume-modal-overlay" onClick={() => setShowVersionModal(false)}>
+      {/* CREATE RESUME FOR NEW ROLE MODAL */}
+      {showNewRoleModal && (
+        <div className="resume-modal-overlay" onClick={() => setShowNewRoleModal(false)}>
           <div className="resume-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="resume-modal-header">
-              <h3>Version History</h3>
+              <h3>Create Resume for Target Role</h3>
               <button
                 type="button"
                 className="btn-dismiss-x"
-                onClick={() => setShowVersionModal(false)}
+                onClick={() => setShowNewRoleModal(false)}
               >
-                <Icon name="close" />
+                ✕
               </button>
             </div>
 
-            {versionHistory.length === 0 ? (
-              <p style={{ fontSize: '0.9rem', color: '#64748b' }}>No previous versions saved yet. Click "Build Resume with AI" to create your first snapshot.</p>
-            ) : (
-              <div style={{ marginBottom: '1rem', maxHeight: '320px', overflowY: 'auto' }}>
-                {versionHistory.map((v) => (
-                  <div key={v.id || v.date} className="version-item-row">
-                    <div className="version-info">
-                      <strong>{v.title || 'AI Resume Snapshot'}</strong>
-                      <span>{v.date}</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-restore-version"
-                      onClick={() => handleRestoreVersion(v.id)}
-                    >
-                      Restore
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <form onSubmit={handleCreateNewRole}>
+              <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.2rem' }}>
+                Create a tailored resume version optimized for a specific job title (e.g. Senior Product Designer, Full Stack Engineer, Product Manager).
+              </p>
 
-            <button
-              type="button"
-              className="btn-outline-secondary"
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={() => setShowVersionModal(false)}
-            >
-              Close
-            </button>
+              <label style={{ display: 'block', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '6px' }}>Target Role Title *</span>
+                <input
+                  type="text"
+                  placeholder="e.g. Full Stack Developer"
+                  value={newRoleInput}
+                  onChange={(e) => setNewRoleInput(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                  required
+                  autoFocus
+                />
+              </label>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-outline-secondary"
+                  onClick={() => setShowNewRoleModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-spark"
+                  style={{ padding: '0.65rem 1.25rem' }}
+                >
+                  Create Role Resume
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
