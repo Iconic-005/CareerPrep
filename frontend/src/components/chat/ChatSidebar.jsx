@@ -13,6 +13,7 @@ export function ChatSidebar({
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [deletingSessionId, setDeletingSessionId] = useState(null);
 
   const filteredSessions = sessions.filter((s) =>
     (s.title || '').toLowerCase().includes(search.toLowerCase())
@@ -48,17 +49,62 @@ export function ChatSidebar({
     onUpdateSession(session.id, { isPinned: !session.isPinned });
   };
 
-  const handleDelete = (sessionId, e) => {
+  const handlePromptDelete = (sessionId, e) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this chat conversation?')) {
-      onDeleteSession(sessionId);
+    setDeletingSessionId(sessionId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingSessionId) {
+      onDeleteSession(deletingSessionId);
+      setDeletingSessionId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeletingSessionId(null);
   };
 
   return (
     <>
       {/* Mobile Backdrop */}
       {isOpen && <div className="chat-sidebar-backdrop" onClick={onCloseMobile} />}
+
+      {/* Modern Custom Delete Confirmation Modal */}
+      {deletingSessionId && (
+        <div className="chat-dialog-overlay" onClick={handleCancelDelete}>
+          <div className="chat-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-dialog__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </div>
+            <h3 className="chat-dialog__title">Delete conversation?</h3>
+            <p className="chat-dialog__text">
+              Are you sure you want to delete this chat conversation? All messages will be permanently removed.
+            </p>
+            <div className="chat-dialog__actions">
+              <button
+                type="button"
+                className="chat-dialog__btn chat-dialog__btn--cancel"
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="chat-dialog__btn chat-dialog__btn--confirm"
+                onClick={handleConfirmDelete}
+              >
+                Delete Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
         <div className="chat-sidebar__header">
@@ -106,7 +152,7 @@ export function ChatSidebar({
                   onSaveRename={handleSaveRename}
                   onKeyDownRename={handleKeyDownRename}
                   onTogglePin={handleTogglePin}
-                  onDelete={handleDelete}
+                  onDelete={handlePromptDelete}
                 />
               ))}
             </div>
@@ -132,7 +178,7 @@ export function ChatSidebar({
                   onSaveRename={handleSaveRename}
                   onKeyDownRename={handleKeyDownRename}
                   onTogglePin={handleTogglePin}
-                  onDelete={handleDelete}
+                  onDelete={handlePromptDelete}
                 />
               ))
             )}
