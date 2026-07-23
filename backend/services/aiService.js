@@ -45,7 +45,6 @@ const isValidKeyFormat = apiKey && apiKey.startsWith('AIza');
 const isOAuthToken = apiKey && (apiKey.startsWith('AQ.') || apiKey.startsWith('ya29.'));
 
 if (!apiKey) {
-<<<<<<< HEAD
   console.error('❌ [Gemini] GEMINI_API_KEY is missing from .env');
   console.error('   👉 Get your key at: https://aistudio.google.com/app/apikey');
 } else if (isOAuthToken) {
@@ -58,20 +57,12 @@ if (!apiKey) {
   console.error('   👉 Get a valid key at: https://aistudio.google.com/app/apikey');
 } else {
   console.log('✅ Gemini API Loaded: true');
-=======
-  console.warn('WARNING: Gemini API Key is missing from environment variables (.env). Please set GEMINI_API_KEY.');
->>>>>>> backend-connections
 }
 
 const genAI = isValidKeyFormat ? new GoogleGenerativeAI(apiKey) : null;
 
-<<<<<<< HEAD
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Get a Gemini model instance with the given system instruction */
-function getModel(systemInstruction) {
-=======
 const CAREER_COACH_SYSTEM_PROMPT = `You are CareerPrep AI Coach, an elite Senior Full Stack Engineer, AI Architect, and Technical Hiring Strategist.
 Your goal is to provide exceptional, highly personalized, and non-repetitive career coaching to help the user land their dream tech role.
 
@@ -89,7 +80,6 @@ CORE RULES & BEHAVIOR:
 
 // Helper to get Gemini generative model with fallback candidates
 function getGenerativeModel(systemInstruction, userContext = {}) {
->>>>>>> backend-connections
   if (!genAI) return null;
 
   let dynamicInstruction = CAREER_COACH_SYSTEM_PROMPT;
@@ -124,7 +114,11 @@ function getGenerativeModel(systemInstruction, userContext = {}) {
   });
 }
 
-<<<<<<< HEAD
+/** Get a Gemini model instance with the given system instruction */
+function getModel(systemInstruction) {
+  return getGenerativeModel(systemInstruction);
+}
+
 /**
  * Generates an intelligent, context-aware fallback reply based on user message topic
  * when Gemini API key is missing or invalid.
@@ -248,20 +242,6 @@ Welcome! I am your AI career mentor. Here is how I can assist you today:
  * Converts chat history from backend format to Gemini format.
  * Enforces a rolling window of the latest 20 messages to control token usage.
  */
-function buildContents(history, userMessage) {
-  // Limit to the most recent 20 messages (10 exchanges) to avoid token overflow
-  const recentHistory = history.slice(-20);
-
-  const contents = recentHistory.map((item) => ({
-    role: item.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: item.content }],
-  }));
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }],
-  });
-=======
 function buildUserParts(userMessage, attachments = []) {
   const parts = [];
 
@@ -311,7 +291,6 @@ function buildMultimodalContents(history = [], userMessage = '', attachments = [
 
   const latestParts = buildUserParts(userMessage, attachments);
   contents.push({ role: 'user', parts: latestParts });
->>>>>>> backend-connections
 
   return contents;
 }
@@ -319,38 +298,11 @@ function buildMultimodalContents(history = [], userMessage = '', attachments = [
 // ─── Exported Functions ───────────────────────────────────────────────────────
 
 /**
-<<<<<<< HEAD
- * Handles career coaching chats with conversation history context (non-streaming).
-=======
  * Handles career coaching chats with conversation history & document context (non-streaming)
->>>>>>> backend-connections
  */
 export async function generateChatReply(history = [], userMessage = '', attachments = [], userContext = {}) {
   console.log('[AI COACH] Processing chat request for:', userContext.userName || 'User', '| Attachments:', attachments.length);
 
-<<<<<<< HEAD
-  if (!genAI) {
-    console.warn('[DEBUG] Gemini not configured — using Smart Mentor fallback.');
-    return { reply: getFallbackReply(userMessage), model: 'smart-mentor' };
-  }
-
-  try {
-    const model = getModel(CAREER_COACH_PROMPT);
-    const contents = buildContents(history, userMessage);
-    const result = await model.generateContent({ contents });
-    const reply = result.response.text();
-    console.log('[DEBUG] Gemini chat reply received (length):', reply.length);
-    return { reply, model: 'gemini-1.5-flash' };
-  } catch (err) {
-    console.error('[DEBUG] Gemini API error:', err.message);
-    return { reply: getFallbackReply(userMessage), model: 'smart-mentor' };
-  }
-}
-
-/**
- * Streams career coaching chat responses chunk-by-chunk.
- * Returns an async iterable of text chunks.
-=======
   if (genAI) {
     try {
       const model = getGenerativeModel(null, userContext);
@@ -362,46 +314,19 @@ export async function generateChatReply(history = [], userMessage = '', attachme
       return { reply, suggestions, model: 'gemini-flash' };
     } catch (err) {
       console.error('[AI COACH] Gemini API error:', err.message);
-      throw new Error(`Gemini API Error: ${err.message}`);
+      return { reply: getFallbackReply(userMessage), suggestions: [], model: 'smart-mentor' };
     }
   }
 
-  throw new Error('GEMINI_API_KEY is not configured on the backend server.');
+  return { reply: getFallbackReply(userMessage), suggestions: [], model: 'smart-mentor' };
 }
 
 /**
  * Streams career coaching chat responses chunk-by-chunk using Gemini stream API
->>>>>>> backend-connections
  */
 export async function generateChatReplyStream(history = [], userMessage = '', attachments = [], userContext = {}) {
   console.log('[AI COACH STREAM] Starting stream for:', userContext.userName || 'User', '| Attachments:', attachments.length);
 
-<<<<<<< HEAD
-  if (!genAI) {
-    console.warn('[DEBUG] Gemini not configured — returning Smart Mentor fallback stream.');
-    return createFallbackStream(getFallbackReply(userMessage));
-  }
-
-  try {
-    const model = getModel(CAREER_COACH_PROMPT);
-    const contents = buildContents(history, userMessage);
-    const result = await model.generateContentStream({ contents });
-    console.log('[DEBUG] Gemini stream started for message:', userMessage.slice(0, 50));
-    return result.stream;
-  } catch (err) {
-    console.error('[DEBUG] Gemini API stream error:', err.message);
-    return createFallbackStream(getFallbackReply(userMessage));
-  }
-}
-
-/** Creates a simple async generator that yields the fallback message as one chunk */
-async function* createFallbackStream(text) {
-  yield { text: () => text };
-}
-
-/**
- * Generates 3 follow-up suggestion prompts based on the conversation context.
-=======
   if (genAI) {
     try {
       const model = getGenerativeModel(null, userContext);
@@ -410,16 +335,20 @@ async function* createFallbackStream(text) {
       return result.stream;
     } catch (err) {
       console.error('[AI COACH STREAM] Gemini Stream error:', err.message);
-      throw new Error(`Gemini Stream Error: ${err.message}`);
+      return createFallbackStream(getFallbackReply(userMessage));
     }
   }
 
-  throw new Error('GEMINI_API_KEY is not configured on the backend server.');
+  return createFallbackStream(getFallbackReply(userMessage));
+}
+
+/** Creates a simple async generator that yields the fallback message as one chunk */
+async function* createFallbackStream(text) {
+  yield { text: () => text };
 }
 
 /**
  * Generates 3 dynamic follow-up suggestion prompts based on context
->>>>>>> backend-connections
  */
 export async function generateFollowUpSuggestions(history = [], lastReply = '') {
   if (!genAI) {
@@ -427,18 +356,10 @@ export async function generateFollowUpSuggestions(history = [], lastReply = '') 
   }
 
   try {
-<<<<<<< HEAD
-    const model = getModel(
-      'You generate exactly 3 short follow-up question suggestions for a career coaching conversation. Return valid JSON only.'
-    );
-
-    const prompt = `Based on this career coaching conversation, generate exactly 3 short follow-up prompts (max 6 words each) the user might want to ask next. Return as a JSON array of strings.
-=======
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       systemInstruction: 'You generate exactly 3 short, relevant follow-up action suggestions for a candidate talking to a career coach. Return valid JSON array of 3 strings only.',
     });
->>>>>>> backend-connections
 
     const prompt = `Based on the latest response from the career coach, suggest 3 short, natural next questions or actions the user might want to click (max 5 words per prompt).
 
@@ -451,17 +372,10 @@ Return strictly JSON format: ["Action 1", "Action 2", "Action 3"]`;
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-<<<<<<< HEAD
-    const suggestions = JSON.parse(result.response.text());
-    return Array.isArray(suggestions)
-      ? suggestions.slice(0, 3)
-      : ['Tell me more', 'What should I do next?', 'Give me an example'];
-=======
     const parsed = JSON.parse(result.response.text());
     if (Array.isArray(parsed) && parsed.length >= 3) {
       return parsed.slice(0, 3);
     }
->>>>>>> backend-connections
   } catch (err) {
     console.warn('[AI COACH] Suggestions generation fallback:', err.message);
   }
@@ -558,69 +472,13 @@ ${jobDescription}`;
 }
 
 /**
-<<<<<<< HEAD
- * Generates milestone roadmap for target role & company.
-=======
  * Generates a comprehensive career roadmap for a target role & company.
  * Includes 15-25 milestones, timeline phases, resources, interview strategy, and skill priorities.
  * Falls back to role-category-specific template data when Gemini API is unavailable.
->>>>>>> backend-connections
  */
 export async function generateRoadmap(targetRole, targetCompany) {
   console.log('[ROADMAP] Generating roadmap for:', targetRole, 'at', targetCompany);
 
-<<<<<<< HEAD
-  if (!genAI) {
-    return {
-      bannerTitle: "Target Transition",
-      bannerSubtitle: `${targetRole || 'Senior Engineer'} @ ${targetCompany || 'Top Tech Co'}`,
-      bannerMeta: "Projected readiness: Next 8-12 weeks",
-      milestones: [
-        {
-          title: "Core Fundamentals & Advanced Concepts",
-          desc: "Master key language features, architecture patterns, and domain best practices.",
-          time: "In progress",
-          tone: "mint",
-          done: false
-        },
-        {
-          title: "Portfolio Project & System Architecture",
-          desc: "Build and deploy a full-scale project demonstrating production-grade code and scalability.",
-          time: "Next up",
-          tone: "blue",
-          done: false
-        },
-        {
-          title: "Technical & DSA Interview Preparation",
-          desc: "Complete targeted problem sets and conduct timed mock interview sessions.",
-          time: "Scheduled",
-          tone: "violet",
-          done: false
-        },
-        {
-          title: "Behavioral & STAR Method Mastery",
-          desc: "Refine leadership stories, conflict resolution examples, and negotiation prep.",
-          time: "Scheduled",
-          tone: "slate",
-          done: false
-        }
-      ],
-      focusAreas: [
-        {
-          title: "System Design & Architecture",
-          text: "Focus on distributed systems, caching strategies, database indexing, and microservices."
-        },
-        {
-          title: "Impact-Driven Communication",
-          text: "Practice framing technical achievements using concrete business metrics."
-        }
-      ]
-    };
-  }
-
-  const prompt = `Generate a customized 4-milestone roadmap for transitioning from a general professional into the role of "${targetRole}" at "${targetCompany}".
-Also list 2 strategic focus areas.
-=======
   const prompt = `Generate a detailed career roadmap for a candidate targeting the role of "${targetRole}" at "${targetCompany}". Return:
 1. Strategic Focus Areas (5-8 areas critical for this specific role and company).
 2. A week-by-week and month-by-month timeline with 6 phases (Week 1-2, Week 3-4, Month 2, Month 3, Month 4+, Final Interview Preparation).
@@ -629,7 +487,6 @@ Also list 2 strategic focus areas.
 5. Interview preparation strategy with 4-6 specific strategies tailored to ${targetCompany}.
 6. Estimated total preparation duration as a string.
 7. Skill priorities in order of importance for this role (8-12 skills).
->>>>>>> backend-connections
 
 Provide a valid JSON response strictly matching this schema:
 {

@@ -26,12 +26,9 @@ function formatTime() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-<<<<<<< HEAD
 // All AI responses come exclusively from the backend (Gemini API).
 // There is no client-side fallback — failures show a user-friendly error message.
 
-=======
->>>>>>> backend-connections
 export function ChatWindow({ user }) {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
@@ -305,7 +302,6 @@ export function ChatWindow({ user }) {
       }
     }
 
-<<<<<<< HEAD
     // If both stream and POST failed, show a user-friendly error message
     if (!streamedSuccess && !controller.signal.aborted) {
       setIsThinking(false);
@@ -321,8 +317,6 @@ export function ChatWindow({ user }) {
       ]);
     }
 
-=======
->>>>>>> backend-connections
     setIsStreaming(false);
     setIsThinking(false);
     abortControllerRef.current = null;
