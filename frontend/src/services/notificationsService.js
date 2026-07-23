@@ -5,6 +5,22 @@ export async function getNotifications() {
   return res.json();
 }
 
+export async function markNotificationAsRead(id) {
+  const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  return res.json();
+}
+
+export async function markAllNotificationsAsRead() {
+  const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  return res.json();
+}
+
 export async function deleteNotification(id) {
   await fetch(`${API_BASE_URL}/notifications/${id}`, {
     method: 'DELETE',

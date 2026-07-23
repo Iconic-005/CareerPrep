@@ -9,6 +9,7 @@ import {
   deleteNotificationData,
   evaluateInterviewSessionData,
   generateRoadmapData,
+  getActivityData,
   getAdminData,
   getCoachData,
   getCurrentUser,
@@ -23,6 +24,8 @@ import {
   getSettingsData,
   handleChatRequest,
   handleChatStreamRequest,
+  markAllNotificationsReadData,
+  markNotificationReadData,
   optimizeResumeData,
   startInterviewSession,
   submitAuthRequest,
@@ -253,9 +256,38 @@ router.post('/interview/evaluate', async (req, res) => {
 });
 
 
+// Activity Log
+router.get('/activity', async (req, res) => {
+  try {
+    const { search, category, page, limit } = req.query;
+    const result = await getActivityData(req.user.id, { search, category, page, limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Notifications
 router.get('/notifications', async (req, res) => {
   res.json(await getNotificationsData(req.user.id));
+});
+
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    const result = await markAllNotificationsReadData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const result = await markNotificationReadData(req.user.id, req.params.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.delete('/notifications', async (req, res) => {

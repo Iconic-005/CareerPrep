@@ -34,3 +34,11 @@ export async function deleteGoal(goalId) {
   if (response.ok) return response.json();
   throw new Error('Failed to delete goal');
 }
+
+export async function getActivityLog(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const url = `${API_BASE_URL}/activity${query ? `?${query}` : ''}`;
+  const response = await fetch(url, { headers: getAuthHeaders() });
+  if (response.ok) return response.json();
+  throw new Error('Failed to load activity log');
+}

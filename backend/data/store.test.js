@@ -16,7 +16,7 @@ test.after(async () => {
   }
 });
 
-test('new user registration initializes clean record in MongoDB', async () => {
+test('new user registration initializes clean record in MongoDB without mock data', async () => {
   const store = createStore();
   const testEmail = `alex_${Date.now()}@example.com`;
 
@@ -27,7 +27,12 @@ test('new user registration initializes clean record in MongoDB', async () => {
   const dashboard = await store.getDashboard(newUser.id);
   assert.equal(dashboard.greeting, 'Alex');
   assert.ok(dashboard.user.id);
-  assert.ok(dashboard.stats.length === 3);
+  assert.equal(dashboard.codingXP, 0);
+  assert.equal(dashboard.careerReadiness, 0);
+  assert.equal(dashboard.resumeScore, 'Not Generated');
+  assert.equal(dashboard.interviewRank, '--');
+  assert.equal(dashboard.goals.length, 0);
+  assert.equal(dashboard.notifications.length, 0);
 });
 
 test('user data is strictly isolated per userId', async () => {
@@ -54,11 +59,21 @@ test('completing actions updates user analytics dynamically', async () => {
   const emailMina = `mina_${Date.now()}@example.com`;
 
   const user = await store.registerUser({ name: 'Mina', email: emailMina, password: 'password123' });
-  
+
   const goal = await store.addGoal(user.id, 'Complete 5 practice questions');
   await store.updateGoal(user.id, goal.id || goal._id, { done: true });
 
   const dashboard = await store.getDashboard(user.id);
   assert.ok(dashboard.codingXP >= 25);
   assert.ok(dashboard.recentActivity.length > 0);
+});
+
+test('activity log filtering and pagination', async () => {
+  const store = createStore();
+  const testEmail = `act_${Date.now()}@example.com`;
+  const user = await store.registerUser({ name: 'Activity User', email: testEmail, password: 'password123' });
+
+  const activityData = await store.getActivityLog(user.id, { category: 'All' });
+  assert.ok(Array.isArray(activityData.activities));
+  assert.ok(activityData.categories.includes('Resume Builder'));
 });

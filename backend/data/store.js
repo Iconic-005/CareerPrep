@@ -59,11 +59,20 @@ export function createStore() {
     async getNotifications(userId) {
       return mongoStore.getNotifications(userId);
     },
+    async markNotificationRead(userId, id) {
+      return mongoStore.markNotificationRead(userId, id);
+    },
+    async markAllNotificationsRead(userId) {
+      return mongoStore.markAllNotificationsRead(userId);
+    },
     async deleteNotification(userId, id) {
       return mongoStore.deleteNotification(userId, id);
     },
     async clearAllNotifications(userId) {
       return mongoStore.clearAllNotifications(userId);
+    },
+    async getActivityLog(userId, params) {
+      return mongoStore.getActivityLog(userId, params);
     },
     async getPractice(userId) {
       return mongoStore.getPractice(userId);

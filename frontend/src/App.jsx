@@ -19,6 +19,7 @@ const NotificationsPage    = lazy(() => import('./pages/Notifications/Notificati
 const ProfilePage          = lazy(() => import('./pages/Profile/ProfilePage.jsx'));
 const SettingsPage         = lazy(() => import('./pages/Settings/SettingsPage.jsx'));
 const AdminPage            = lazy(() => import('./pages/Admin/AdminPage.jsx'));
+const ActivityLogPage      = lazy(() => import('./pages/Activity/ActivityLogPage.jsx'));
 const NotFoundPage         = lazy(() => import('./pages/NotFound/NotFoundPage.jsx'));
 
 // ── Route table ──────────────────────────────────────────────────────────────
@@ -26,6 +27,8 @@ const routes = {
   '/':                  LandingPage,
   '/auth':              AuthPage,
   '/dashboard':         DashboardPage,
+  '/dashboard/activity': ActivityLogPage,
+  '/activity':          ActivityLogPage,
   '/resume':            ResumePage,
   '/jd-analyzer':       JDAnalyzerPage,
   '/coach':             CoachPage,

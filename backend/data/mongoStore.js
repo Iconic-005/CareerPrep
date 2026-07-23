@@ -31,66 +31,18 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
       userId,
       name,
       email,
-      title: 'Senior Product Designer @ Fintech Innovations',
-      avatarUrl: '/images/alex_thompson.png',
-      completion: 85,
-      about: 'Passionate about designing human-centered products and scalable design systems.',
-      recruiterSnapshot: 'Experienced designer with strong background in Fintech and React ecosystems.',
-      experiences: [
-        {
-          id: 'exp_1',
-          role: 'Senior Product Designer',
-          company: 'Fintech Innovations',
-          period: 'Jan 2022 — Present',
-          description: 'Leading the design system team for a series-B mobile banking app. Reduced design-to-code latency by 40%.',
-          current: true,
-        },
-        {
-          id: 'exp_2',
-          role: 'UX Designer',
-          company: 'Creativ Studio',
-          period: 'Jun 2019 — Dec 2021',
-          description: 'Designed end-to-end user journeys for high-traffic e-commerce platforms.',
-          current: false,
-        },
-      ],
-      education: [
-        {
-          id: 'edu_1',
-          degree: 'B.S. Interaction Design',
-          institution: 'Stanford University',
-          period: '2015 — 2019',
-          description: 'Focus on Human-Computer Interaction and Cognitive Psychology.',
-        },
-      ],
-      projects: [
-        {
-          id: 'proj_1',
-          title: 'Nexus Wallet',
-          description: 'Crypto asset management redesigned for clarity.',
-          image: '/images/nexus_wallet.png',
-        },
-        {
-          id: 'proj_2',
-          title: 'DataStream Dashboard',
-          description: 'Real-time analytics for enterprise-level logistics.',
-          image: '/images/datastream_dashboard.png',
-        },
-      ],
-      skills: ['Figma', 'UI/UX Design', 'React.js', 'Design Systems', 'Prototyping', 'User Testing', 'Adobe CC'],
-      skillsActive: ['Figma', 'UI/UX Design', 'React.js'],
-      targetRoles: ['Principal Product Designer', 'Design Manager'],
-      dreamCompanies: [
-        { name: 'Stripe', color: '#000000' },
-        { name: 'Linear', color: '#2563eb' },
-        { name: 'Airbnb', color: '#ff385c' },
-      ],
-      aiSuggestion: {
-        targetCompany: 'Stripe',
-        title: 'Optimize for Stripe',
-        description: "Based on your target companies, highlight 'Systems Thinking' in your project descriptions.",
-        buttonLabel: 'Refine Project Text',
-      },
+      title: '',
+      avatarUrl: '',
+      completion: 10,
+      about: '',
+      recruiterSnapshot: '',
+      experiences: [],
+      education: [],
+      projects: [],
+      skills: [],
+      skillsActive: [],
+      targetRoles: [],
+      dreamCompanies: [],
     });
   }
 
@@ -98,24 +50,22 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
   if (!analytics) {
     analytics = await AnalyticsModel.create({
       userId,
-      codingXP: 150,
-      careerReadiness: 65,
-      resumeScore: '85/100',
-      interviewRank: 'Top 10%',
+      codingXP: 0,
+      careerReadiness: 0,
+      resumeScore: 'Not Generated',
+      interviewRank: '--',
       weeklyActivity: [
-        { day: 'Mon', count: 2 },
-        { day: 'Tue', count: 4 },
-        { day: 'Wed', count: 1 },
-        { day: 'Thu', count: 5 },
-        { day: 'Fri', count: 3 },
+        { day: 'Mon', count: 0 },
+        { day: 'Tue', count: 0 },
+        { day: 'Wed', count: 0 },
+        { day: 'Thu', count: 0 },
+        { day: 'Fri', count: 0 },
         { day: 'Sat', count: 0 },
-        { day: 'Sun', count: 2 },
+        { day: 'Sun', count: 0 },
       ],
-      activityLog: [
-        { id: `act_${Date.now()}_1`, title: 'Joined CareerPrep Platform', desc: 'Account created and initialized.', time: 'Recently', tone: 'mint' },
-      ],
-      practiceStats: { questionsCompleted: 4, accuracy: 88 },
-      streak: 3,
+      activityLog: [],
+      practiceStats: { questionsCompleted: 0, accuracy: 0 },
+      streak: 0,
     });
   }
 
@@ -123,12 +73,10 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
   if (!resume) {
     resume = await ResumeModel.create({
       userId,
-      suggestions: [
-        { id: 'sug_1', title: 'Quantify achievements in Stripe role', desc: 'Adding metrics increases ATS score.', accent: 'blue' },
-      ],
-      missingSkills: ['System Architecture', 'GraphQL', 'Kubernetes'],
-      resumeText: 'Senior Product Designer with 5+ years of experience building design systems and scalable apps.',
-      score: '85/100',
+      suggestions: [],
+      missingSkills: [],
+      resumeText: '',
+      score: 'Not Generated',
     });
   }
 
@@ -137,17 +85,10 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
     roadmap = await RoadmapModel.create({
       userId,
       bannerTitle: 'Target Transition',
-      bannerSubtitle: 'Principal Product Designer @ Stripe',
-      bannerMeta: 'Estimated 8 weeks to maximum readiness.',
-      milestones: [
-        { id: 'm_1', title: 'Design System Architecture', desc: 'Master tokenized design components in Figma and React.', time: 'Done', tone: 'mint', done: true },
-        { id: 'm_2', title: 'STAR Behavioral Scenarios', desc: 'Prepare 5 structured leadership anecdotes.', time: 'In progress', tone: 'blue', done: false },
-        { id: 'm_3', title: 'Live System Design Mock', desc: 'Schedule 1-on-1 peer review session.', time: 'Scheduled', tone: 'slate', done: false },
-      ],
-      focusAreas: [
-        { id: 'f_1', title: 'Systems Thinking', text: 'Focus on multi-platform design sync.' },
-        { id: 'f_2', title: 'Cross-functional Communication', text: 'Demonstrate design decisions with data.' },
-      ],
+      bannerSubtitle: 'Not Set',
+      bannerMeta: 'Generate your customized career roadmap to get started.',
+      milestones: [],
+      focusAreas: [],
     });
   }
 
@@ -165,51 +106,6 @@ export async function ensureUserInitialized(userId, name = 'User', email = '') {
     await AIChatHistoryModel.create({
       userId,
       messages: [],
-    });
-  }
-
-  const existingGoalsCount = await GoalModel.countDocuments({ userId });
-  if (existingGoalsCount === 0) {
-    await GoalModel.create([
-      { userId, title: 'Solve 3 Coding Challenges', done: false, status: 'Pending' },
-      { userId, title: 'Review Resume ATS Recommendations', done: true, status: 'Complete' },
-      { userId, title: 'Complete 1 Mock Interview Scenario', done: false, status: 'Pending' },
-    ]);
-  }
-
-  const existingNotificationCount = await NotificationModel.countDocuments({ userId });
-  if (existingNotificationCount === 0) {
-    await NotificationModel.create([
-      { userId, title: 'Welcome to CareerPrep!', detail: 'Your dynamic career preparation dashboard is fully activated.', time: 'Just now', accent: 'mint', read: false },
-      { userId, title: 'Mock Interview Scheduled', detail: 'System Design practice scheduled for tomorrow at 4 PM.', time: 'Today', accent: 'violet', read: false },
-    ]);
-  }
-
-  const existingInterviewCount = await MockInterviewModel.countDocuments({ userId });
-  if (existingInterviewCount === 0) {
-    await MockInterviewModel.create({
-      userId,
-      title: 'Senior Product Designer Mock Interview',
-      role: 'Principal Product Designer',
-      targetCompany: 'Stripe',
-      difficulty: 'Hard',
-      score: 8.8,
-      maxScore: 10,
-      headline: 'Outstanding Performance!',
-      percentileText: 'You are in the top 5% of candidates for Senior Product Designer roles.',
-      skillsRadar: { Technical: 90, Communication: 85, Grammar: 80, Behavioral: 88, Confidence: 92 },
-      strengths: [
-        { id: 'str_1', title: 'Architectural Depth', desc: 'Excellent explanation of design system tokens and component state.' },
-        { id: 'str_2', title: 'Executive Presence', desc: 'Clear, articulate delivery under scenario pressure.' },
-      ],
-      improvements: [
-        { id: 'imp_1', title: 'Mention Alternatives', desc: 'Discuss trade-offs between custom SVG icons vs font icons.' },
-      ],
-      nextSteps: [
-        { id: 'ns_1', title: 'Practice Leadership Question', text: 'How do you prioritize design debt versus feature output?', icon: 'chat' },
-      ],
-      status: 'Upcoming',
-      interviewDate: new Date(Date.now() + 86400000 * 2),
     });
   }
 
@@ -248,67 +144,73 @@ export async function computeCalculatedMetrics(userId) {
   const resume = await ResumeModel.findOne({ userId });
   const goals = await GoalModel.find({ userId });
   const roadmap = await RoadmapModel.findOne({ userId });
-  const interview = await MockInterviewModel.findOne({ userId }).sort({ createdAt: -1 });
-  const practiceCount = await PracticeHistoryModel.countDocuments({ userId });
+  const interview = await MockInterviewModel.findOne({ userId, score: { $exists: true, $ne: null } }).sort({ createdAt: -1 });
 
   let resumeScoreNum = 0;
-  if (resume && resume.score) {
+  if (resume && resume.score && resume.score !== 'Not Generated') {
     const parsed = parseInt(resume.score, 10);
     if (!isNaN(parsed)) resumeScoreNum = parsed;
   }
 
-  let interviewScoreNum = 75;
+  let interviewScoreNum = 0;
   if (interview && interview.score) {
-    interviewScoreNum = Math.min(100, Math.round((interview.score / interview.maxScore) * 100));
+    interviewScoreNum = Math.min(100, Math.round((interview.score / (interview.maxScore || 10)) * 100));
   }
 
   const completedGoals = goals.filter((g) => g.done).length;
-  const totalGoals = goals.length || 1;
-  const goalProgress = (completedGoals / totalGoals) * 100;
+  const totalGoals = goals.length || 0;
+  const goalProgress = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
 
-  const totalMilestones = roadmap?.milestones?.length || 1;
+  const totalMilestones = roadmap?.milestones?.length || 0;
   const completedMilestones = roadmap?.milestones?.filter((m) => m.done).length || 0;
-  const roadmapProgress = (completedMilestones / totalMilestones) * 100;
+  const roadmapProgress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
 
   const xpProgress = Math.min(100, ((analytics?.codingXP || 0) / 1000) * 100);
 
-  // Calculated Career Readiness Formula:
-  // 30% Resume + 30% Interview + 20% Coding XP + 10% Goals Progress + 10% Roadmap Progress
-  const calculatedReadiness = Math.min(
-    100,
-    Math.round(
-      0.30 * resumeScoreNum +
-      0.30 * interviewScoreNum +
-      0.20 * xpProgress +
-      0.10 * goalProgress +
-      0.10 * roadmapProgress
-    )
-  );
+  const hasActivity = resumeScoreNum > 0 || interviewScoreNum > 0 || (analytics?.codingXP || 0) > 0 || completedGoals > 0;
 
-  // Dynamic Interview Rank across all registered users in MongoDB
+  const calculatedReadiness = hasActivity
+    ? Math.min(
+        100,
+        Math.round(
+          0.30 * resumeScoreNum +
+          0.30 * interviewScoreNum +
+          0.20 * xpProgress +
+          0.10 * goalProgress +
+          0.10 * roadmapProgress
+        )
+      )
+    : 0;
+
   const allAnalytics = await AnalyticsModel.find({}, 'codingXP careerReadiness');
   const userXP = analytics?.codingXP || 0;
-  const lowerUsersCount = allAnalytics.filter((a) => (a.codingXP || 0) < userXP).length;
-  const totalUsersCount = allAnalytics.length || 1;
-  const percentileRank = Math.round(((totalUsersCount - lowerUsersCount) / totalUsersCount) * 100);
+  let interviewRank = '--';
 
-  let interviewRank = 'Top 50%';
-  if (percentileRank <= 3) interviewRank = 'Top 3%';
-  else if (percentileRank <= 8) interviewRank = 'Top 8%';
-  else if (percentileRank <= 15) interviewRank = 'Top 15%';
-  else if (percentileRank <= 30) interviewRank = 'Top 30%';
+  if (hasActivity) {
+    const lowerUsersCount = allAnalytics.filter((a) => (a.codingXP || 0) < userXP).length;
+    const totalUsersCount = allAnalytics.length || 1;
+    const percentileRank = Math.round(((totalUsersCount - lowerUsersCount) / totalUsersCount) * 100);
+
+    interviewRank = 'Top 50%';
+    if (percentileRank <= 3) interviewRank = 'Top 3%';
+    else if (percentileRank <= 8) interviewRank = 'Top 8%';
+    else if (percentileRank <= 15) interviewRank = 'Top 15%';
+    else if (percentileRank <= 30) interviewRank = 'Top 30%';
+  }
+
+  const displayResumeScore = resumeScoreNum > 0 ? `${resumeScoreNum} / 100` : (resume?.score || 'Not Generated');
 
   if (analytics) {
     analytics.careerReadiness = calculatedReadiness;
     analytics.interviewRank = interviewRank;
-    if (resumeScoreNum > 0) analytics.resumeScore = `${resumeScoreNum} / 100`;
+    analytics.resumeScore = displayResumeScore;
     await analytics.save();
   }
 
   return {
     careerReadiness: calculatedReadiness,
     interviewRank,
-    resumeScore: analytics?.resumeScore || '85 / 100',
+    resumeScore: displayResumeScore,
     codingXP: analytics?.codingXP || 0,
   };
 }
@@ -377,7 +279,7 @@ export async function getDashboard(userId) {
       id: userId,
       name: profile?.name || 'User',
       email: profile?.email || '',
-      avatar: profile?.avatarUrl || '/images/alex_thompson.png',
+      avatar: profile?.avatarUrl || '',
     },
     greeting: firstName,
     profile,
@@ -386,7 +288,7 @@ export async function getDashboard(userId) {
     resumeScore: metrics.resumeScore,
     codingXP: metrics.codingXP,
     interviewRank: metrics.interviewRank,
-    streak: analytics?.streak || 1,
+    streak: analytics?.streak || 0,
     stats: [
       { title: 'Resume Score', value: metrics.resumeScore, accent: 'blue', icon: 'document' },
       { title: 'Interview Rank', value: metrics.interviewRank, accent: 'violet', icon: 'mic' },
@@ -934,6 +836,23 @@ export async function getNotifications(userId) {
   return NotificationModel.find({ userId }).sort({ createdAt: -1 });
 }
 
+export async function markNotificationRead(userId, id) {
+  await ensureUserInitialized(userId);
+  const notif = await NotificationModel.findOne({ _id: id, userId });
+  if (notif) {
+    notif.read = true;
+    await notif.save();
+    return notif;
+  }
+  return null;
+}
+
+export async function markAllNotificationsRead(userId) {
+  await ensureUserInitialized(userId);
+  await NotificationModel.updateMany({ userId }, { $set: { read: true } });
+  return { success: true, message: 'All notifications marked as read.' };
+}
+
 export async function deleteNotification(userId, id) {
   await ensureUserInitialized(userId);
   const result = await NotificationModel.deleteOne({ _id: id, userId });
@@ -947,6 +866,54 @@ export async function clearAllNotifications(userId) {
   await ensureUserInitialized(userId);
   await NotificationModel.deleteMany({ userId });
   return { success: true, message: 'All notifications cleared.' };
+}
+
+// Activity Log
+export async function getActivityLog(userId, { search = '', category = 'All', page = 1, limit = 10 } = {}) {
+  await ensureUserInitialized(userId);
+  const analytics = await AnalyticsModel.findOne({ userId });
+  let log = analytics?.activityLog || [];
+
+  const categorizedLog = log.map((item) => {
+    const obj = item.toObject ? item.toObject() : item;
+    let cat = 'System';
+    const titleLower = (obj.title || '').toLowerCase();
+    const descLower = (obj.desc || '').toLowerCase();
+
+    if (titleLower.includes('resume') || descLower.includes('resume')) cat = 'Resume Builder';
+    else if (titleLower.includes('interview') || descLower.includes('interview')) cat = 'Mock Interviews';
+    else if (titleLower.includes('jd') || titleLower.includes('job') || descLower.includes('jd')) cat = 'JD Analyzer';
+    else if (titleLower.includes('coding') || titleLower.includes('problem') || titleLower.includes('solution') || descLower.includes('xp')) cat = 'Coding Practice';
+    else if (titleLower.includes('coach') || titleLower.includes('chat') || descLower.includes('coach')) cat = 'AI Coach';
+    else if (titleLower.includes('profile') || descLower.includes('profile')) cat = 'Profile Updates';
+
+    return { ...obj, category: cat };
+  });
+
+  let filtered = categorizedLog;
+
+  if (category && category !== 'All') {
+    filtered = filtered.filter((item) => item.category === category);
+  }
+
+  if (search && search.trim()) {
+    const q = search.toLowerCase().trim();
+    filtered = filtered.filter((item) => (item.title || '').toLowerCase().includes(q) || (item.desc || '').toLowerCase().includes(q));
+  }
+
+  const total = filtered.length;
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const startIndex = (pageNum - 1) * limitNum;
+  const paginatedItems = filtered.slice(startIndex, startIndex + limitNum);
+
+  return {
+    activities: paginatedItems,
+    total,
+    page: pageNum,
+    totalPages: Math.ceil(total / limitNum) || 1,
+    categories: ['All', 'Resume Builder', 'Mock Interviews', 'JD Analyzer', 'Coding Practice', 'AI Coach', 'Profile Updates'],
+  };
 }
 
 export async function getLatestJDAnalysis(userId) {

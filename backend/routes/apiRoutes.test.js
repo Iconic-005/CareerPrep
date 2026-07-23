@@ -36,7 +36,7 @@ test('GET /api/health returns health status', async () => {
   }
 });
 
-test('Full Auth & MongoDB Goals CRUD workflow', async () => {
+test('Full Auth, Dashboard, Goals CRUD & Activity API workflow', async () => {
   const server = app.listen(0);
   const port = server.address().port;
 
@@ -56,7 +56,14 @@ test('Full Auth & MongoDB Goals CRUD workflow', async () => {
       Authorization: `Bearer ${regData.token}`,
     };
 
-    // 1. Create Goal
+    // 1. Initial Dashboard should be empty for new user
+    const initialDashRes = await fetch(`http://localhost:${port}/api/dashboard`, { headers });
+    const initialDashData = await initialDashRes.json();
+    assert.equal(initialDashRes.status, 200);
+    assert.equal(initialDashData.codingXP, 0);
+    assert.equal(initialDashData.careerReadiness, 0);
+
+    // 2. Create Goal
     const createRes = await fetch(`http://localhost:${port}/api/goals`, {
       method: 'POST',
       headers,
@@ -68,7 +75,7 @@ test('Full Auth & MongoDB Goals CRUD workflow', async () => {
 
     const goalId = createdGoal.id || createdGoal._id;
 
-    // 2. Toggle Goal
+    // 3. Toggle Goal
     const updateRes = await fetch(`http://localhost:${port}/api/goals/${goalId}`, {
       method: 'PUT',
       headers,
@@ -78,14 +85,20 @@ test('Full Auth & MongoDB Goals CRUD workflow', async () => {
     assert.equal(updateRes.status, 200);
     assert.equal(updatedGoal.done, true);
 
-    // 3. Get Dashboard
+    // 4. Get Dashboard after goal completion
     const dashRes = await fetch(`http://localhost:${port}/api/dashboard`, { headers });
     const dashData = await dashRes.json();
     assert.equal(dashRes.status, 200);
     assert.equal(dashData.greeting, 'Test');
     assert.ok(dashData.codingXP >= 25);
 
-    // 4. Delete Goal
+    // 5. Test Activity Log API
+    const activityRes = await fetch(`http://localhost:${port}/api/activity?category=All`, { headers });
+    const activityData = await activityRes.json();
+    assert.equal(activityRes.status, 200);
+    assert.ok(Array.isArray(activityData.activities));
+
+    // 6. Delete Goal
     const deleteRes = await fetch(`http://localhost:${port}/api/goals/${goalId}`, {
       method: 'DELETE',
       headers,

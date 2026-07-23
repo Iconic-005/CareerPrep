@@ -60,12 +60,24 @@ export async function getNotificationsData(userId) {
   return { groups: notifications };
 }
 
+export async function markNotificationReadData(userId, id) {
+  return mongoStore.markNotificationRead(userId, id);
+}
+
+export async function markAllNotificationsReadData(userId) {
+  return mongoStore.markAllNotificationsRead(userId);
+}
+
 export async function deleteNotificationData(userId, id) {
   return mongoStore.deleteNotification(userId, id);
 }
 
 export async function clearAllNotificationsData(userId) {
   return mongoStore.clearAllNotifications(userId);
+}
+
+export async function getActivityData(userId, params) {
+  return mongoStore.getActivityLog(userId, params);
 }
 
 export async function getProfileData(userId) {
