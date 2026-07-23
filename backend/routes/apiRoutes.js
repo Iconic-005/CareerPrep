@@ -13,6 +13,10 @@ import {
   getActivityData,
   getAdminData,
   getCoachData,
+  getChatSessionsData,
+  createChatSessionData,
+  updateChatSessionData,
+  deleteChatSessionData,
   getCurrentUser,
   getDashboardData,
   getInterviewReportData,
@@ -196,7 +200,44 @@ router.post('/jd-analyzer', async (req, res) => {
 
 // AI Coach & Chat
 router.get('/coach', async (req, res) => {
-  res.json(await getCoachData(req.user.id));
+  try {
+    const { sessionId } = req.query;
+    res.json(await getCoachData(req.user.id, sessionId));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/chat/sessions', async (req, res) => {
+  try {
+    res.json(await getChatSessionsData(req.user.id));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/chat/sessions', async (req, res) => {
+  try {
+    res.json(await createChatSessionData(req.user.id, req.body));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/chat/sessions/:id', async (req, res) => {
+  try {
+    res.json(await updateChatSessionData(req.user.id, req.params.id, req.body));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/chat/sessions/:id', async (req, res) => {
+  try {
+    res.json(await deleteChatSessionData(req.user.id, req.params.id));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.post('/chat', async (req, res) => {
@@ -212,7 +253,6 @@ router.post('/chat/stream', async (req, res) => {
   try {
     await handleChatStreamRequest(req.user.id, req.body, res);
   } catch (error) {
-    // If headers haven't been sent yet, send error as JSON
     if (!res.headersSent) {
       res.status(400).json({ error: error.message });
     } else {
@@ -225,6 +265,76 @@ router.post('/chat/stream', async (req, res) => {
 router.delete('/chat/clear', async (req, res) => {
   try {
     const result = await clearCoachHistoryData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// File Upload & Specialized Analysis
+router.post('/upload', async (req, res) => {
+  try {
+    const { name, type, size, base64, extractedText } = req.body;
+    if (!name || !type) throw new Error('File name and type are required.');
+    if (size && size > 20 * 1024 * 1024) throw new Error('File size exceeds maximum limit of 20MB.');
+
+    const fileObj = {
+      id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name,
+      type,
+      size: size || 0,
+      mimeType: type,
+      base64: base64 || null,
+      extractedText: extractedText || '',
+      uploadedAt: new Date(),
+    };
+
+    res.json({ success: true, file: fileObj });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/resume-review', async (req, res) => {
+  try {
+    const { resumeText, targetRole } = req.body;
+    const prompt = `Review this resume for the role "${targetRole || 'Software Engineer'}". Critique bullet points using the Google X-Y-Z formula and identify missing technical skills.`;
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments: resumeText ? [{ name: 'Resume.txt', extractedText: resumeText }] : [] });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/document-analysis', async (req, res) => {
+  try {
+    const { documentName, documentContent } = req.body;
+    const prompt = `Analyze this document "${documentName || 'Document'}": summarize key takeaways, extract core technical concepts, and provide actionable next steps.`;
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments: [{ name: documentName || 'Doc', extractedText: documentContent }] });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/certificate-analysis', async (req, res) => {
+  try {
+    const { certificateName, issuer, base64, mimeType } = req.body;
+    const prompt = `Analyze this certification "${certificateName || 'Certificate'}" issued by ${issuer || 'issuing body'}. Verify its industry relevance, skills validated, and how to showcase it on LinkedIn/Resume.`;
+    const attachments = base64 ? [{ name: certificateName || 'Cert', base64, mimeType: mimeType || 'image/png' }] : [];
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/image-analysis', async (req, res) => {
+  try {
+    const { imageName, base64, mimeType, userQuery } = req.body;
+    const prompt = userQuery || `Analyze this image "${imageName || 'Screenshot'}". Perform OCR, explain diagrams or code snippets shown, and provide actionable insights.`;
+    const attachments = base64 ? [{ name: imageName || 'Image', base64, mimeType: mimeType || 'image/png' }] : [];
+    const result = await handleChatRequest(req.user.id, { message: prompt, attachments });
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });

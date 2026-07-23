@@ -9,6 +9,7 @@ import {
   RoadmapModel,
   NotificationModel,
   JDAnalysisModel,
+  AIChatSessionModel,
   AIChatHistoryModel,
   PracticeHistoryModel,
   BadgeModel,
@@ -845,51 +846,205 @@ export async function analyzeJD(userId, jobDescription) {
   }
 }
 
-// AI Coach
-export async function getCoachData(userId) {
+// AI Coach Sessions & Chat History
+export async function getChatSessions(userId) {
   await ensureUserInitialized(userId);
-  const profile = await ProfileModel.findOne({ userId });
-  const chatHistory = await AIChatHistoryModel.findOne({ userId });
-  const role = profile?.title || 'your target role';
-  const firstName = (profile?.name || 'there').split(' ')[0];
+  const sessions = await AIChatSessionModel.find({ userId }).sort({ isPinned: -1, updatedAt: -1 });
+  return sessions.map((s) => ({
+    id: s.sessionId,
+    title: s.title,
+    isPinned: s.isPinned,
+    updatedAt: s.updatedAt,
+    messageCount: s.messages.length,
+    lastMessage: s.messages.length > 0 ? s.messages[s.messages.length - 1].content.slice(0, 60) : '',
+  }));
+}
 
+export async function createChatSession(userId, title = 'New Conversation') {
+  await ensureUserInitialized(userId);
+  const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const session = await AIChatSessionModel.create({
+    userId,
+    sessionId,
+    title,
+    isPinned: false,
+    messages: [],
+  });
   return {
-    userName: firstName,
-    welcome: `I reviewed your career profile. Let's sharpen your profile for ${role}.`,
-    starterPrompts: ['Review my resume', 'Prep for interview', 'Find skill gaps'],
-    history: chatHistory?.messages || [],
+    id: session.sessionId,
+    title: session.title,
+    isPinned: session.isPinned,
+    createdAt: session.createdAt,
+    messages: [],
   };
 }
 
-export async function handleChat(userId, userMessage) {
+export async function updateChatSession(userId, sessionId, patch = {}) {
   await ensureUserInitialized(userId);
-  let chatHistoryDoc = await AIChatHistoryModel.findOne({ userId });
-  if (!chatHistoryDoc) {
-    chatHistoryDoc = await AIChatHistoryModel.create({ userId, messages: [] });
+  const session = await AIChatSessionModel.findOne({ userId, sessionId });
+  if (!session) throw new Error('Session not found');
+
+  if (typeof patch.title === 'string' && patch.title.trim()) {
+    session.title = patch.title.trim();
+  }
+  if (typeof patch.isPinned === 'boolean') {
+    session.isPinned = patch.isPinned;
+  }
+  await session.save();
+  return {
+    id: session.sessionId,
+    title: session.title,
+    isPinned: session.isPinned,
+    updatedAt: session.updatedAt,
+  };
+}
+
+export async function deleteChatSession(userId, sessionId) {
+  await ensureUserInitialized(userId);
+  await AIChatSessionModel.deleteOne({ userId, sessionId });
+  return { success: true, message: 'Session deleted' };
+}
+
+export async function getCoachData(userId, sessionId = null) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  const role = profile?.title || 'Software Engineer';
+  const targetCompany = profile?.company || 'Top Tech Companies';
+  const firstName = (profile?.name || 'Candidate').split(' ')[0];
+
+  let sessions = await AIChatSessionModel.find({ userId }).sort({ isPinned: -1, updatedAt: -1 });
+  
+  // If user has no sessions yet, migrate legacy AIChatHistory or create first session
+  if (sessions.length === 0) {
+    const legacyHistory = await AIChatHistoryModel.findOne({ userId });
+    const initialMessages = legacyHistory?.messages?.map((m, idx) => ({
+      id: `msg-legacy-${idx}`,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt || new Date(),
+    })) || [];
+
+    const defaultSession = await AIChatSessionModel.create({
+      userId,
+      sessionId: `session-default-${Date.now()}`,
+      title: 'Career Coaching & Resume Prep',
+      isPinned: false,
+      messages: initialMessages,
+    });
+    sessions = [defaultSession];
   }
 
-  try {
-    const history = chatHistoryDoc.messages.map((m) => ({ role: m.role, content: m.content }));
-    const result = await generateChatReply(history, userMessage);
+  const activeSessionId = sessionId || sessions[0]?.sessionId;
+  const activeSession = sessions.find((s) => s.sessionId === activeSessionId) || sessions[0];
 
-    chatHistoryDoc.messages.push({ role: 'user', content: userMessage });
-    chatHistoryDoc.messages.push({ role: 'assistant', content: result.reply });
-    await chatHistoryDoc.save();
+  return {
+    userName: firstName,
+    targetRole: role,
+    targetCompany: targetCompany,
+    welcome: `Hello ${firstName}! I am your AI Career Coach. How can I assist with your ${role} preparation today?`,
+    sessions: sessions.map((s) => ({
+      id: s.sessionId,
+      title: s.title,
+      isPinned: s.isPinned,
+      updatedAt: s.updatedAt,
+      messageCount: s.messages.length,
+      lastMessage: s.messages.length > 0 ? s.messages[s.messages.length - 1].content.slice(0, 60) : '',
+    })),
+    activeSessionId: activeSession.sessionId,
+    history: activeSession.messages || [],
+  };
+}
 
-    const analytics = await AnalyticsModel.findOne({ userId });
-    if (analytics) {
-      analytics.codingXP += 10;
-      await analytics.save();
-    }
+export async function handleChat(userId, payload = {}) {
+  await ensureUserInitialized(userId);
+  const { message, attachments = [], sessionId: requestedSessionId } = payload;
+  const userMessage = (message || '').trim();
 
-    await logActivity(userId, 'Consulted AI Career Coach', `Prompt: "${userMessage.slice(0, 30)}..." (+10 XP)`, 'violet');
-    await computeCalculatedMetrics(userId);
-
-    return { reply: result.reply, model: result.model };
-  } catch (err) {
-    console.error('Gemini API Chat error:', err.message);
-    throw new Error('Unable to reach AI Coach. Please try again.');
+  if (!userMessage && attachments.length === 0) {
+    throw new Error('Message or attachment is required');
   }
+
+  // Find or create session
+  let session;
+  if (requestedSessionId) {
+    session = await AIChatSessionModel.findOne({ userId, sessionId: requestedSessionId });
+  }
+  if (!session) {
+    session = await AIChatSessionModel.findOne({ userId }).sort({ updatedAt: -1 });
+  }
+  if (!session) {
+    const newSessionId = `session-${Date.now()}`;
+    session = await AIChatSessionModel.create({
+      userId,
+      sessionId: newSessionId,
+      title: userMessage ? userMessage.slice(0, 30) : 'Document Analysis',
+      messages: [],
+    });
+  }
+
+  // Auto-generate session title if first message
+  if (session.messages.length === 0 && userMessage) {
+    session.title = userMessage.slice(0, 35) + (userMessage.length > 35 ? '...' : '');
+  }
+
+  const history = session.messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+    attachments: m.attachments || [],
+  }));
+
+  const profile = await ProfileModel.findOne({ userId });
+  const userContext = {
+    userName: profile?.name || 'Candidate',
+    targetRole: profile?.title || 'Software Engineer',
+    targetCompany: profile?.company || 'Top Tech Companies',
+    skills: profile?.skills || [],
+    bio: profile?.bio || '',
+  };
+
+  const result = await generateChatReply(history, userMessage, attachments, userContext);
+
+  // Save user & assistant messages to session
+  const userMsgObj = {
+    id: `msg-user-${Date.now()}`,
+    role: 'user',
+    content: userMessage,
+    attachments,
+    createdAt: new Date(),
+  };
+  const botMsgObj = {
+    id: `msg-bot-${Date.now()}`,
+    role: 'assistant',
+    content: result.reply,
+    createdAt: new Date(),
+  };
+
+  session.messages.push(userMsgObj);
+  session.messages.push(botMsgObj);
+  await session.save();
+
+  // Also sync to legacy history for backward compatibility
+  await AIChatHistoryModel.updateOne(
+    { userId },
+    { $push: { messages: [{ role: 'user', content: userMessage }, { role: 'assistant', content: result.reply }] } },
+    { upsert: true }
+  );
+
+  const analytics = await AnalyticsModel.findOne({ userId });
+  if (analytics) {
+    analytics.codingXP += 10;
+    await analytics.save();
+  }
+
+  await logActivity(userId, 'Consulted AI Career Coach', `Prompt: "${(userMessage || 'Attachment').slice(0, 30)}..." (+10 XP)`, 'violet');
+  await computeCalculatedMetrics(userId);
+
+  return {
+    reply: result.reply,
+    suggestions: result.suggestions || ['Review my resume', 'Prep for interview', 'Find skill gaps'],
+    model: result.model,
+    sessionId: session.sessionId,
+  };
 }
 
 // Roadmap
@@ -1276,6 +1431,7 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
 export async function clearChatHistory(userId) {
   await ensureUserInitialized(userId);
   await AIChatHistoryModel.updateOne({ userId }, { $set: { messages: [] } });
+  await AIChatSessionModel.deleteMany({ userId });
   return { success: true, message: 'Chat history cleared.' };
 }
 

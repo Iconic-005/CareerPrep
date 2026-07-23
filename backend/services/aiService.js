@@ -5,133 +5,194 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
 
 if (!apiKey) {
-  console.warn('WARNING: Gemini API Key is missing from the environment variables (.env). AI features will fall back to mockup responses.');
+  console.warn('WARNING: Gemini API Key is missing from environment variables (.env). Please set GEMINI_API_KEY.');
 }
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// Helper to get the Gemini model
-function getModel(systemInstruction) {
+const CAREER_COACH_SYSTEM_PROMPT = `You are CareerPrep AI Coach, an elite Senior Full Stack Engineer, AI Architect, and Technical Hiring Strategist.
+Your goal is to provide exceptional, highly personalized, and non-repetitive career coaching to help the user land their dream tech role.
+
+CORE RULES & BEHAVIOR:
+1. PERSONALIZED CONTEXT: Incorporate the candidate's target role, target company, skills, and past conversation memory into every answer.
+2. ATTACHMENTS & MULTIMODAL ANALYSIS: When a user uploads documents (PDF, DOCX, TXT, Certificates, Resumes, Offer Letters, Screenshots, Code, or Diagrams), conduct a thorough analysis. Extract concrete details, critique resume bullet points using the Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]"), identify skill gaps, and highlight exact insights.
+3. NO GENERIC REPETITIVE RESPONSES: Never repeat identical paragraphs or generic filler phrases across answers. Provide concrete, step-by-step guidance every time.
+4. RICH MARKDOWN FORMATTING: Always format your answers cleanly using GitHub-style Markdown:
+   - Use clear, bold section headers (### Header)
+   - Use structured bullet points and numbered lists
+   - Format tabular data using Markdown tables
+   - Use fenced code blocks with language identifiers (e.g. \`\`\`python, \`\`\`sql, \`\`\`javascript)
+   - Use callout boxes or bold key metrics to draw attention
+5. TONE: Professional, encouraging, highly analytical, clear, and actionable.`;
+
+// Helper to get Gemini generative model with fallback candidates
+function getGenerativeModel(systemInstruction, userContext = {}) {
   if (!genAI) return null;
+
+  let dynamicInstruction = CAREER_COACH_SYSTEM_PROMPT;
+  if (userContext.userName || userContext.targetRole || userContext.targetCompany) {
+    dynamicInstruction += `\n\nCURRENT USER PROFILE:
+- Candidate Name: ${userContext.userName || 'Candidate'}
+- Target Role: ${userContext.targetRole || 'Software Engineer'}
+- Target Company: ${userContext.targetCompany || 'Top Tech Companies'}
+- Known Skills: ${(userContext.skills || []).join(', ') || 'Not specified'}`;
+  }
+
+  const modelNames = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  for (const name of modelNames) {
+    try {
+      return genAI.getGenerativeModel({
+        model: name,
+        systemInstruction: systemInstruction || dynamicInstruction,
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      });
+    } catch {
+      // Continue to next candidate model if initialization fails
+    }
+  }
+
   return genAI.getGenerativeModel({
     model: 'gemini-1.5-flash',
-    systemInstruction,
+    systemInstruction: systemInstruction || dynamicInstruction,
   });
 }
 
-function getFallbackReply(userMessage) {
-  const msg = (userMessage || '').toLowerCase();
-  if (msg.includes('resume')) {
-    return `### 📄 Resume Review Tips\n\nHere are 3 key steps to optimize your resume:\n\n• **Use the Google X-Y-Z Formula**: "Accomplished [X] as measured by [Y], by doing [Z]".\n• **Quantify Impact**: Use concrete numbers, percentages, and metrics to prove your achievements.\n• **ATS Optimization**: Match keywords directly from the target job description.\n\n**Quick Tip:** Keep formatting simple — avoid complex tables, columns, or graphics that confuse ATS parsers.\n\nWould you like me to review specific bullet points or your summary section?`;
+function buildUserParts(userMessage, attachments = []) {
+  const parts = [];
+
+  for (const file of attachments) {
+    if (file.base64 && file.mimeType) {
+      const cleanBase64 = file.base64.replace(/^data:[^;]+;base64,/, '');
+      parts.push({
+        inlineData: {
+          mimeType: file.mimeType,
+          data: cleanBase64,
+        },
+      });
+    } else if (file.extractedText) {
+      parts.push({
+        text: `\n[ATTACHMENT: ${file.name || 'Document'}]\n${file.extractedText}\n[END ATTACHMENT]\n`,
+      });
+    }
   }
-  if (msg.includes('interview') || msg.includes('google')) {
-    return `### 🎯 Interview Preparation Strategy\n\nFollow these 3 core steps for interview success:\n\n• **Master the STAR Framework**: Prepare Situation, Task, Action, and Result for behavioral questions.\n• **Problem Solving**: Practice coding and system design step-by-step out loud.\n• **Company Research**: Understand the company's core products, culture, and engineering values.\n\n**Quick Tip:** Always state assumptions clearly before starting technical problem-solving.\n\nWould you like to practice a mock interview question right now?`;
+
+  if (userMessage && userMessage.trim()) {
+    parts.push({ text: userMessage.trim() });
+  } else if (parts.length === 0) {
+    parts.push({ text: 'Please analyze the attached file and provide detailed career advice.' });
   }
-  if (msg.includes('skill') || msg.includes('gap')) {
-    return `### 📊 Skill Gap Analysis\n\nHere is how to identify and bridge your skill gaps:\n\n• **Target Role Benchmark**: Review 5 top job descriptions for your target position.\n• **Hands-On Projects**: Build end-to-end projects implementing missing technical skills.\n• **Structured Practice**: Practice daily coding and architectural challenges.\n\n**Quick Tip:** Depth beats breadth — focus on mastering core fundamentals first.\n\nWould you like me to generate a 30-day learning roadmap tailored to your goals?`;
-  }
-  return `### 💡 Career Mentor Guidance\n\nHere is actionable advice to boost your career prep:\n\n• **Consistent Practice**: Set aside 30–45 minutes daily for targeted practice.\n• **Portfolio & LinkedIn**: Keep your GitHub and LinkedIn updated with recent projects.\n• **Mock Interviews**: Practice articulating your solutions clearly and concisely.\n\n**Quick Tip:** Focus on incremental daily progress to build strong confidence.\n\nHow else can I assist with your career preparation today?`;
+
+  return parts;
 }
 
-/**
- * Converts chat history from backend format to Gemini format
- */
-function buildContents(history, userMessage) {
-  const contents = history.map((item) => ({
-    role: item.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: item.content }],
-  }));
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }],
-  });
+function buildMultimodalContents(history = [], userMessage = '', attachments = []) {
+  const contents = [];
+
+  for (const item of history) {
+    if (!item.content && (!item.attachments || item.attachments.length === 0)) continue;
+    
+    const role = item.role === 'assistant' || item.role === 'model' ? 'model' : 'user';
+    const parts = [];
+
+    if (role === 'user' && item.attachments && item.attachments.length > 0) {
+      const attParts = buildUserParts(item.content, item.attachments);
+      parts.push(...attParts);
+    } else {
+      parts.push({ text: item.content || '...' });
+    }
+
+    contents.push({ role, parts });
+  }
+
+  const latestParts = buildUserParts(userMessage, attachments);
+  contents.push({ role: 'user', parts: latestParts });
+
   return contents;
 }
 
 /**
- * Handles career coaching chats with conversation history context (non-streaming)
+ * Handles career coaching chats with conversation history & document context (non-streaming)
  */
-export async function generateChatReply(history = [], userMessage) {
-  console.log('[DEBUG] Outgoing user message:', userMessage);
+export async function generateChatReply(history = [], userMessage = '', attachments = [], userContext = {}) {
+  console.log('[AI COACH] Processing chat request for:', userContext.userName || 'User', '| Attachments:', attachments.length);
 
   if (genAI) {
     try {
-      const model = getModel(CAREER_COACH_PROMPT);
-      const contents = buildContents(history, userMessage);
+      const model = getGenerativeModel(null, userContext);
+      const contents = buildMultimodalContents(history, userMessage, attachments);
       const result = await model.generateContent({ contents });
       const reply = result.response.text();
-      console.log('[DEBUG] Gemini chat reply:', reply);
-      return { reply, model: 'gemini-1.5-flash' };
+      
+      const suggestions = await generateFollowUpSuggestions(history, reply);
+      return { reply, suggestions, model: 'gemini-flash' };
     } catch (err) {
-      console.error('[DEBUG] Gemini API error, using fallback:', err.message);
+      console.error('[AI COACH] Gemini API error:', err.message);
+      throw new Error(`Gemini API Error: ${err.message}`);
     }
   }
 
-  const fallback = getFallbackReply(userMessage);
-  return { reply: fallback, model: 'fallback' };
+  throw new Error('GEMINI_API_KEY is not configured on the backend server.');
 }
 
 /**
- * Streams career coaching chat responses chunk-by-chunk
- * Returns an async iterable of text chunks
+ * Streams career coaching chat responses chunk-by-chunk using Gemini stream API
  */
-export async function generateChatReplyStream(history = [], userMessage) {
-  console.log('[DEBUG] Streaming user message:', userMessage);
+export async function generateChatReplyStream(history = [], userMessage = '', attachments = [], userContext = {}) {
+  console.log('[AI COACH STREAM] Starting stream for:', userContext.userName || 'User', '| Attachments:', attachments.length);
 
   if (genAI) {
     try {
-      const model = getModel(CAREER_COACH_PROMPT);
-      const contents = buildContents(history, userMessage);
+      const model = getGenerativeModel(null, userContext);
+      const contents = buildMultimodalContents(history, userMessage, attachments);
       const result = await model.generateContentStream({ contents });
       return result.stream;
     } catch (err) {
-      console.error('[DEBUG] Gemini API Stream error, using fallback stream:', err.message);
+      console.error('[AI COACH STREAM] Gemini Stream error:', err.message);
+      throw new Error(`Gemini Stream Error: ${err.message}`);
     }
   }
 
-  // Fallback stream generator
-  const fallbackText = getFallbackReply(userMessage);
-  const words = fallbackText.split(' ');
-  
-  async function* fallbackStream() {
-    for (let i = 0; i < words.length; i += 3) {
-      const chunk = words.slice(i, i + 3).join(' ') + ' ';
-      yield { text: () => chunk };
-      await new Promise((resolve) => setTimeout(resolve, 40));
-    }
-  }
-
-  return fallbackStream();
+  throw new Error('GEMINI_API_KEY is not configured on the backend server.');
 }
 
 /**
- * Generates 3 follow-up suggestion prompts based on the conversation context
+ * Generates 3 dynamic follow-up suggestion prompts based on context
  */
-export async function generateFollowUpSuggestions(history = [], lastReply) {
+export async function generateFollowUpSuggestions(history = [], lastReply = '') {
   if (!genAI) {
-    return ['Tell me more', 'What should I do next?', 'Can you give an example?'];
+    return ['Review my resume', 'Practice interview questions', 'Create a 30-day study plan'];
   }
 
   try {
-    const model = getModel('You generate exactly 3 short follow-up question suggestions for a career coaching conversation. Return valid JSON only.');
-    
-    const prompt = `Based on this career coaching conversation, generate exactly 3 short follow-up prompts (max 6 words each) the user might want to ask next. Return as a JSON array of strings.
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      systemInstruction: 'You generate exactly 3 short, relevant follow-up action suggestions for a candidate talking to a career coach. Return valid JSON array of 3 strings only.',
+    });
 
-Last AI response: "${lastReply.slice(0, 300)}"
+    const prompt = `Based on the latest response from the career coach, suggest 3 short, natural next questions or actions the user might want to click (max 5 words per prompt).
 
-Example output: ["Practice coding interview", "Improve my resume", "Create study plan"]`;
+Latest AI Response: "${(lastReply || '').slice(0, 350)}"
+
+Return strictly JSON format: ["Action 1", "Action 2", "Action 3"]`;
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-    const suggestions = JSON.parse(result.response.text());
-    return Array.isArray(suggestions) ? suggestions.slice(0, 3) : ['Tell me more', 'What should I do next?', 'Give me an example'];
+    const parsed = JSON.parse(result.response.text());
+    if (Array.isArray(parsed) && parsed.length >= 3) {
+      return parsed.slice(0, 3);
+    }
   } catch (err) {
-    console.error('[DEBUG] Follow-up suggestions error:', err.message);
-    return ['Tell me more', 'What should I do next?', 'Give me an example'];
+    console.warn('[AI COACH] Suggestions generation fallback:', err.message);
   }
+
+  return ['Review my resume', 'Practice interview questions', 'Create a 30-day study plan'];
 }
 
 /**

@@ -177,3 +177,79 @@ test('AI Resume Builder API Workflow', async () => {
   }
 });
 
+test('AI Coach Sessions & Attachment Upload API Workflow', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const testEmail = `coach_test_${Date.now()}@example.com`;
+    const regRes = await fetch(`http://localhost:${port}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Coach Tester', email: testEmail, password: 'password123' }),
+    });
+    const regData = await regRes.json();
+    assert.ok(regData.token);
+
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${regData.token}`,
+    };
+
+    // 1. Get initial coach data & default session
+    const coachRes = await fetch(`http://localhost:${port}/api/coach`, { headers });
+    const coachData = await coachRes.json();
+    assert.equal(coachRes.status, 200);
+    assert.ok(Array.isArray(coachData.sessions));
+    assert.ok(coachData.activeSessionId);
+
+    // 2. Create new session
+    const createSessionRes = await fetch(`http://localhost:${port}/api/chat/sessions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ title: 'Google Interview Prep' }),
+    });
+    const newSession = await createSessionRes.json();
+    assert.equal(createSessionRes.status, 200);
+    assert.equal(newSession.title, 'Google Interview Prep');
+
+    // 3. Test File Upload Endpoint
+    const uploadRes = await fetch(`http://localhost:${port}/api/upload`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: 'sample_resume.pdf',
+        type: 'application/pdf',
+        size: 1500,
+        base64: 'data:application/pdf;base64,JVBERi0xLjQK...',
+      }),
+    });
+    const uploadData = await uploadRes.json();
+    assert.equal(uploadRes.status, 200);
+    assert.equal(uploadData.success, true);
+    assert.equal(uploadData.file.name, 'sample_resume.pdf');
+
+    // 4. Update session (Pin & Rename)
+    const updateSessionRes = await fetch(`http://localhost:${port}/api/chat/sessions/${newSession.id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ isPinned: true, title: 'Google SDE Prep (Pinned)' }),
+    });
+    const updatedSession = await updateSessionRes.json();
+    assert.equal(updateSessionRes.status, 200);
+    assert.equal(updatedSession.isPinned, true);
+    assert.equal(updatedSession.title, 'Google SDE Prep (Pinned)');
+
+    // 5. Delete Session
+    const deleteSessionRes = await fetch(`http://localhost:${port}/api/chat/sessions/${newSession.id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    const deleteResult = await deleteSessionRes.json();
+    assert.equal(deleteSessionRes.status, 200);
+    assert.equal(deleteResult.success, true);
+  } finally {
+    server.close();
+  }
+});
+

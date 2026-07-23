@@ -320,6 +320,35 @@ const jdAnalysisSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const attachmentSchema = new mongoose.Schema({
+  id: String,
+  name: String,
+  type: String,
+  size: Number,
+  url: String,
+  extractedText: String,
+  mimeType: String,
+});
+
+const chatMessageSchema = new mongoose.Schema({
+  id: String,
+  role: { type: String, enum: ['user', 'assistant'], required: true },
+  content: { type: String, default: '' },
+  attachments: [attachmentSchema],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const aiChatSessionSchema = new mongoose.Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    sessionId: { type: String, required: true, unique: true, index: true },
+    title: { type: String, default: 'New Conversation' },
+    isPinned: { type: Boolean, default: false },
+    messages: [chatMessageSchema],
+  },
+  { timestamps: true }
+);
+
 const aiChatHistorySchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, unique: true, index: true },
@@ -379,6 +408,7 @@ delete mongoose.models.MockInterview;
 delete mongoose.models.Roadmap;
 delete mongoose.models.Notification;
 delete mongoose.models.JDAnalysis;
+delete mongoose.models.AIChatSession;
 delete mongoose.models.AIChatHistory;
 delete mongoose.models.PracticeHistory;
 delete mongoose.models.Badge;
@@ -393,6 +423,7 @@ export const MockInterviewModel = mongoose.model('MockInterview', mockInterviewS
 export const RoadmapModel = mongoose.model('Roadmap', roadmapSchema);
 export const NotificationModel = mongoose.model('Notification', notificationSchema);
 export const JDAnalysisModel = mongoose.model('JDAnalysis', jdAnalysisSchema);
+export const AIChatSessionModel = mongoose.model('AIChatSession', aiChatSessionSchema);
 export const AIChatHistoryModel = mongoose.model('AIChatHistory', aiChatHistorySchema);
 export const PracticeHistoryModel = mongoose.model('PracticeHistory', practiceHistorySchema);
 export const BadgeModel = mongoose.model('Badge', badgeSchema);

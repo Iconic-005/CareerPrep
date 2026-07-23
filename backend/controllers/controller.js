@@ -52,16 +52,102 @@ export async function getLatestJDAnalysisData(userId) {
   return mongoStore.getLatestJDAnalysis(userId);
 }
 
-export async function getCoachData(userId) {
-  return mongoStore.getCoachData(userId);
+export async function getCoachData(userId, sessionId = null) {
+  return mongoStore.getCoachData(userId, sessionId);
+}
+
+export async function getChatSessionsData(userId) {
+  return mongoStore.getChatSessions(userId);
+}
+
+export async function createChatSessionData(userId, payload = {}) {
+  const { title } = payload;
+  return mongoStore.createChatSession(userId, title);
+}
+
+export async function updateChatSessionData(userId, sessionId, payload = {}) {
+  return mongoStore.updateChatSession(userId, sessionId, payload);
+}
+
+export async function deleteChatSessionData(userId, sessionId) {
+  return mongoStore.deleteChatSession(userId, sessionId);
 }
 
 export async function handleChatRequest(userId, payload = {}) {
-  const { message } = payload;
-  if (!message || !message.trim()) {
-    throw new Error('Message is required');
+  return mongoStore.handleChat(userId, payload);
+}
+
+export async function clearCoachHistoryData(userId) {
+  return mongoStore.clearChatHistory ? mongoStore.clearChatHistory(userId) : { success: true };
+}
+
+export async function handleChatStreamRequest(userId, payload, res) {
+  const { message, attachments = [], sessionId: requestedSessionId } = payload;
+  const userMessage = (message || '').trim();
+
+  if (!userMessage && attachments.length === 0) {
+    throw new Error('Message or attachment is required');
   }
-  return mongoStore.handleChat(userId, message);
+
+  // Retrieve user session & context
+  const coachData = await mongoStore.getCoachData(userId, requestedSessionId);
+  const activeSessionId = coachData.activeSessionId;
+  const history = (coachData.history || []).map((m) => ({
+    role: m.role,
+    content: m.content,
+    attachments: m.attachments || [],
+  }));
+
+  const userContext = {
+    userName: coachData.userName,
+    targetRole: coachData.targetRole,
+    targetCompany: coachData.targetCompany,
+  };
+
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  let fullReply = '';
+
+  try {
+    const stream = await generateChatReplyStream(history, userMessage, attachments, userContext);
+
+    for await (const chunk of stream) {
+      const text = typeof chunk.text === 'function' ? chunk.text() : chunk.text || '';
+      if (text) {
+        fullReply += text;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: text, sessionId: activeSessionId })}\n\n`);
+      }
+    }
+
+    // Save conversation step to MongoDB session
+    await mongoStore.handleChat(userId, {
+      sessionId: activeSessionId,
+      message: userMessage,
+      attachments,
+      streamedReply: fullReply,
+    });
+
+    // Generate follow-up suggestions
+    try {
+      const suggestions = await generateFollowUpSuggestions(history, fullReply);
+      res.write(`data: ${JSON.stringify({ type: 'suggestions', suggestions })}\n\n`);
+    } catch {
+      // Non-critical
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'done', sessionId: activeSessionId })}\n\n`);
+    res.end();
+  } catch (err) {
+    console.error('[CHAT STREAM CONTROLLER ERROR]:', err.message);
+    res.write(`data: ${JSON.stringify({ type: 'error', message: err.message || 'Unable to connect to AI Coach.' })}\n\n`);
+    res.end();
+  }
 }
 
 export async function getNotificationsData(userId) {
@@ -169,60 +255,6 @@ export async function startInterviewSession(userId, payload = {}) {
 
 export async function evaluateInterviewSessionData(userId, payload = {}) {
   return mongoStore.evaluateMockInterview(userId, payload);
-}
-
-export async function clearCoachHistoryData(userId) {
-  return mongoStore.clearChatHistory(userId);
-}
-
-export async function handleChatStreamRequest(userId, payload, res) {
-  const { message } = payload;
-  if (!message || !message.trim()) {
-    throw new Error('Message is required');
-  }
-
-  // Get chat history
-  const history = await mongoStore.getChatHistory(userId);
-
-  // Set SSE headers
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  });
-
-  let fullReply = '';
-
-  try {
-    const stream = await generateChatReplyStream(history, message);
-
-    for await (const chunk of stream) {
-      const text = chunk.text();
-      if (text) {
-        fullReply += text;
-        res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
-      }
-    }
-
-    // Save messages to DB after streaming completes
-    await mongoStore.saveChatMessages(userId, message, fullReply);
-
-    // Generate and send follow-up suggestions
-    try {
-      const suggestions = await generateFollowUpSuggestions(history, fullReply);
-      res.write(`data: ${JSON.stringify({ type: 'suggestions', suggestions })}\n\n`);
-    } catch (e) {
-      // Non-critical — silently skip suggestions
-    }
-
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-    res.end();
-  } catch (err) {
-    console.error('Stream error:', err.message);
-    res.write(`data: ${JSON.stringify({ type: 'error', message: 'Unable to reach AI Coach. Please try again.' })}\n\n`);
-    res.end();
-  }
 }
 
 export async function getAdminData() {
