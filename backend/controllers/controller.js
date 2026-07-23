@@ -22,8 +22,17 @@ export async function getResumeData(userId) {
   return mongoStore.getResume(userId);
 }
 
+export async function buildResumeData(userId) {
+  return mongoStore.buildResumeWithAI(userId);
+}
+
 export async function updateResumeData(userId, payload = {}) {
   return mongoStore.updateResume(userId, payload);
+}
+
+export async function restoreResumeVersionData(userId, payload = {}) {
+  const { versionId } = payload;
+  return mongoStore.restoreResumeVersion(userId, versionId);
 }
 
 export async function optimizeResumeData(userId, payload = {}) {

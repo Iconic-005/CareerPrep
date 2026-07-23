@@ -110,3 +110,70 @@ test('Full Auth, Dashboard, Goals CRUD & Activity API workflow', async () => {
     server.close();
   }
 });
+
+test('AI Resume Builder API Workflow', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const testEmail = `resume_test_${Date.now()}@example.com`;
+    const regRes = await fetch(`http://localhost:${port}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Resume Tester', email: testEmail, password: 'password123' }),
+    });
+    const regData = await regRes.json();
+    assert.ok(regData.token);
+
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${regData.token}`,
+    };
+
+    // 1. Fetch initial resume (should auto-build from profile)
+    const initialRes = await fetch(`http://localhost:${port}/api/resume`, { headers });
+    const initialData = await initialRes.json();
+    assert.equal(initialRes.status, 200);
+    assert.ok(initialData.contact);
+    assert.equal(initialData.contact.name, 'Resume Tester');
+
+    // 2. Trigger Build Resume with AI
+    const buildRes = await fetch(`http://localhost:${port}/api/resume/build`, {
+      method: 'POST',
+      headers,
+    });
+    const buildData = await buildRes.json();
+    assert.equal(buildRes.status, 200);
+    assert.ok(buildData.summary);
+    assert.ok(Array.isArray(buildData.versions));
+    assert.ok(buildData.versions.length >= 1);
+
+    // 3. Edit Resume section
+    const updateRes = await fetch(`http://localhost:${port}/api/resume`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        summary: 'Updated summary for testing live MongoDB persistence.',
+        skills: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'AI Integration'],
+      }),
+    });
+    const updateData = await updateRes.json();
+    assert.equal(updateRes.status, 200);
+    assert.equal(updateData.summary, 'Updated summary for testing live MongoDB persistence.');
+    assert.ok(updateData.skills.includes('AI Integration'));
+
+    // 4. Restore Previous Version
+    const versionId = buildData.versions[0].id;
+    const restoreRes = await fetch(`http://localhost:${port}/api/resume/restore-version`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ versionId }),
+    });
+    const restoreData = await restoreRes.json();
+    assert.equal(restoreRes.status, 200);
+    assert.ok(restoreData.contact);
+  } finally {
+    server.close();
+  }
+});
+

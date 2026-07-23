@@ -17,6 +17,7 @@ import {
 import {
   generateChatReply,
   generateOptimizedResume,
+  generateBuildResumeFromProfile,
   generateJDAnalysis,
   generateRoadmap as aiGenerateRoadmap,
   generateMockInterviewQuestions,
@@ -380,16 +381,349 @@ export async function deleteGoal(userId, id) {
 }
 
 // Resume
+// Resume ATS Calculator
+export function calculateResumeMetrics(resume = {}) {
+  const contact = resume.contact || {};
+  const summary = resume.summary || '';
+  const experience = resume.experience || [];
+  const education = resume.education || [];
+  const projects = resume.projects || [];
+  const skills = resume.skills || [];
+  const certifications = resume.certifications || [];
+  const achievements = resume.achievements || [];
+
+  // 1. Calculate Real ATS Score (0 - 100)
+  let atsScore = 0;
+
+  // Contact Information Quality (20 pts)
+  if (contact.name && contact.name.trim()) atsScore += 4;
+  if (contact.email && contact.email.trim()) atsScore += 4;
+  if (contact.phone && contact.phone.trim()) atsScore += 4;
+  if (contact.location && contact.location.trim()) atsScore += 4;
+  if ((contact.linkedin && contact.linkedin.trim()) || (contact.github && contact.github.trim()) || (contact.portfolio && contact.portfolio.trim())) atsScore += 4;
+
+  // Summary Quality & Action Keywords (15 pts)
+  if (summary && summary.trim()) {
+    atsScore += 5;
+    const words = summary.trim().split(/\s+/).length;
+    if (words >= 20 && words <= 120) atsScore += 5;
+    else if (words > 10) atsScore += 3;
+
+    const summaryLower = summary.toLowerCase();
+    const actionKeywords = ['lead', 'manage', 'engineer', 'develop', 'design', 'architect', 'deliver', 'optimize', 'scale', 'spearhead', 'implement', 'build', 'results'];
+    if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 2) atsScore += 5;
+    else if (actionKeywords.filter((k) => summaryLower.includes(k)).length >= 1) atsScore += 3;
+  }
+
+  // Experience & Metrics / STAR Formula (30 pts)
+  if (experience.length > 0) {
+    atsScore += 5;
+    if (experience.length >= 2) atsScore += 5;
+
+    let totalBullets = 0;
+    let metricBullets = 0;
+    let actionWordBullets = 0;
+
+    const metricRegex = /(\d+|%|\$|\+|\b(reduced|increased|improved|boosted|grew|saved|doubled|tripled)\b)/i;
+    const actionRegex = /^(architected|engineered|developed|led|optimized|implemented|managed|designed|built|delivered|created|spearheaded|crafted|launched|automated|drove|reduced|increased)\b/i;
+
+    experience.forEach((item) => {
+      const bullets = item.bulletPoints || (item.description ? [item.description] : []);
+      totalBullets += bullets.length;
+      bullets.forEach((b) => {
+        if (metricRegex.test(b)) metricBullets++;
+        if (actionRegex.test(b.trim())) actionWordBullets++;
+      });
+    });
+
+    if (totalBullets >= 3) atsScore += 5;
+    if (metricBullets >= 1) atsScore += 5;
+    if (metricBullets >= 3) atsScore += 5;
+    if (actionWordBullets >= 2) atsScore += 5;
+  }
+
+  // Technical & Soft Skills (20 pts)
+  if (skills.length >= 1) atsScore += 5;
+  if (skills.length >= 5) atsScore += 5;
+  if (skills.length >= 8) atsScore += 5;
+  if (skills.length >= 12) atsScore += 5;
+
+  // Education & Credentials (10 pts)
+  if (education.length >= 1) atsScore += 6;
+  if (certifications.length >= 1 || education.length >= 2) atsScore += 4;
+
+  // Projects (5 pts)
+  if (projects.length >= 1) atsScore += 3;
+  if (projects.length >= 2) atsScore += 2;
+
+  atsScore = Math.min(98, Math.max(25, atsScore));
+
+  // 2. Real Skill Match Score (0 - 100)
+  const title = contact.title || '';
+  const titleLower = title.toLowerCase();
+  let benchmarkSkills = ['javascript', 'react', 'node.js', 'html', 'css', 'git', 'sql', 'rest apis'];
+  if (titleLower.includes('design') || titleLower.includes('ui') || titleLower.includes('ux')) {
+    benchmarkSkills = ['figma', 'ui/ux design', 'prototyping', 'design systems', 'user research', 'wireframing', 'adobe cc'];
+  } else if (titleLower.includes('product manager') || titleLower.includes('pm')) {
+    benchmarkSkills = ['product strategy', 'roadmap', 'agile', 'user stories', 'data analytics', 'stakeholder management', 'a/b testing'];
+  } else if (titleLower.includes('python') || titleLower.includes('data')) {
+    benchmarkSkills = ['python', 'pandas', 'sql', 'machine learning', 'data analysis', 'numpy', 'scikit-learn'];
+  }
+
+  const userSkillsLower = skills.map((s) => String(s).toLowerCase().trim());
+  const matchedCount = benchmarkSkills.filter((b) => userSkillsLower.some((u) => u.includes(b) || b.includes(u))).length;
+
+  let skillMatchScore = Math.round((matchedCount / benchmarkSkills.length) * 70) + Math.min(30, userSkillsLower.length * 3);
+  skillMatchScore = Math.min(98, Math.max(35, skillMatchScore));
+
+  // 3. Completeness & Missing Sections
+  const sections = [
+    { name: 'Summary', check: () => Boolean(summary && summary.trim()) },
+    { name: 'Experience', check: () => Boolean(experience && experience.length > 0) },
+    { name: 'Education', check: () => Boolean(education && education.length > 0) },
+    { name: 'Projects', check: () => Boolean(projects && projects.length > 0) },
+    { name: 'Skills', check: () => Boolean(skills && skills.length > 0) },
+    { name: 'Certifications', check: () => Boolean(certifications && certifications.length > 0) },
+    { name: 'Achievements', check: () => Boolean(achievements && achievements.length > 0) },
+  ];
+
+  const presentCount = sections.filter((s) => s.check()).length;
+  const missingSections = sections.filter((s) => !s.check()).map((s) => s.name);
+  const completenessScore = Math.round((presentCount / sections.length) * 100);
+
+  return {
+    atsScore,
+    skillMatchScore,
+    completenessScore,
+    missingSections,
+  };
+}
+
+export async function buildResumeWithAI(userId) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  if (!profile) throw new Error('User profile not found in MongoDB.');
+
+  const profileObj = profile.toObject ? profile.toObject() : profile;
+
+  // Call Gemini API to generate structured resume
+  const aiResult = await generateBuildResumeFromProfile(profileObj);
+
+  const contact = {
+    name: profileObj.name || 'User',
+    email: profileObj.email || '',
+    phone: profileObj.phone || '',
+    location: profileObj.address || 'San Francisco, CA',
+    linkedin: profileObj.linkedin || '',
+    github: profileObj.github || '',
+    portfolio: profileObj.portfolio || '',
+    title: profileObj.title || 'Software Professional',
+  };
+
+  const metrics = calculateResumeMetrics({
+    contact,
+    summary: aiResult.summary,
+    experience: aiResult.experience,
+    education: aiResult.education,
+    projects: aiResult.projects,
+    skills: aiResult.skills,
+    certifications: aiResult.certifications,
+    achievements: aiResult.achievements,
+    languages: aiResult.languages,
+  });
+
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) {
+    resume = new ResumeModel({ userId });
+  }
+
+  resume.contact = contact;
+  resume.summary = aiResult.summary || '';
+  resume.experience = aiResult.experience || [];
+  resume.education = aiResult.education || [];
+  resume.projects = aiResult.projects || [];
+  resume.skills = (aiResult.skills || []).map((s) => (typeof s === 'string' ? s : String(s)));
+  resume.certifications = aiResult.certifications || [];
+  resume.achievements = (aiResult.achievements || []).map((a) => (typeof a === 'string' ? a : a.title || a.description || String(a)));
+  resume.languages = (aiResult.languages || []).map((l) => (typeof l === 'string' ? l : String(l)));
+  resume.interests = (aiResult.interests || []).map((i) => (typeof i === 'string' ? i : String(i)));
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSkills = (aiResult.missingSkills || []).map((s) => (typeof s === 'string' ? s : String(s)));
+  resume.missingSections = metrics.missingSections || [];
+  resume.suggestions = aiResult.suggestions || [];
+  resume.score = `${metrics.atsScore} / 100`;
+
+  // Create version history snapshot
+  const versionEntry = {
+    id: `v_${Date.now()}`,
+    title: `${contact.title || 'Resume'} - AI Build`,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    createdAt: new Date(),
+    resumeData: {
+      contact: { ...contact },
+      summary: aiResult.summary,
+      experience: JSON.parse(JSON.stringify(aiResult.experience || [])),
+      education: JSON.parse(JSON.stringify(aiResult.education || [])),
+      projects: JSON.parse(JSON.stringify(aiResult.projects || [])),
+      skills: [...(aiResult.skills || [])],
+      certifications: JSON.parse(JSON.stringify(aiResult.certifications || [])),
+      achievements: [...(aiResult.achievements || [])],
+      languages: [...(aiResult.languages || [])],
+      atsScore: aiResult.atsScore || 88,
+      skillMatchScore: aiResult.skillMatchScore || 85,
+    },
+  };
+
+  if (!resume.versions) resume.versions = [];
+  resume.versions.unshift(versionEntry);
+
+  await resume.save();
+
+  const analytics = await AnalyticsModel.findOne({ userId });
+  if (analytics) {
+    analytics.codingXP += 50;
+    analytics.resumeScore = `${aiResult.atsScore || 88} / 100`;
+    await analytics.save();
+  }
+
+  await logActivity(userId, 'Built Resume with AI', `Generated complete ATS-friendly resume for ${contact.title} (+50 XP)`, 'violet');
+  await computeCalculatedMetrics(userId);
+
+  return resume.toObject();
+}
+
 export async function getResume(userId) {
   await ensureUserInitialized(userId);
-  const resume = await ResumeModel.findOne({ userId });
+  let resume = await ResumeModel.findOne({ userId });
+  const profile = await ProfileModel.findOne({ userId });
+
+  const hasData = resume && (
+    (resume.summary && resume.summary.trim()) ||
+    (resume.experience && resume.experience.length > 0) ||
+    (resume.contact && resume.contact.name)
+  );
+
+  if (!hasData) {
+    return await buildResumeWithAI(userId);
+  }
+
+  if (profile && (!resume.contact || !resume.contact.name || !resume.contact.email)) {
+    resume.contact = {
+      name: resume.contact?.name || profile.name || 'User',
+      email: resume.contact?.email || profile.email || '',
+      phone: resume.contact?.phone || profile.phone || '',
+      location: resume.contact?.location || profile.address || 'San Francisco, CA',
+      linkedin: resume.contact?.linkedin || profile.linkedin || '',
+      github: resume.contact?.github || profile.github || '',
+      portfolio: resume.contact?.portfolio || profile.portfolio || '',
+      title: resume.contact?.title || profile.title || 'Software Professional',
+    };
+  }
+
+  const metrics = calculateResumeMetrics(resume);
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+  resume.score = `${metrics.atsScore} / 100`;
+  await resume.save();
+
+  return resume.toObject();
+}
+
+export async function updateResume(userId, payload = {}) {
+  await ensureUserInitialized(userId);
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) {
+    resume = new ResumeModel({ userId });
+  }
+
+  if (payload.contact) {
+    resume.contact = { ...resume.contact, ...payload.contact };
+    resume.markModified('contact');
+
+    const profile = await ProfileModel.findOne({ userId });
+    if (profile) {
+      if (payload.contact.name) profile.name = payload.contact.name;
+      if (payload.contact.email) profile.email = payload.contact.email;
+      if (payload.contact.phone) profile.phone = payload.contact.phone;
+      if (payload.contact.location) profile.address = payload.contact.location;
+      if (payload.contact.title) profile.title = payload.contact.title;
+      if (payload.contact.linkedin) profile.linkedin = payload.contact.linkedin;
+      if (payload.contact.github) profile.github = payload.contact.github;
+      if (payload.contact.portfolio) profile.portfolio = payload.contact.portfolio;
+      await profile.save();
+    }
+  }
+
+  if (payload.summary !== undefined) {
+    resume.summary = payload.summary;
+    resume.markModified('summary');
+  }
+  if (payload.experience !== undefined) {
+    resume.experience = payload.experience;
+    resume.markModified('experience');
+  }
+  if (payload.education !== undefined) {
+    resume.education = payload.education;
+    resume.markModified('education');
+  }
+  if (payload.projects !== undefined) {
+    resume.projects = payload.projects;
+    resume.markModified('projects');
+  }
+  if (payload.skills !== undefined) {
+    resume.skills = payload.skills.map((s) => (typeof s === 'string' ? s : String(s)));
+    resume.markModified('skills');
+  }
+  if (payload.certifications !== undefined) {
+    resume.certifications = payload.certifications;
+    resume.markModified('certifications');
+  }
+  if (payload.achievements !== undefined) {
+    resume.achievements = payload.achievements.map((a) => (typeof a === 'string' ? a : a.title || a.description || String(a)));
+    resume.markModified('achievements');
+  }
+  if (payload.languages !== undefined) {
+    resume.languages = payload.languages.map((l) => (typeof l === 'string' ? l : String(l)));
+    resume.markModified('languages');
+  }
+  if (payload.interests !== undefined) {
+    resume.interests = payload.interests.map((i) => (typeof i === 'string' ? i : String(i)));
+    resume.markModified('interests');
+  }
+  if (payload.customSections !== undefined) {
+    resume.customSections = payload.customSections;
+    resume.markModified('customSections');
+  }
+  if (payload.missingSkills !== undefined) {
+    resume.missingSkills = payload.missingSkills;
+    resume.markModified('missingSkills');
+  }
+  if (payload.suggestions !== undefined) {
+    resume.suggestions = payload.suggestions;
+    resume.markModified('suggestions');
+  }
+
+  // Recalculate real ATS metrics dynamically
+  const metrics = calculateResumeMetrics(resume);
+  resume.atsScore = metrics.atsScore;
+  resume.skillMatchScore = metrics.skillMatchScore;
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+  resume.score = `${metrics.atsScore} / 100`;
+
+  await resume.save();
+
   const analytics = await AnalyticsModel.findOne({ userId });
-  return {
-    suggestions: resume?.suggestions || [],
-    missingSkills: resume?.missingSkills || [],
-    resumeText: resume?.resumeText || '',
-    score: analytics?.resumeScore || '85 / 100',
-  };
+  if (analytics) {
+    analytics.resumeScore = `${metrics.atsScore} / 100`;
+    await analytics.save();
+  }
+
+  return resume.toObject();
 }
 
 export async function optimizeResume(userId, resumeText, targetRole) {
@@ -428,6 +762,40 @@ export async function optimizeResume(userId, resumeText, targetRole) {
     console.error('Gemini API resume error:', err.message);
     throw new Error('Unable to reach AI Service. Please try again.');
   }
+}
+
+export async function restoreResumeVersion(userId, versionId) {
+  await ensureUserInitialized(userId);
+  let resume = await ResumeModel.findOne({ userId });
+  if (!resume) throw new Error('Resume not found.');
+
+  const version = (resume.versions || []).find((v) => v.id === versionId || v._id?.toString() === versionId);
+  if (!version || !version.resumeData) {
+    throw new Error('Version not found in history.');
+  }
+
+  const rData = version.resumeData;
+  if (rData.contact) resume.contact = rData.contact;
+  if (rData.summary !== undefined) resume.summary = rData.summary;
+  if (rData.experience) resume.experience = rData.experience;
+  if (rData.education) resume.education = rData.education;
+  if (rData.projects) resume.projects = rData.projects;
+  if (rData.skills) resume.skills = rData.skills;
+  if (rData.certifications) resume.certifications = rData.certifications;
+  if (rData.achievements) resume.achievements = rData.achievements;
+  if (rData.languages) resume.languages = rData.languages;
+  if (rData.atsScore) resume.atsScore = rData.atsScore;
+  if (rData.skillMatchScore) resume.skillMatchScore = rData.skillMatchScore;
+
+  const metrics = calculateResumeMetrics(resume);
+  resume.completenessScore = metrics.completenessScore;
+  resume.missingSections = metrics.missingSections;
+
+  await resume.save();
+  await logActivity(userId, 'Restored Resume Version', `Restored snapshot: "${version.title}"`, 'blue');
+  await computeCalculatedMetrics(userId);
+
+  return resume.toObject();
 }
 
 // JD Analyzer
@@ -930,29 +1298,6 @@ export async function getLatestJDAnalysis(userId) {
     recommendations: jdDoc.recommendations,
     jobDescription: jdDoc.jobDescription,
     createdAt: jdDoc.createdAt,
-  };
-}
-
-export async function updateResume(userId, payload = {}) {
-  await ensureUserInitialized(userId);
-  let resume = await ResumeModel.findOne({ userId });
-  if (!resume) {
-    resume = new ResumeModel({ userId });
-  }
-
-  if (payload.resumeText !== undefined) resume.resumeText = payload.resumeText;
-  if (payload.suggestions !== undefined) resume.suggestions = payload.suggestions;
-  if (payload.missingSkills !== undefined) resume.missingSkills = payload.missingSkills;
-  if (payload.score !== undefined) resume.score = payload.score;
-  if (payload.versions !== undefined) resume.versions = payload.versions;
-
-  await resume.save();
-  return {
-    suggestions: resume.suggestions || [],
-    missingSkills: resume.missingSkills || [],
-    resumeText: resume.resumeText || '',
-    score: resume.score || '85 / 100',
-    versions: resume.versions || [],
   };
 }
 

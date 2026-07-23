@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   addGoalData,
   analyzeJobDescriptionData,
+  buildResumeData,
   clearAllNotificationsData,
   clearCoachHistoryData,
   deleteGoalData,
@@ -27,6 +28,7 @@ import {
   markAllNotificationsReadData,
   markNotificationReadData,
   optimizeResumeData,
+  restoreResumeVersionData,
   startInterviewSession,
   submitAuthRequest,
   submitPracticeData,
@@ -116,9 +118,24 @@ router.delete('/goals/:id', async (req, res) => {
   }
 });
 
-// Resume & Optimizer
+// Resume & AI Builder
 router.get('/resume', async (req, res) => {
-  res.json(await getResumeData(req.user.id));
+  try {
+    res.json(await getResumeData(req.user.id));
+  } catch (error) {
+    console.error('[GET /resume error]:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/resume/build', async (req, res) => {
+  try {
+    const result = await buildResumeData(req.user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('[POST /resume/build error]:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
 router.put('/resume', async (req, res) => {
@@ -126,6 +143,17 @@ router.put('/resume', async (req, res) => {
     const result = await updateResumeData(req.user.id, req.body);
     res.json(result);
   } catch (error) {
+    console.error('[PUT /resume error]:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/resume/restore-version', async (req, res) => {
+  try {
+    const result = await restoreResumeVersionData(req.user.id, req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('[POST /resume/restore-version error]:', error);
     res.status(400).json({ error: error.message });
   }
 });
