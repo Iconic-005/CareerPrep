@@ -198,7 +198,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-  .main-content--roadmap { margin-left: 0; padding: 1.25rem 1rem 5rem; }
+  .main-content--roadmap { margin-left: 0; padding: 1.25rem 1rem 5.5rem; }
   .rm-top-3col { grid-template-columns: 1fr; }
   .rm-phase-grid { grid-template-columns: 1fr 1fr; }
   .rm-timeline-node { grid-template-columns: 80px 36px 1fr; gap: 10px; }

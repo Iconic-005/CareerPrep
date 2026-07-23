@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { SidebarShell } from './Sidebar.jsx';
 import { MobileNav } from './MobileNav.jsx';
 import { Icon } from '../Icon.jsx';
 import { RouteLink } from '../Common/RouteLink.jsx';
+import { useSidebar } from '../../context/SidebarContext.jsx';
 
 export function AppShell({ title, subtitle, actions, children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { openSidebar } = useSidebar();
 
   return (
     <div className="app-shell">
@@ -15,7 +15,7 @@ export function AppShell({ title, subtitle, actions, children }) {
           <button
             type="button"
             className="icon-circle"
-            onClick={() => setSidebarOpen(true)}
+            onClick={openSidebar}
             aria-label="Open Navigation Menu"
           >
             <Icon name="menu" />
@@ -32,7 +32,7 @@ export function AppShell({ title, subtitle, actions, children }) {
         </div>
       </div>
 
-      <SidebarShell isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarShell />
 
       <main className="main-content">
         {title && (

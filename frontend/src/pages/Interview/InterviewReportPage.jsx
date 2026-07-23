@@ -43,21 +43,19 @@ export default function InterviewReportPage() {
       <div className="app-shell">
         <SidebarShell />
 
-        <main className="main-content" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <header style={{ background: '#ffffff', padding: '20px 28px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <main className="main-content" style={{ padding: '1.5rem 1rem 5.5rem', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <header className="interview-config-header">
             <div>
-              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>AI Mock Interview Setup</h1>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Configure your targeted role and company to launch an interactive simulation.</p>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--heading)', margin: 0 }}>AI Mock Interview Setup</h1>
+              <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: '4px 0 0 0' }}>Configure your targeted role and company to launch an interactive simulation.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', color: '#475569', padding: '6px 14px', borderRadius: '16px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #e2e8f0' }}>
+              <div className="privacy-badge-chip">
                 <Icon name="shieldCheck" />
                 <span>AI Ready</span>
               </div>
             </div>
           </header>
-
-
 
           {toastMsg ? (
             <div className="profile-toast">
@@ -66,17 +64,17 @@ export default function InterviewReportPage() {
             </div>
           ) : null}
 
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 0' }}>
-            <div className="interview-config-card" style={{ background: '#ffffff', borderRadius: '16px', padding: '32px', maxWidth: '520px', width: '100%', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>Interview Configuration</h2>
-              <p className="config-subtitle" style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 24px 0' }}>
+          <div className="config-centered-main">
+            <div className="interview-config-card">
+              <h2>Interview Configuration</h2>
+              <p className="config-subtitle">
                 Set your preferences to start an AI-powered simulation.
               </p>
 
-              <form onSubmit={handleStartSession} className="config-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="config-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <label className="config-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div className="field-label-row" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <form onSubmit={handleStartSession} className="config-form">
+                <div className="config-form-grid">
+                  <label className="config-field">
+                    <div className="field-label-row">
                       <Icon name="building" />
                       <span>Target Company</span>
                     </div>
@@ -84,7 +82,6 @@ export default function InterviewReportPage() {
                       value={targetCompany}
                       onChange={(e) => setTargetCompany(e.target.value)}
                       className="config-select-input"
-                      style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
                     >
                       <option value="Google">Google</option>
                       <option value="Meta">Meta</option>
@@ -95,8 +92,8 @@ export default function InterviewReportPage() {
                     </select>
                   </label>
 
-                  <label className="config-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div className="field-label-row" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label className="config-field">
+                    <div className="field-label-row">
                       <Icon name="user" />
                       <span>Role</span>
                     </div>
@@ -104,7 +101,6 @@ export default function InterviewReportPage() {
                       value={targetRole}
                       onChange={(e) => setTargetRole(e.target.value)}
                       className="config-select-input"
-                      style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
                     >
                       <option value="Product Manager">Product Manager</option>
                       <option value="Software Engineer">Software Engineer</option>
@@ -116,25 +112,15 @@ export default function InterviewReportPage() {
                   </label>
                 </div>
 
-                <div className="difficulty-selection-box" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label className="field-label-row" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Difficulty Level</label>
-                  <div className="difficulty-btn-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <div className="difficulty-selection-box">
+                  <label className="field-label-row">Difficulty Level</label>
+                  <div className="difficulty-btn-group">
                     {['Entry', 'Mid-Level', 'Senior/Staff'].map((level) => (
                       <button
                         key={level}
                         type="button"
                         className={`difficulty-level-btn ${difficulty === level ? 'difficulty-level-btn--active' : ''}`}
                         onClick={() => setDifficulty(level)}
-                        style={{
-                          padding: '10px',
-                          borderRadius: '8px',
-                          border: difficulty === level ? '2px solid #256cf0' : '1px solid #cbd5e1',
-                          background: difficulty === level ? '#eff6ff' : '#ffffff',
-                          color: difficulty === level ? '#256cf0' : '#475569',
-                          fontWeight: 700,
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                        }}
                       >
                         {level}
                       </button>
@@ -142,7 +128,7 @@ export default function InterviewReportPage() {
                   </div>
                 </div>
 
-                <button type="submit" className="start-session-btn" disabled={loading} style={{ padding: '12px 20px', borderRadius: '8px', border: 'none', background: '#256cf0', color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}>
+                <button type="submit" className="start-session-btn" disabled={loading}>
                   <span>{loading ? 'Initializing Session...' : 'Start Interview Session'}</span>
                   <Icon name="arrowRight" />
                 </button>
@@ -152,6 +138,7 @@ export default function InterviewReportPage() {
 
           <AppFooter />
         </main>
+        <MobileNav />
       </div>
     );
   }
@@ -165,27 +152,27 @@ export default function InterviewReportPage() {
       <div className="app-shell">
         <SidebarShell />
 
-        <main className="main-content" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <main className="main-content" style={{ padding: '1.5rem 1rem 5.5rem', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* TOP SESSION STATUS HEADER */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '16px 24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <div>
-              <div style={{ fontSize: '0.78rem', color: '#256cf0', fontWeight: 700, letterSpacing: '0.5px' }}>INTERACTIVE AI MOCK INTERVIEW</div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="session-header-bar">
+            <div className="session-header-info">
+              <div className="session-subtitle-badge">INTERACTIVE AI MOCK INTERVIEW</div>
+              <h2 className="session-header-title">
                 <span>{targetRole} @ {targetCompany}</span>
-                <span style={{ fontSize: '0.8rem', background: '#eff6ff', color: '#256cf0', padding: '3px 10px', borderRadius: '12px', fontWeight: 700 }}>
+                <span className="session-difficulty-pill">
                   {difficulty}
                 </span>
               </h2>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: '#f8fafc', padding: '6px 14px', borderRadius: '20px', border: '1px solid #e2e8f0', fontSize: '0.88rem', fontWeight: 700, color: '#334155' }}>
+            <div className="session-header-meta">
+              <div className="session-counter-badge">
                 Question {currentQuestionIndex + 1} of {totalQ}
               </div>
               <button
                 type="button"
+                className="session-exit-btn"
                 onClick={() => setView('config')}
-                style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '8px', color: '#64748b', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
               >
                 Exit Session
               </button>
@@ -200,17 +187,17 @@ export default function InterviewReportPage() {
           ) : null}
 
           {/* MAIN INTERVIEW WORKSPACE GRID */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+          <div className="session-workspace-grid">
             {/* LEFT: QUESTION PROMPT & CANDIDATE RESPONSE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* AI QUESTION CARD */}
-              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <span style={{ background: '#eff6ff', color: '#256cf0', fontSize: '0.8rem', fontWeight: 700, padding: '4px 12px', borderRadius: '12px' }}>
+              <div className="session-question-card">
+                <div className="session-question-top">
+                  <span className="question-category-tag">
                     {currentQ.category || 'General Interview Question'}
                   </span>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => speakQuestion(currentQ.question)}
@@ -220,9 +207,9 @@ export default function InterviewReportPage() {
                         gap: '6px',
                         padding: '6px 14px',
                         borderRadius: '8px',
-                        border: isSpeaking ? '2px solid #256cf0' : '1px solid #cbd5e1',
-                        background: isSpeaking ? '#eff6ff' : '#ffffff',
-                        color: isSpeaking ? '#256cf0' : '#334155',
+                        border: isSpeaking ? '2px solid var(--primary)' : '1px solid var(--stroke)',
+                        background: isSpeaking ? 'var(--blue-soft)' : 'var(--panel)',
+                        color: isSpeaking ? 'var(--primary)' : 'var(--text)',
                         fontWeight: 700,
                         fontSize: '0.83rem',
                         cursor: 'pointer',
@@ -243,12 +230,12 @@ export default function InterviewReportPage() {
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+                <h3 className="session-question-text">
                   "{currentQ.question}"
                 </h3>
 
                 {currentQ.hint ? (
-                  <div style={{ marginTop: '14px' }}>
+                  <div style={{ marginTop: '10px' }}>
                     {!revealedHints[currentQuestionIndex] ? (
                       <button
                         type="button"
@@ -284,9 +271,9 @@ export default function InterviewReportPage() {
               </div>
 
               {/* CANDIDATE ANSWER INPUT CARD */}
-              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Your Response</label>
+              <div className="session-response-card">
+                <div className="session-response-header">
+                  <label style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--heading)' }}>Your Response</label>
                   <button
                     type="button"
                     onClick={toggleListening}
@@ -296,9 +283,9 @@ export default function InterviewReportPage() {
                       gap: '8px',
                       padding: '8px 16px',
                       borderRadius: '20px',
-                      border: isListening ? '2px solid #ef4444' : '1px solid #cbd5e1',
-                      background: isListening ? '#fef2f2' : '#ffffff',
-                      color: isListening ? '#ef4444' : '#334155',
+                      border: isListening ? '2px solid #ef4444' : '1px solid var(--stroke)',
+                      background: isListening ? '#fef2f2' : 'var(--panel)',
+                      color: isListening ? '#ef4444' : 'var(--text)',
                       fontWeight: 700,
                       fontSize: '0.85rem',
                       cursor: 'pointer',
@@ -314,11 +301,11 @@ export default function InterviewReportPage() {
                   onChange={(e) => setUserAnswer(e.target.value)}
                   placeholder="Type your response here or click '🎤 Voice Input' to speak your answer..."
                   rows={6}
-                  style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#0f172a', lineHeight: 1.5 }}
+                  className="session-textarea"
                 />
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
+                <div className="session-response-footer">
+                  <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontWeight: 600 }}>
                     {userAnswer.trim() ? `${userAnswer.trim().split(/\s+/).length} words` : '0 words'}
                   </span>
 
@@ -327,19 +314,20 @@ export default function InterviewReportPage() {
                     onClick={handleNextQuestion}
                     disabled={isEvaluating}
                     style={{
-                      padding: '12px 26px',
+                      padding: '12px 24px',
                       borderRadius: '10px',
                       border: 'none',
-                      background: '#256cf0',
+                      background: 'var(--primary)',
                       color: '#ffffff',
                       fontWeight: 700,
-                      fontSize: '0.95rem',
+                      fontSize: '0.92rem',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
                       opacity: isEvaluating ? 0.7 : 1,
-                      boxShadow: '0 4px 12px rgba(37, 108, 240, 0.2)',
+                      boxShadow: 'var(--shadow-button)',
                     }}
                   >
                     {isEvaluating ? (
@@ -361,41 +349,40 @@ export default function InterviewReportPage() {
             </div>
 
             {/* RIGHT SIDEBAR: SESSION TRANSCRIPT */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Session Transcript</span>
-                  <span style={{ fontSize: '0.78rem', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                    {qnaList.length} / {totalQ}
-                  </span>
-                </h4>
+            <div className="session-transcript-card">
+              <div className="session-transcript-header">
+                <h4>Session Transcript</h4>
+                <span style={{ fontSize: '0.78rem', background: 'var(--bg-secondary)', color: 'var(--muted)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                  {qnaList.length} / {totalQ}
+                </span>
+              </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto' }}>
-                  {qnaList.map((item, idx) => (
-                    <div key={idx} style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', borderLeft: '3px solid #256cf0' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#256cf0', marginBottom: '4px' }}>
-                        Q{idx + 1}: {item.category}
-                      </div>
-                      <div style={{ fontSize: '0.83rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-                        {item.question}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        "{item.answer}"
-                      </div>
+              <div className="session-transcript-list">
+                {qnaList.map((item, idx) => (
+                  <div key={idx} className="session-transcript-item">
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '4px' }}>
+                      Q{idx + 1}: {item.category}
                     </div>
-                  ))}
-                  {qnaList.length === 0 ? (
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', margin: '24px 0' }}>
-                      Your answered questions will log here as you progress.
-                    </p>
-                  ) : null}
-                </div>
+                    <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--heading)', marginBottom: '4px' }}>
+                      {item.question}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      "{item.answer}"
+                    </div>
+                  </div>
+                ))}
+                {qnaList.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center', margin: '24px 0' }}>
+                    Your answered questions will log here as you progress.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
 
           <AppFooter />
         </main>
+        <MobileNav />
       </div>
     );
   }
@@ -405,46 +392,47 @@ export default function InterviewReportPage() {
     return (
       <div className="app-shell">
         <SidebarShell />
-        <main className="main-content" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+        <main className="main-content" style={{ padding: '40px 20px 5.5rem', textAlign: 'center', color: 'var(--muted)' }}>
           Loading your interview report...
         </main>
+        <MobileNav />
       </div>
     );
   }
 
   // EMPTY STATE WHEN NO VALID COMPLETED INTERVIEW EXISTS
   if (!reportData) {
-
     return (
       <div className="app-shell">
         <SidebarShell />
-        <main className="main-content main-content--interview-report" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-          <div style={{ background: '#eff6ff', color: '#256cf0', width: '64px', height: '64px', borderRadius: '50%', display: 'grid', placeItems: 'center', marginBottom: '20px' }}>
+        <main className="main-content main-content--interview-report" style={{ padding: '40px 24px 5.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
+          <div style={{ background: 'var(--blue-soft)', color: 'var(--primary)', width: '64px', height: '64px', borderRadius: '50%', display: 'grid', placeItems: 'center', marginBottom: '20px' }}>
             <Icon name="chat" />
           </div>
 
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 8px 0' }}>
             No Interview Report Available
           </h2>
-          <p style={{ fontSize: '0.95rem', color: '#64748b', maxWidth: '420px', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.95rem', color: 'var(--muted)', maxWidth: '420px', margin: '0 0 24px 0', lineHeight: 1.5 }}>
             Complete a mock interview to generate your personalized report.
           </p>
 
           <button
             type="button"
             className="primary-button"
-            onClick={() => navigate('/mock-interviews')}
-            style={{ padding: '12px 24px', borderRadius: '8px', border: 'none', background: '#256cf0', color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            onClick={() => setView('config')}
+            style={{ padding: '12px 24px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: '#ffffff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
             <Icon name="spark" />
             <span>Start Mock Interview</span>
           </button>
         </main>
+        <MobileNav />
       </div>
     );
   }
 
-  // DYNAMIC COMPLETED REPORT VIEW (PURE DATABASE DATA, NO MOCK/HARDCODED FALLBACKS)
+  // DYNAMIC COMPLETED REPORT VIEW
   const scoreVal = reportData.score ?? 0;
   const radar = reportData.skillsRadar || { Technical: 0, Communication: 0, Grammar: 0, Behavioral: 0, Confidence: 0 };
   const strengths = reportData.strengths || [];
@@ -460,7 +448,7 @@ export default function InterviewReportPage() {
         <div className="report-header-section">
           <div>
             <div className="report-breadcrumb">
-              <span style={{ cursor: 'pointer', color: '#256cf0', fontWeight: 600 }} onClick={handleExitReport}>
+              <span style={{ cursor: 'pointer', color: 'var(--primary)', fontWeight: 600 }} onClick={handleExitReport}>
                 ← Mock Interviews Setup
               </span>
               <Icon name="chevronRight" />
@@ -523,7 +511,7 @@ export default function InterviewReportPage() {
             </p>
 
             {reportData.hintsUsedCount > 0 ? (
-              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--amber-soft)', border: '1px solid var(--amber)', color: 'var(--amber)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
                 <Icon name="spark" />
                 <span>{reportData.hintsUsedCount} Hint(s) Used (-{reportData.scoreDeduction || reportData.hintsUsedCount * 0.5} pts deduction)</span>
               </div>
@@ -546,16 +534,16 @@ export default function InterviewReportPage() {
             {/* SVG RADAR CHART */}
             <div className="radar-chart-container">
               <svg viewBox="0 0 500 240" className="radar-svg">
-                <polygon points="250,50 326,105 297,195 203,195 174,105" fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                <polygon points="250,75 302,113 282,175 218,175 198,113" fill="none" stroke="#f1f5f9" strokeWidth="1" />
-                <polygon points="250,100 279,121 268,154 232,154 221,121" fill="none" stroke="#f8fafc" strokeWidth="1" />
-                <line x1="250" y1="130" x2="250" y2="50" stroke="#e2e8f0" strokeWidth="1" />
-                <line x1="250" y1="130" x2="326" y2="105" stroke="#e2e8f0" strokeWidth="1" />
-                <line x1="250" y1="130" x2="297" y2="195" stroke="#e2e8f0" strokeWidth="1" />
-                <line x1="250" y1="130" x2="203" y2="195" stroke="#e2e8f0" strokeWidth="1" />
-                <line x1="250" y1="130" x2="174" y2="105" stroke="#e2e8f0" strokeWidth="1" />
-                <polygon points="250,60 317,108 291,187 209,187 183,108" fill="rgba(203, 213, 225, 0.2)" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 3" />
-                <polygon points={`250,${130 - (radar.Technical || 80) * 0.8} ${250 + (radar.Communication || 80) * 0.76},${130 - (radar.Communication || 80) * 0.25} ${250 + (radar.Grammar || 80) * 0.47},${130 + (radar.Grammar || 80) * 0.65} ${250 - (radar.Behavioral || 80) * 0.47},${130 + (radar.Behavioral || 80) * 0.65} ${250 - (radar.Confidence || 80) * 0.76},${130 - (radar.Confidence || 80) * 0.25}`} fill="rgba(37, 99, 235, 0.15)" stroke="#2563eb" strokeWidth="3" />
+                <polygon points="250,50 326,105 297,195 203,195 174,105" fill="none" stroke="var(--stroke)" strokeWidth="1" />
+                <polygon points="250,75 302,113 282,175 218,175 198,113" fill="none" stroke="var(--bg-secondary)" strokeWidth="1" />
+                <polygon points="250,100 279,121 268,154 232,154 221,121" fill="none" stroke="var(--panel)" strokeWidth="1" />
+                <line x1="250" y1="130" x2="250" y2="50" stroke="var(--stroke)" strokeWidth="1" />
+                <line x1="250" y1="130" x2="326" y2="105" stroke="var(--stroke)" strokeWidth="1" />
+                <line x1="250" y1="130" x2="297" y2="195" stroke="var(--stroke)" strokeWidth="1" />
+                <line x1="250" y1="130" x2="203" y2="195" stroke="var(--stroke)" strokeWidth="1" />
+                <line x1="250" y1="130" x2="174" y2="105" stroke="var(--stroke)" strokeWidth="1" />
+                <polygon points="250,60 317,108 291,187 209,187 183,108" fill="rgba(203, 213, 225, 0.2)" stroke="var(--stroke)" strokeWidth="2" strokeDasharray="3 3" />
+                <polygon points={`250,${130 - (radar.Technical || 80) * 0.8} ${250 + (radar.Communication || 80) * 0.76},${130 - (radar.Communication || 80) * 0.25} ${250 + (radar.Grammar || 80) * 0.47},${130 + (radar.Grammar || 80) * 0.65} ${250 - (radar.Behavioral || 80) * 0.47},${130 + (radar.Behavioral || 80) * 0.65} ${250 - (radar.Confidence || 80) * 0.76},${130 - (radar.Confidence || 80) * 0.25}`} fill="rgba(37, 99, 235, 0.15)" stroke="var(--primary)" strokeWidth="3" />
                 <text x="250" y="32" textAnchor="middle" className="radar-label">Technical ({radar.Technical || 85}%)</text>
                 <text x="338" y="108" textAnchor="start" className="radar-label">Communication ({radar.Communication || 90}%)</text>
                 <text x="302" y="215" textAnchor="middle" className="radar-label">Grammar ({radar.Grammar || 88}%)</text>
@@ -633,6 +621,7 @@ export default function InterviewReportPage() {
 
         <AppFooter />
       </main>
+      <MobileNav />
     </div>
   );
 }

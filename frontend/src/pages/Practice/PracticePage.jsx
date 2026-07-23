@@ -2,6 +2,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePractice } from '../../hooks/usePractice.js';
 import { Icon } from '../../components/Icon.jsx';
 import { SidebarShell } from '../../components/Layout/Sidebar.jsx';
+import { MobileNav } from '../../components/Layout/MobileNav.jsx';
 import { AppFooter } from '../../components/Layout/AppFooter.jsx';
 import { CareerSelectorModal } from '../../components/Practice/CareerSelectorModal.jsx';
 import { SearchableTopicSelect } from '../../components/Practice/SearchableTopicSelect.jsx';
@@ -855,6 +856,7 @@ export default function PracticePage() {
 
         <AppFooter />
       </main>
+      <MobileNav />
     </div>
   );
 }

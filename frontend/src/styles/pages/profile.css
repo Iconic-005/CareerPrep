@@ -301,3 +301,51 @@
   font-size: 0.78rem;
   color: var(--muted);
 }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .main-content--profile {
+    margin-left: 0;
+    padding: 1.25rem 1rem 5.5rem;
+  }
+  .profile-hero-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .profile-hero-card__body {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .profile-hero-info {
+    max-width: 100%;
+    text-align: center;
+  }
+  .profile-content-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-header--profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .save-changes-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .profile-avatar-container {
+    width: 90px;
+    height: 90px;
+  }
+  .profile-hero-name-input {
+    text-align: center;
+    font-size: 1.25rem;
+  }
+  .profile-hero-title-input {
+    text-align: center;
+  }
+}

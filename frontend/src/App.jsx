@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { usePathname } from './hooks/usePathname.js';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
+import { SidebarProvider } from './context/SidebarContext.jsx';
 import { RouteGuard } from './components/Common/RouteLink.jsx';
 
 // ── Lazy-loaded page imports ─────────────────────────────────────────────────
@@ -84,11 +85,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <RouteGuard path={pathname}>
-          <Suspense fallback={<PageLoader />}>
-            <Page />
-          </Suspense>
-        </RouteGuard>
+        <SidebarProvider>
+          <RouteGuard path={pathname}>
+            <Suspense fallback={<PageLoader />}>
+              <Page />
+            </Suspense>
+          </RouteGuard>
+        </SidebarProvider>
       </AuthProvider>
     </ThemeProvider>
   );

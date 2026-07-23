@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useSidebar } from '../../context/SidebarContext.jsx';
 import { Icon } from '../Icon.jsx';
 import { RouteLink } from '../Common/RouteLink.jsx';
 import { appNav } from '../../constants/navigation.js';
@@ -22,13 +23,18 @@ function ShellNav({ compact = false, onItemClick }) {
   );
 }
 
-export function SidebarShell({ isOpen = false, onClose }) {
+export function SidebarShell({ isOpen: propIsOpen, onClose: propOnClose }) {
   const { logout } = useAuth();
+  const context = useSidebar();
+
+  const isOpen = propIsOpen !== undefined ? propIsOpen : (context?.isOpen || false);
+  const handleClose = propOnClose || context?.closeSidebar || (() => {});
+
   return (
     <>
       <div
         className={`sidebar-overlay ${isOpen ? 'sidebar-overlay--open' : ''}`}
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
       <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
@@ -36,7 +42,7 @@ export function SidebarShell({ isOpen = false, onClose }) {
           <RouteLink
             path="/dashboard"
             className="brand"
-            onClick={onClose}
+            onClick={handleClose}
             style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
           >
             <div className="brand__mark brand__mark--img">
@@ -53,7 +59,7 @@ export function SidebarShell({ isOpen = false, onClose }) {
         </div>
 
         <nav className="sidebar__nav">
-          <ShellNav onItemClick={onClose} />
+          <ShellNav onItemClick={handleClose} />
         </nav>
 
         <div className="sidebar__promo">
@@ -62,7 +68,7 @@ export function SidebarShell({ isOpen = false, onClose }) {
           <RouteLink
             path="/settings"
             className="sidebar__promo-btn"
-            onClick={onClose}
+            onClick={handleClose}
             style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
           >
             Go Premium
@@ -70,18 +76,18 @@ export function SidebarShell({ isOpen = false, onClose }) {
         </div>
 
         <div className="sidebar__footer">
-          <RouteLink path="/settings" className="nav-link" activeClassName="nav-link--active" onClick={onClose}>
+          <RouteLink path="/settings" className="nav-link" activeClassName="nav-link--active" onClick={handleClose}>
             <Icon name="settings" />
             <span>Settings</span>
           </RouteLink>
-          <RouteLink path="/profile" className="nav-link" activeClassName="nav-link--active" onClick={onClose}>
+          <RouteLink path="/profile" className="nav-link" activeClassName="nav-link--active" onClick={handleClose}>
             <Icon name="user" />
             <span>Profile</span>
           </RouteLink>
           <button
             type="button"
             onClick={() => {
-              if (onClose) onClose();
+              if (handleClose) handleClose();
               logout();
             }}
             className="nav-link"

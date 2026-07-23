@@ -1224,10 +1224,17 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .main-content--practice {
+    margin-left: 0;
+    padding: 1.25rem 1rem 5.5rem;
+  }
+}
+
 /* Mobile: <768px */
 @media (max-width: 767px) {
   .main-content--practice {
-    padding: 1rem;
+    padding: 1rem 1rem 5.5rem;
   }
 
   .practice-top-row {

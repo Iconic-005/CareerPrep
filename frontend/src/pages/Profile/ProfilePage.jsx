@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useProfile } from '../../hooks/useProfile.js';
 import { Icon } from '../../components/Icon.jsx';
 import { SidebarShell } from '../../components/Layout/Sidebar.jsx';
+import { MobileNav } from '../../components/Layout/MobileNav.jsx';
 import { AppFooter } from '../../components/Layout/AppFooter.jsx';
 import { RouteLink } from '../../components/Common/RouteLink.jsx';
 
@@ -74,6 +75,7 @@ export default function ProfilePage() {
         <main className="main-content">
           <p className="text-muted" style={{ padding: '2rem' }}>Loading profile…</p>
         </main>
+        <MobileNav />
       </div>
     );
   }
@@ -732,6 +734,7 @@ export default function ProfilePage() {
 
         <AppFooter />
       </main>
+      <MobileNav />
     </div>
   );
 }
