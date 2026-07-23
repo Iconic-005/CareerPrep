@@ -14,6 +14,8 @@ import {
   BadgeModel,
   UserSettingsModel,
 } from '../models/index.js';
+import { CAREER_TRACKS } from './careerData.js';
+import { CODING_QUESTIONS, generate10AptitudeQuestions } from './questionStore.js';
 import {
   generateChatReply,
   generateOptimizedResume,
@@ -24,6 +26,7 @@ import {
   evaluateInterviewSession,
   evaluateCodeSubmission,
 } from '../services/aiService.js';
+
 
 export async function ensureUserInitialized(userId, name = 'User', email = '') {
   let profile = await ProfileModel.findOne({ userId });
@@ -975,41 +978,132 @@ export async function updateMilestone(userId, id, patch) {
   return milestone;
 }
 
-// Practice
-export async function getPractice(userId) {
+// Practice & Career Track Management
+export async function getUserPracticeStats(userId) {
   await ensureUserInitialized(userId);
   const analytics = await AnalyticsModel.findOne({ userId });
-  const history = await PracticeHistoryModel.find({ userId }).sort({ createdAt: -1 });
+  const history = await PracticeHistoryModel.find({ userId });
+
+  const solved = history.filter(h => h.type === 'code' && (h.score >= 25 || (h.accuracy && h.accuracy >= 70))).length;
+  const attempted = history.length;
+  const correctCount = history.filter(h => (h.accuracy && h.accuracy >= 70) || h.score >= 25).length;
+  const accuracy = attempted > 0 ? Math.round((correctCount / attempted) * 100) : 0;
+  const streak = analytics?.streak || 0;
+  const xp = analytics?.codingXP || 0;
 
   return {
-    codingProblem: {
-      id: '142',
-      title: 'Linked List Cycle II',
-      difficulty: 'Medium',
-      description: 'Given the head of a linked list, return the node where the cycle begins. If there is no cycle, return null.',
-      examples: [
-        { id: 'ex_1', input: 'head = [3,2,0,-4], pos = 1', output: 'tail connects to node index 1', explanation: 'There is a cycle in the linked list where tail connects to the second node.' },
-      ],
-      constraints: ['The number of nodes in the list is in the range [0, 10^4].', '-10^5 <= Node.val <= 10^5'],
-      aiAnalysis: {
-        algorithm: "Floyd's Tortoise and Hare",
-        text: 'Most candidates use a two-pointer approach here.',
-      },
-      starterCode: `class Solution:\n    def detectCycle(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        # TODO: Initialize slow and fast pointers\n        slow = fast = head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if slow == fast:\n                slow = head\n                while slow != fast:\n                    slow = slow.next\n                    fast = fast.next\n                return slow\n        return None`,
-    },
+    solved,
+    attempted,
+    accuracy,
+    streak,
+    xp,
+  };
+}
+
+export async function getRandomCodingQuestion(userId, query = {}) {
+  await ensureUserInitialized(userId);
+  const { career, topic, difficulty } = query;
+  let pool = [...CODING_QUESTIONS];
+
+  if (career && career !== 'All') {
+    pool = pool.filter(q => !q.careers || q.careers.includes(career) || career === 'Software Engineer');
+  }
+  if (topic && topic !== 'All') {
+    pool = pool.filter(q => q.topic.toLowerCase() === topic.toLowerCase());
+  }
+  if (difficulty && difficulty !== 'All') {
+    pool = pool.filter(q => q.difficulty.toLowerCase() === difficulty.toLowerCase());
+  }
+
+  if (pool.length === 0) pool = [...CODING_QUESTIONS];
+  const question = pool[Math.floor(Math.random() * pool.length)];
+  return { question };
+}
+
+export async function getRandomAptitudeQuestion(query = {}) {
+  const { category = 'Logical Reasoning', difficulty = 'Medium' } = query;
+  const questions = generate10AptitudeQuestions(category, difficulty);
+  const question = questions[Math.floor(Math.random() * questions.length)];
+  return { question };
+}
+
+export async function updateCareerTrack(userId, careerTrack) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  if (profile) {
+    profile.selectedCareerTrack = careerTrack;
+    profile.title = careerTrack;
+    await profile.save();
+  }
+  await logActivity(userId, 'Changed Career Track', `Switched active focus track to ${careerTrack}`, 'blue');
+  return { success: true, careerTrack };
+}
+
+export async function getCodingQuestions(userId, query = {}) {
+  await ensureUserInitialized(userId);
+  const { career, topic, difficulty, search } = query;
+  
+  let questions = [...CODING_QUESTIONS];
+
+  if (career && career !== 'All') {
+    questions = questions.filter(q => !q.careers || q.careers.includes(career) || career === 'Software Engineer');
+  }
+
+  if (topic && topic !== 'All') {
+    questions = questions.filter(q => q.topic.toLowerCase() === topic.toLowerCase());
+  }
+
+  if (difficulty && difficulty !== 'All') {
+    questions = questions.filter(q => q.difficulty.toLowerCase() === difficulty.toLowerCase());
+  }
+
+  if (search) {
+    const term = search.toLowerCase();
+    questions = questions.filter(q => q.title.toLowerCase().includes(term) || q.description.toLowerCase().includes(term));
+  }
+
+  return { questions, total: questions.length };
+}
+
+export async function getCodingTopics(career) {
+  const track = CAREER_TRACKS.find(t => t.name.toLowerCase() === (career || '').toLowerCase());
+  if (track) return track.codingTopics;
+  return ['Arrays', 'Strings', 'Linked Lists', 'Trees', 'Graphs', 'Dynamic Programming', 'SQL', 'OOP', 'DBMS', 'OS', 'Networking', 'System Design'];
+}
+
+export async function getCodingHistory(userId) {
+  await ensureUserInitialized(userId);
+  return PracticeHistoryModel.find({ userId, type: 'code' }).sort({ createdAt: -1 });
+}
+
+export async function getAptitudeQuestions(query = {}) {
+  const { category = 'Logical Reasoning', difficulty = 'Medium' } = query;
+  const questions = generate10AptitudeQuestions(category, difficulty);
+  return { questions, total: questions.length, category };
+}
+
+export async function getPractice(userId) {
+  await ensureUserInitialized(userId);
+  const profile = await ProfileModel.findOne({ userId });
+  const analytics = await AnalyticsModel.findOne({ userId });
+  const history = await PracticeHistoryModel.find({ userId }).sort({ createdAt: -1 });
+  const selectedCareerTrack = profile?.selectedCareerTrack || profile?.title || 'Software Engineer';
+
+  const defaultCoding = CODING_QUESTIONS[0];
+  const defaultAptitude = generate10AptitudeQuestions('Logical Reasoning')[0];
+
+  return {
+    selectedCareerTrack,
+    tracks: CAREER_TRACKS,
+    codingProblem: defaultCoding,
     aptitudeSession: {
-      currentQuestionIndex: 5,
-      totalQuestions: 20,
-      accuracy: 85,
+      currentQuestionIndex: 0,
+      totalQuestions: 10,
+      accuracy: analytics?.practiceStats?.accuracy || 88,
       category: 'Logical Reasoning',
-      questionText: "If 'CLARK' is coded as '24-12-1-18-11', how would you code 'MEMBER'?",
-      options: [
-        { label: 'A', text: '13-5-13-2-5-18' },
-        { label: 'B', text: '14-6-14-3-6-19', isCorrect: true },
-        { label: 'C', text: '12-4-12-1-4-17' },
-        { label: 'D', text: '13-6-13-3-6-18' },
-      ],
-      metrics: { avgTime: '42s', streak: 12, logicMapping: 'High', speedControl: 'Medium' },
+      question: defaultAptitude.question,
+      options: defaultAptitude.options,
+      explanation: defaultAptitude.explanation,
     },
     stats: analytics?.practiceStats || { questionsCompleted: history.length, accuracy: 88 },
     history,
@@ -1029,31 +1123,36 @@ export async function submitPractice(userId, payload = {}) {
     }
   }
 
-  const xpGained = isCodeSubmit ? 50 : 25;
+  const xpGained = isCodeSubmit ? (evalResult?.status === 'failed' ? 10 : 50) : (payload.isCorrect ? 25 : 5);
 
   await PracticeHistoryModel.create({
     userId,
-    problemId: payload.problemId || '142',
-    title: payload.title || payload.problemTitle || (isCodeSubmit ? 'Linked List Cycle II' : 'Logical Reasoning Drill'),
+    problemId: payload.problemId || 'code-101',
+    title: payload.title || payload.problemTitle || (isCodeSubmit ? 'Coding Challenge' : 'Aptitude Drill'),
     type: isCodeSubmit ? 'code' : 'aptitude',
     score: xpGained,
     runtime: evalResult?.runtime || '38ms',
     beatsPercent: evalResult?.beatsPercent || '94%',
-    accuracy: 90,
+    accuracy: payload.accuracy || 90,
   });
 
   const analytics = await AnalyticsModel.findOne({ userId });
   if (analytics) {
-    analytics.codingXP += xpGained;
-    analytics.practiceStats.questionsCompleted += 1;
-    analytics.practiceStats.accuracy = 88;
+    analytics.codingXP = (analytics.codingXP || 0) + xpGained;
+    analytics.practiceStats.questionsCompleted = (analytics.practiceStats.questionsCompleted || 0) + 1;
+    if (payload.accuracy) {
+      analytics.practiceStats.accuracy = payload.accuracy;
+    }
+    if (analytics.streak !== undefined) {
+      analytics.streak = (analytics.streak || 0) + 1;
+    }
     await analytics.save();
   }
 
   await logActivity(
     userId,
-    isCodeSubmit ? 'Submitted Coding Solution' : 'Answered Aptitude Drill',
-    isCodeSubmit ? `Passed test cases (${evalResult?.runtime || '38ms'}, +${xpGained} XP)` : `Correct answer (+${xpGained} XP)`,
+    isCodeSubmit ? 'Submitted Coding Solution' : 'Answered Aptitude Question',
+    isCodeSubmit ? `Evaluated by Gemini AI (${evalResult?.runtime || '38ms'}, +${xpGained} XP)` : `Completed Drill (+${xpGained} XP)`,
     'blue'
   );
 
@@ -1061,12 +1160,12 @@ export async function submitPractice(userId, payload = {}) {
 
   return {
     success: true,
-    message: evalResult?.message || (isCodeSubmit ? '✓ All standard test cases passed.' : '✓ Correct Answer!'),
+    message: evalResult?.message || (isCodeSubmit ? '✓ All test cases passed successfully.' : (payload.isCorrect ? '✓ Correct Answer!' : 'Reviewed Answer.')),
     xpGained,
     runtime: evalResult?.runtime || '38ms',
     beatsPercent: evalResult?.beatsPercent || '94%',
-    complexity: evalResult?.complexity,
-    review: evalResult?.review,
+    complexity: evalResult?.complexity || 'Time: O(N), Space: O(1)',
+    review: evalResult?.review || 'Good attempt!',
   };
 }
 

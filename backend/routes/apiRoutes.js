@@ -19,6 +19,15 @@ import {
   getLatestJDAnalysisData,
   getNotificationsData,
   getPracticeData,
+  submitPracticeData,
+  updateCareerTrackData,
+  getCodingQuestionsData,
+  getCodingTopicsData,
+  getCodingHistoryData,
+  getAptitudeQuestionsData,
+  getUserPracticeStatsData,
+  getRandomCodingQuestionData,
+  getRandomAptitudeQuestionData,
   getProfileData,
   getResumeData,
   getRoadmapData,
@@ -31,7 +40,6 @@ import {
   restoreResumeVersionData,
   startInterviewSession,
   submitAuthRequest,
-  submitPracticeData,
   updateGoalData,
   updateMilestoneData,
   updateProfileData,
@@ -246,9 +254,87 @@ router.put('/roadmap/milestones/:id', async (req, res) => {
   }
 });
 
-// Practice
+// Practice & User Stats
+router.get('/user/practice-stats', async (req, res) => {
+  try {
+    const stats = await getUserPracticeStatsData(req.user.id);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/practice', async (req, res) => {
   res.json(await getPracticeData(req.user.id));
+});
+
+router.put('/practice/career', async (req, res) => {
+  try {
+    const { careerTrack } = req.body;
+    const result = await updateCareerTrackData(req.user.id, careerTrack);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding', async (req, res) => {
+  try {
+    const { career, topic, difficulty, search } = req.query;
+    const result = await getCodingQuestionsData(req.user.id, { career, topic, difficulty, search });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/random', async (req, res) => {
+  try {
+    const { career, topic, difficulty } = req.query;
+    const result = await getRandomCodingQuestionData(req.user.id, { career, topic, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/topics', async (req, res) => {
+  try {
+    const { career } = req.query;
+    const topics = await getCodingTopicsData(career);
+    res.json({ topics });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/coding/history', async (req, res) => {
+  try {
+    const history = await getCodingHistoryData(req.user.id);
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/aptitude', async (req, res) => {
+  try {
+    const { category, difficulty } = req.query;
+    const result = await getAptitudeQuestionsData({ category, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/practice/aptitude/random', async (req, res) => {
+  try {
+    const { category, difficulty } = req.query;
+    const result = await getRandomAptitudeQuestionData({ category, difficulty });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.post('/practice/submit', async (req, res) => {

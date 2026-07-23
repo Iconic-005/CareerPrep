@@ -126,6 +126,39 @@ export async function submitPracticeData(userId, payload = {}) {
   return mongoStore.submitPractice(userId, payload);
 }
 
+export async function updateCareerTrackData(userId, careerTrack) {
+  return mongoStore.updateCareerTrack(userId, careerTrack);
+}
+
+export async function getCodingQuestionsData(userId, query) {
+  return mongoStore.getCodingQuestions(userId, query);
+}
+
+export async function getCodingTopicsData(career) {
+  return mongoStore.getCodingTopics(career);
+}
+
+export async function getCodingHistoryData(userId) {
+  return mongoStore.getCodingHistory(userId);
+}
+
+export async function getUserPracticeStatsData(userId) {
+  return mongoStore.getUserPracticeStats(userId);
+}
+
+export async function getRandomCodingQuestionData(userId, query) {
+  return mongoStore.getRandomCodingQuestion(userId, query);
+}
+
+export async function getRandomAptitudeQuestionData(query) {
+  return mongoStore.getRandomAptitudeQuestion(query);
+}
+
+export async function getAptitudeQuestionsData(query) {
+  return mongoStore.getAptitudeQuestions(query);
+}
+
+
 export async function getInterviewReportData(userId) {
   return mongoStore.getInterviewReport(userId);
 }
