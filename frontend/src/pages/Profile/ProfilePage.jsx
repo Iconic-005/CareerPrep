@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useProfile } from '../../hooks/useProfile.js';
 import { Icon } from '../../components/Icon.jsx';
@@ -7,6 +8,8 @@ import { RouteLink } from '../../components/Common/RouteLink.jsx';
 
 export default function ProfilePage() {
   const { updateUser } = useAuth();
+  const fileInputRef = useRef(null);
+
   const {
     profile,
     saving,
@@ -30,6 +33,10 @@ export default function ProfilePage() {
     newSkill, setNewSkill,
     showRoleModal, setShowRoleModal,
     newRole, setNewRole,
+    showCompanyModal, setShowCompanyModal,
+    newCompany, setNewCompany,
+    showProjectModal, setShowProjectModal,
+    newProject, setNewProject,
     showAvatarModal, setShowAvatarModal,
     refiningText,
     handleSaveProfile,
@@ -38,8 +45,27 @@ export default function ProfilePage() {
     handleAddEducation,
     handleAddSkill,
     handleAddTargetRole,
+    handleRemoveTargetRole,
+    handleAddCompany,
+    handleRemoveCompany,
+    handleAddProject,
+    handleRemoveProject,
+    handlePhotoUpload,
     handleRefineProjectText,
   } = useProfile(updateUser);
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handlePhotoUpload(file);
+    }
+  };
 
   if (!profile) {
     return (
@@ -57,6 +83,15 @@ export default function ProfilePage() {
       <SidebarShell />
 
       <main className="main-content main-content--profile">
+        {/* Hidden global photo upload input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+
         {/* TOP APP HEADER */}
         <header className="page-header page-header--profile">
           <div className="brand-header-title header-brand-container">
@@ -78,7 +113,7 @@ export default function ProfilePage() {
 
         {toast ? (
           <div className="profile-toast">
-            <Icon name="checkCircle" />
+            <Icon name="check" />
             <span>{toast}</span>
           </div>
         ) : null}
@@ -93,9 +128,9 @@ export default function ProfilePage() {
                   type="button"
                   className="profile-avatar-edit-btn"
                   onClick={() => setShowAvatarModal(true)}
-                  title="Change Avatar"
+                  title="Upload / Change Photo"
                 >
-                  <Icon name="pencil" />
+                  <Icon name="edit" />
                 </button>
               </div>
 
@@ -139,7 +174,6 @@ export default function ProfilePage() {
                 onClick={handleSaveProfile}
                 disabled={saving}
               >
-                <Icon name="save" />
                 <span>{saving ? 'Saving...' : 'Save Changes'}</span>
               </button>
             </div>
@@ -167,7 +201,7 @@ export default function ProfilePage() {
                   {experiences.map((exp) => (
                     <div key={exp.id} className="timeline-item">
                       <div className={`timeline-icon-box ${exp.current ? 'timeline-icon-box--active' : ''}`}>
-                        <Icon name="building" />
+                        <Icon name="briefcase" />
                       </div>
                       <div className="timeline-content">
                         <div className="timeline-header">
@@ -194,7 +228,7 @@ export default function ProfilePage() {
                 <div className="profile-section-header">
                   <div className="profile-section-title">
                     <div className="section-icon-badge section-icon-badge--blue">
-                      <Icon name="graduation" />
+                      <Icon name="document" />
                     </div>
                     <h3>Education</h3>
                   </div>
@@ -207,7 +241,7 @@ export default function ProfilePage() {
                   {education.map((edu) => (
                     <div key={edu.id} className="timeline-item">
                       <div className="timeline-icon-box">
-                        <Icon name="landmark" />
+                        <Icon name="document" />
                       </div>
                       <div className="timeline-content">
                         <div className="timeline-header">
@@ -238,24 +272,84 @@ export default function ProfilePage() {
                     </div>
                     <h3>Featured Projects</h3>
                   </div>
-                  <button type="button" className="section-action-btn" onClick={handleRefineProjectText}>
-                    Manage All
-                  </button>
+                  <div className="profile-section-actions">
+                    <button
+                      type="button"
+                      className="section-action-btn"
+                      onClick={() => setShowProjectModal(true)}
+                    >
+                      + Add Project
+                    </button>
+                  </div>
                 </div>
 
-                <div className="featured-projects-grid">
-                  {projects.map((proj) => (
-                    <div key={proj.id} className="project-card">
-                      <div className="project-card__image-wrap">
-                        <img src={proj.image} alt={proj.title} className="project-card__image" />
-                      </div>
-                      <div className="project-card__info">
-                        <h4>{proj.title}</h4>
-                        <p>{proj.description}</p>
-                      </div>
+                {projects.length === 0 ? (
+                  <div className="empty-projects-state">
+                    <div className="empty-icon-box">
+                      <Icon name="rocket" />
                     </div>
-                  ))}
-                </div>
+                    <p className="empty-title">No featured projects added yet</p>
+                    <p className="empty-subtitle">Highlight your best engineering or design projects to stand out to recruiters.</p>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ marginTop: '0.75rem' }}
+                      onClick={() => setShowProjectModal(true)}
+                    >
+                      + Add Your First Project
+                    </button>
+                  </div>
+                ) : (
+                  <div className="featured-projects-grid">
+                    {projects.map((proj) => (
+                      <div key={proj.id} className="project-card">
+                        <button
+                          type="button"
+                          className="project-card__delete-btn"
+                          onClick={() => handleRemoveProject(proj.id)}
+                          title="Remove project"
+                        >
+                          ✕
+                        </button>
+                        <div className="project-card__image-wrap">
+                          {proj.image ? (
+                            <img
+                              src={proj.image}
+                              alt={proj.title}
+                              className="project-card__image"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) {
+                                  e.target.nextSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="project-card__fallback"
+                            style={{ display: proj.image ? 'none' : 'flex' }}
+                          >
+                            <Icon name="rocket" />
+                          </div>
+                        </div>
+                        <div className="project-card__info">
+                          <h4>{proj.title}</h4>
+                          <p>{proj.description}</p>
+                          {proj.link ? (
+                            <a
+                              href={proj.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="project-card__link"
+                            >
+                              View Project →
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
             </div>
 
@@ -306,18 +400,39 @@ export default function ProfilePage() {
                           <Icon name="check" />
                         </div>
                         <span>{role}</span>
+                        <button
+                          type="button"
+                          className="pill-remove-btn"
+                          onClick={() => handleRemoveTargetRole(role)}
+                          title="Remove role"
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="goals-subgroup" style={{ marginTop: '1.2rem' }}>
-                  <h5>Dream Companies</h5>
+                <div className="goals-subgroup" style={{ marginTop: '1.25rem' }}>
+                  <div className="goals-subgroup-header">
+                    <h5>Dream Companies</h5>
+                    <button type="button" className="small-link-btn" onClick={() => setShowCompanyModal(true)}>
+                      + Add
+                    </button>
+                  </div>
                   <div className="dream-companies-list">
                     {dreamCompanies.map((c) => (
                       <div key={c.name} className="dream-company-pill">
                         <span className="company-dot" style={{ backgroundColor: c.color || '#2563eb' }} />
                         <span>{c.name}</span>
+                        <button
+                          type="button"
+                          className="pill-remove-btn"
+                          onClick={() => handleRemoveCompany(c.name)}
+                          title="Remove company"
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -327,7 +442,7 @@ export default function ProfilePage() {
               {/* AI SUGGESTION HERO CARD */}
               <section className="ai-suggestion-hero-card">
                 <div className="ai-suggestion-badge">
-                  <Icon name="sparkles" />
+                  <Icon name="brain" />
                   <span>AI SUGGESTION</span>
                 </div>
                 <h4>{aiSuggestion?.title || 'Optimize for Stripe'}</h4>
@@ -341,7 +456,8 @@ export default function ProfilePage() {
                   onClick={handleRefineProjectText}
                   disabled={refiningText}
                 >
-                  {refiningText ? 'Refining with AI...' : aiSuggestion?.buttonLabel || 'Refine Project Text'}
+                  <Icon name="brain" />
+                  <span>{refiningText ? 'Refining with AI...' : aiSuggestion?.buttonLabel || 'Refine Project Text'}</span>
                 </button>
               </section>
             </div>
@@ -349,6 +465,58 @@ export default function ProfilePage() {
         </div>
 
         {/* MODALS */}
+
+        {/* UPLOAD / CHANGE AVATAR MODAL */}
+        {showAvatarModal ? (
+          <div className="modal-backdrop" onClick={() => setShowAvatarModal(false)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              <h3>Update Profile Photo</h3>
+              
+              <div className="modal-photo-upload-section">
+                <p className="photo-upload-label">Option 1: Upload Photo from Device</p>
+                <div
+                  className="photo-dropzone"
+                  onClick={triggerFileInput}
+                >
+                  <div className="photo-dropzone-icon">
+                    <Icon name="edit" />
+                  </div>
+                  <div className="photo-dropzone-text">
+                    <strong>Click to upload photo</strong>
+                    <span>Supports JPG, PNG, WebP (Max 5MB)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-divider-row">
+                <span>OR</span>
+              </div>
+
+              <div className="modal-photo-url-section">
+                <label>
+                  <span>Option 2: Paste Image URL</span>
+                  <input
+                    type="text"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.png"
+                  />
+                </label>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: '1.25rem' }}>
+                <button type="button" className="ghost-button" onClick={() => setShowAvatarModal(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="primary-button" onClick={() => setShowAvatarModal(false)}>
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ADD EXPERIENCE MODAL */}
         {showExpModal ? (
           <div className="modal-backdrop" onClick={() => setShowExpModal(false)}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -383,6 +551,7 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
+        {/* ADD EDUCATION MODAL */}
         {showEduModal ? (
           <div className="modal-backdrop" onClick={() => setShowEduModal(false)}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -417,6 +586,7 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
+        {/* ADD SKILL MODAL */}
         {showSkillModal ? (
           <div className="modal-backdrop" onClick={() => setShowSkillModal(false)}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -436,6 +606,7 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
+        {/* ADD TARGET ROLE MODAL */}
         {showRoleModal ? (
           <div className="modal-backdrop" onClick={() => setShowRoleModal(false)}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -455,18 +626,103 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
-        {showAvatarModal ? (
-          <div className="modal-backdrop" onClick={() => setShowAvatarModal(false)}>
+        {/* ADD DREAM COMPANY MODAL */}
+        {showCompanyModal ? (
+          <div className="modal-backdrop" onClick={() => setShowCompanyModal(false)}>
             <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-              <h3>Update Profile Image</h3>
-              <label>
-                <span>Image URL</span>
-                <input type="text" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="/images/alex_thompson.png" />
-              </label>
-              <div className="modal-actions" style={{ marginTop: '1rem' }}>
-                <button type="button" className="ghost-button" onClick={() => setShowAvatarModal(false)}>Done</button>
-              </div>
+              <h3>Add Dream Company</h3>
+              <form onSubmit={handleAddCompany}>
+                <label>
+                  <span>Company Name *</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. Stripe, Apple, Google"
+                    value={newCompany.name}
+                    onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                    required
+                  />
+                </label>
+
+                <div style={{ marginTop: '0.75rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--slate-700)', display: 'block', marginBottom: '6px' }}>Brand Accent Color</span>
+                  <div className="color-picker-options" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {['#6366f1', '#2563eb', '#ff385c', '#10b981', '#f59e0b', '#8b5cf6', '#000000'].map((col) => (
+                      <button
+                        key={col}
+                        type="button"
+                        onClick={() => setNewCompany({ ...newCompany, color: col })}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '50%',
+                          backgroundColor: col,
+                          border: newCompany.color === col ? '3px solid #3b82f6' : '2px solid transparent',
+                          cursor: 'pointer',
+                          outline: newCompany.color === col ? '2px solid #bfdbfe' : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: '1.25rem' }}>
+                  <button type="button" className="ghost-button" onClick={() => setShowCompanyModal(false)}>Cancel</button>
+                  <button type="submit" className="primary-button">Add Company</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ADD FEATURED PROJECT MODAL */}
+        {showProjectModal ? (
+          <div className="modal-backdrop" onClick={() => setShowProjectModal(false)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              <h3>Add Featured Project</h3>
+              <form onSubmit={handleAddProject}>
+                <label>
+                  <span>Project Title *</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. Nexus Wallet Redesign"
+                    value={newProject.title}
+                    onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Description</span>
+                  <textarea
+                    rows="3"
+                    placeholder="Brief description of your key achievements and tech stack..."
+                    value={newProject.description}
+                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Image URL (optional)</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. /images/nexus_wallet.png or https://..."
+                    value={newProject.image}
+                    onChange={(e) => setNewProject({ ...newProject, image: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Project Link (optional)</span>
+                  <input
+                    type="url"
+                    placeholder="https://github.com/my-project"
+                    value={newProject.link}
+                    onChange={(e) => setNewProject({ ...newProject, link: e.target.value })}
+                  />
+                </label>
+
+                <div className="modal-actions">
+                  <button type="button" className="ghost-button" onClick={() => setShowProjectModal(false)}>Cancel</button>
+                  <button type="submit" className="primary-button">Add Project</button>
+                </div>
+              </form>
             </div>
           </div>
         ) : null}

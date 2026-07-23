@@ -1,6 +1,27 @@
 import { useState, useEffect } from 'react';
 import { getProfile, updateProfile } from '../services/profileService.js';
 
+const defaultProjects = [
+  {
+    id: 'proj_1',
+    title: 'Nexus Wallet',
+    description: 'Crypto asset management redesigned for clarity with intuitive interaction patterns.',
+    image: '/images/nexus_wallet.png',
+  },
+  {
+    id: 'proj_2',
+    title: 'DataStream Dashboard',
+    description: 'Real-time analytics for enterprise-level logistics with live monitoring metrics.',
+    image: '/images/datastream_dashboard.png',
+  },
+];
+
+const defaultCompanies = [
+  { name: 'Stripe', color: '#6366f1' },
+  { name: 'Linear', color: '#2563eb' },
+  { name: 'Airbnb', color: '#ff385c' },
+];
+
 export function useProfile(updateUserCtx) {
   const [profile, setProfile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -28,6 +49,10 @@ export function useProfile(updateUserCtx) {
   const [newSkill, setNewSkill] = useState('');
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState('');
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [newCompany, setNewCompany] = useState({ name: '', color: '#2563eb' });
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [newProject, setNewProject] = useState({ title: '', description: '', image: '', link: '' });
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [refiningText, setRefiningText] = useState(false);
 
@@ -45,11 +70,11 @@ export function useProfile(updateUserCtx) {
         setAvatarUrl(data.avatarUrl || '/images/alex_thompson.png');
         setExperiences(data.experiences || []);
         setEducation(data.education || []);
-        setProjects(data.projects || []);
+        setProjects((data.projects && data.projects.length > 0) ? data.projects : defaultProjects);
         setSkills(data.skills || []);
         setSkillsActive(data.skillsActive || []);
         setTargetRoles(data.targetRoles || []);
-        setDreamCompanies(data.dreamCompanies || []);
+        setDreamCompanies((data.dreamCompanies && data.dreamCompanies.length > 0) ? data.dreamCompanies : defaultCompanies);
         setAiSuggestion(data.aiSuggestion || null);
       })
       .catch(() => setProfile(null));
@@ -68,7 +93,9 @@ export function useProfile(updateUserCtx) {
     try {
       const data = await updateProfile(buildPayload(patch));
       setProfile(data);
-      if (patch.name) updateUserCtx({ name: data.name });
+      if (patch.name || patch.avatarUrl) {
+        updateUserCtx({ name: data.name, avatar: data.avatarUrl });
+      }
     } catch {
       // silent
     }
@@ -79,7 +106,7 @@ export function useProfile(updateUserCtx) {
     try {
       const data = await updateProfile(buildPayload());
       setProfile(data);
-      updateUserCtx({ name: data.name });
+      updateUserCtx({ name: data.name, avatar: data.avatarUrl });
       showNotification('Profile changes saved successfully!');
     } catch (err) {
       showNotification(err.message || 'Error saving profile');
@@ -166,10 +193,79 @@ export function useProfile(updateUserCtx) {
     persistProfilePatch({ targetRoles: updatedRoles });
   };
 
+  const handleRemoveTargetRole = (roleName) => {
+    const updated = targetRoles.filter((r) => r !== roleName);
+    setTargetRoles(updated);
+    persistProfilePatch({ targetRoles: updated });
+  };
+
+  const handleAddCompany = (e) => {
+    e.preventDefault();
+    if (!newCompany.name.trim()) return;
+    const cName = newCompany.name.trim();
+    if (!dreamCompanies.some((c) => c.name.toLowerCase() === cName.toLowerCase())) {
+      const updated = [...dreamCompanies, { name: cName, color: newCompany.color || '#2563eb' }];
+      setDreamCompanies(updated);
+      persistProfilePatch({ dreamCompanies: updated });
+      showNotification(`Dream company "${cName}" added!`);
+    }
+    setNewCompany({ name: '', color: '#2563eb' });
+    setShowCompanyModal(false);
+  };
+
+  const handleRemoveCompany = (companyName) => {
+    const updated = dreamCompanies.filter((c) => c.name !== companyName);
+    setDreamCompanies(updated);
+    persistProfilePatch({ dreamCompanies: updated });
+    showNotification(`Removed ${companyName}`);
+  };
+
+  const handleAddProject = (e) => {
+    e.preventDefault();
+    if (!newProject.title.trim()) return;
+    const item = {
+      id: `proj_${Date.now()}`,
+      title: newProject.title.trim(),
+      description: newProject.description.trim() || 'Featured portfolio project.',
+      image: newProject.image.trim() || '/images/nexus_wallet.png',
+      link: newProject.link.trim() || '',
+    };
+    const updated = [item, ...projects];
+    setProjects(updated);
+    setNewProject({ title: '', description: '', image: '', link: '' });
+    setShowProjectModal(false);
+    showNotification('New project added to portfolio!');
+    persistProfilePatch({ projects: updated });
+  };
+
+  const handleRemoveProject = (projectId) => {
+    const updated = projects.filter((p) => p.id !== projectId);
+    setProjects(updated);
+    persistProfilePatch({ projects: updated });
+    showNotification('Project removed');
+  };
+
+  const handlePhotoUpload = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showNotification('Please select a valid image file (JPG, PNG, WebP)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const newUrl = uploadEvent.target.result;
+      setAvatarUrl(newUrl);
+      persistProfilePatch({ avatarUrl: newUrl });
+      showNotification('Profile photo updated successfully!');
+      setShowAvatarModal(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRefineProjectText = () => {
     setRefiningText(true);
     setTimeout(() => {
-      const updatedProjects = projects.map((p, index) => {
+      const updatedProjects = (projects.length > 0 ? projects : defaultProjects).map((p, index) => {
         if (index === 0) {
           return {
             ...p,
@@ -207,6 +303,7 @@ export function useProfile(updateUserCtx) {
     education,
     setEducation,
     projects,
+    setProjects,
     skills,
     skillsActive,
     targetRoles,
@@ -228,6 +325,14 @@ export function useProfile(updateUserCtx) {
     setShowRoleModal,
     newRole,
     setNewRole,
+    showCompanyModal,
+    setShowCompanyModal,
+    newCompany,
+    setNewCompany,
+    showProjectModal,
+    setShowProjectModal,
+    newProject,
+    setNewProject,
     showAvatarModal,
     setShowAvatarModal,
     refiningText,
@@ -237,6 +342,13 @@ export function useProfile(updateUserCtx) {
     handleAddEducation,
     handleAddSkill,
     handleAddTargetRole,
+    handleRemoveTargetRole,
+    handleAddCompany,
+    handleRemoveCompany,
+    handleAddProject,
+    handleRemoveProject,
+    handlePhotoUpload,
     handleRefineProjectText,
   };
 }
+
