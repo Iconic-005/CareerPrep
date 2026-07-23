@@ -40,26 +40,13 @@ Formatting rules:
 // ─── API Setup ────────────────────────────────────────────────────────────────
 const apiKey = process.env.GEMINI_API_KEY;
 
-// Validate key format upfront for clear diagnostics
-const isValidKeyFormat = apiKey && apiKey.startsWith('AIza');
-const isOAuthToken = apiKey && (apiKey.startsWith('AQ.') || apiKey.startsWith('ya29.'));
-
 if (!apiKey) {
-  console.error('❌ [Gemini] GEMINI_API_KEY is missing from .env');
-  console.error('   👉 Get your key at: https://aistudio.google.com/app/apikey');
-} else if (isOAuthToken) {
-  console.error('❌ [Gemini] GEMINI_API_KEY is an OAuth token, NOT an API key.');
-  console.error('   OAuth tokens (starting with "AQ." or "ya29.") are NOT accepted by Gemini.');
-  console.error('   👉 Get a valid API key at: https://aistudio.google.com/app/apikey');
-  console.error('   👉 A valid key starts with: AIza...');
-} else if (!isValidKeyFormat) {
-  console.error('❌ [Gemini] GEMINI_API_KEY format is unrecognised (expected "AIza..." prefix).');
-  console.error('   👉 Get a valid key at: https://aistudio.google.com/app/apikey');
+  console.warn('⚠️ [Gemini] GEMINI_API_KEY is missing from .env');
 } else {
   console.log('✅ Gemini API Loaded: true');
 }
 
-const genAI = isValidKeyFormat ? new GoogleGenerativeAI(apiKey) : null;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,7 +78,13 @@ function getGenerativeModel(systemInstruction, userContext = {}) {
 - Known Skills: ${(userContext.skills || []).join(', ') || 'Not specified'}`;
   }
 
-  const modelNames = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  const modelNames = [
+    ...(process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : []),
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+  ];
   for (const name of modelNames) {
     try {
       return genAI.getGenerativeModel({
@@ -109,7 +102,7 @@ function getGenerativeModel(systemInstruction, userContext = {}) {
   }
 
   return genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     systemInstruction: systemInstruction || dynamicInstruction,
   });
 }
@@ -127,10 +120,8 @@ function getFallbackReply(userMessage = '') {
   const lowerMsg = userMessage.toLowerCase();
   let keyNotice = '';
 
-  if (isOAuthToken) {
-    keyNotice = '\n\n---\n*💡 Note: Running in Smart Mentor Mode. Replace the OAuth token in `.env` with a valid Gemini API key starting with `AIza` to enable live Google Gemini 1.5 Flash AI.*';
-  } else if (!apiKey) {
-    keyNotice = '\n\n---\n*💡 Note: Running in Smart Mentor Mode. Add a `GEMINI_API_KEY` starting with `AIza` to your `.env` file to enable live Google Gemini AI.*';
+  if (!apiKey) {
+    keyNotice = '\n\n---\n*💡 Note: Running in Smart Mentor Mode. Add a `GEMINI_API_KEY` to your `.env` file to enable live Google Gemini AI.*';
   }
 
   if (lowerMsg.includes('interview') || lowerMsg.includes('question') || lowerMsg.includes('mock') || lowerMsg.includes('behavioral')) {
@@ -356,10 +347,9 @@ export async function generateFollowUpSuggestions(history = [], lastReply = '') 
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: 'You generate exactly 3 short, relevant follow-up action suggestions for a candidate talking to a career coach. Return valid JSON array of 3 strings only.',
-    });
+    const model = getGenerativeModel(
+      'You generate exactly 3 short, relevant follow-up action suggestions for a candidate talking to a career coach. Return valid JSON array of 3 strings only.'
+    );
 
     const prompt = `Based on the latest response from the career coach, suggest 3 short, natural next questions or actions the user might want to click (max 5 words per prompt).
 
@@ -536,7 +526,14 @@ Provide a valid JSON response strictly matching this schema:
 
   // Attempt AI generation with multi-model fallback
   if (genAI) {
-    const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-pro'];
+    const candidateModels = [
+      ...(process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : []),
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+    ];
     for (const modelName of candidateModels) {
       try {
         console.log(`[ROADMAP] Trying model: ${modelName}`);
@@ -1390,7 +1387,14 @@ Output JSON Schema:
   ]
 }`;
 
-    const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    const candidateModels = [
+      ...(process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : []),
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+    ];
     let resultText = null;
 
     for (const modelName of candidateModels) {

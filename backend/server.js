@@ -35,20 +35,6 @@ app.get('*', (req, res) => {
 });
 
 async function startServer() {
-  // ── Gemini API Key Validation ─────────────────────────────────────────────
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
-    console.error('❌ GEMINI_API_KEY is not set in .env — AI features will not work.');
-    console.error('   Get a key from: https://aistudio.google.com/app/apikey');
-  } else if (!geminiKey.startsWith('AIza')) {
-    console.error('❌ GEMINI_API_KEY appears invalid (should start with "AIza").');
-    console.error('   Current key prefix:', geminiKey.slice(0, 8));
-    console.error('   Get a valid key from: https://aistudio.google.com/app/apikey');
-  } else {
-    console.log('✅ Gemini API Loaded: true');
-  }
-  // ──────────────────────────────────────────────────────────────────────────
-
   if (process.env.MONGODB_URI) {
     try {
       await mongoose.connect(process.env.MONGODB_URI);
