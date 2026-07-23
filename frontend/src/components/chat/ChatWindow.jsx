@@ -24,19 +24,8 @@ function formatTime() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function getClientFallbackReply(userMessage) {
-  const msg = (userMessage || '').toLowerCase();
-  if (msg.includes('resume')) {
-    return `### 📄 Resume Optimization Advice\n\nHere are 3 concrete steps to sharpen your resume for software engineering roles:\n\n• **Apply the Google X-Y-Z Formula**: Write bullet points as "Accomplished [X] as measured by [Y], by doing [Z]".\n• **Quantify Technical Accomplishments**: Include metrics such as "Reduced API latency by 40%" or "Automated CI/CD saving 10 hours weekly".\n• **Highlight Core Tech Stack**: Put primary technologies (React, Node.js, Python, SQL) near the top.\n\n**Quick Tip:** Keep formatting clean and standard so ATS software can easily parse every section.\n\nWould you like me to analyze a specific section of your resume?`;
-  }
-  if (msg.includes('interview') || msg.includes('google')) {
-    return `### 🎯 Interview Preparation Strategy\n\nFollow these 3 core steps for interview success:\n\n• **Master the STAR Framework**: Prepare Situation, Task, Action, and Result for behavioral questions.\n• **Technical Core**: Practice data structures, system design, and coding problems step-by-step out loud.\n• **Company Research**: Understand the target company's core engineering values and products.\n\n**Quick Tip:** Always state assumptions clearly before starting technical problem-solving.\n\nWould you like to practice a mock interview question right now?`;
-  }
-  if (msg.includes('skill') || msg.includes('gap')) {
-    return `### 📊 Skill Gap Analysis\n\nHere is how to identify and bridge your technical skill gaps:\n\n• **Target Role Benchmark**: Review 5 top job descriptions for your target position.\n• **Hands-On Projects**: Build end-to-end projects implementing missing technical skills.\n• **Structured Practice**: Practice daily coding and architectural challenges.\n\n**Quick Tip:** Depth beats breadth — focus on mastering core fundamentals first.\n\nWould you like me to generate a customized 30-day study plan for you?`;
-  }
-  return `### 💡 Career Mentor Guidance\n\nHere is actionable advice to boost your career preparation:\n\n• **Consistent Practice**: Set aside 30–45 minutes daily for targeted practice.\n• **Portfolio & LinkedIn**: Keep your GitHub and LinkedIn updated with recent projects.\n• **Mock Interviews**: Practice articulating your solutions clearly and concisely.\n\n**Quick Tip:** Focus on incremental daily progress to build strong confidence.\n\nHow else can I assist with your career preparation today?`;
-}
+// All AI responses come exclusively from the backend (Gemini API).
+// There is no client-side fallback — failures show a user-friendly error message.
 
 export function ChatWindow({ user }) {
   const [messages, setMessages] = useState([]);
@@ -215,32 +204,19 @@ export function ChatWindow({ user }) {
       }
     }
 
-    // Strategy 3: Guaranteed client-side mentor fallback stream
+    // If both stream and POST failed, show a user-friendly error message
     if (!streamedSuccess && !controller.signal.aborted) {
       setIsThinking(false);
-      const fallbackText = getClientFallbackReply(text.trim());
-      const words = fallbackText.split(' ');
-
       setMessages((prev) => [
         ...prev,
         {
           id: botMsgId,
           role: 'assistant',
           time: formatTime(),
-          text: '',
+          text: "Sorry, I'm having trouble connecting to the AI service. Please try again in a moment.",
+          isError: true,
         },
       ]);
-
-      for (let i = 0; i < words.length; i += 3) {
-        if (controller.signal.aborted) break;
-        const chunk = words.slice(i, i + 3).join(' ') + ' ';
-        setMessages((prev) =>
-          prev.map((m) => (m.id === botMsgId ? { ...m, text: m.text + chunk } : m))
-        );
-        await new Promise((r) => setTimeout(r, 35));
-      }
-
-      setSuggestions(['Practice Coding Interview', 'Improve Resume', 'Generate Study Plan']);
     }
 
     setIsStreaming(false);

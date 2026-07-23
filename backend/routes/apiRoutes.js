@@ -47,6 +47,24 @@ router.get('/health', (req, res) => {
   });
 });
 
+// AI status check — never exposes the key value
+router.get('/ai-status', (req, res) => {
+  const key = process.env.GEMINI_API_KEY || '';
+  const isValid = key.startsWith('AIza');
+  const isOAuth = key.startsWith('AQ.') || key.startsWith('ya29.');
+  res.json({
+    configured: isValid,
+    issue: !key
+      ? 'missing'
+      : isOAuth
+      ? 'oauth_token'
+      : !isValid
+      ? 'invalid_format'
+      : null,
+  });
+});
+
+
 // Auth Routes (Public)
 router.post('/auth/login', async (req, res) => {
   try {

@@ -881,7 +881,9 @@ export async function getChatHistory(userId) {
   await ensureUserInitialized(userId);
   const chatHistoryDoc = await AIChatHistoryModel.findOne({ userId });
   if (!chatHistoryDoc || !chatHistoryDoc.messages) return [];
-  return chatHistoryDoc.messages.map((m) => ({ role: m.role, content: m.content }));
+  // Limit to the most recent 20 messages (10 exchanges) to control Gemini token usage
+  const allMessages = chatHistoryDoc.messages.map((m) => ({ role: m.role, content: m.content }));
+  return allMessages.slice(-20);
 }
 
 export async function saveChatMessages(userId, userMessage, assistantReply) {
