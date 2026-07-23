@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { usePathname } from './hooks/usePathname.js';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import { RouteGuard } from './components/Common/RouteLink.jsx';
 
 // ── Lazy-loaded page imports ─────────────────────────────────────────────────
@@ -51,13 +52,13 @@ function PageLoader() {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        background: '#090d16',
+        background: 'var(--bg)',
       }}
     >
       <div
         style={{
-          border: '4px solid rgba(255,255,255,0.1)',
-          borderTop: '4px solid #6366f1',
+          border: '4px solid var(--stroke)',
+          borderTop: '4px solid var(--primary)',
           borderRadius: '50%',
           width: '40px',
           height: '40px',
@@ -81,12 +82,14 @@ export default function App() {
   }, [pathname]);
 
   return (
-    <AuthProvider>
-      <RouteGuard path={pathname}>
-        <Suspense fallback={<PageLoader />}>
-          <Page />
-        </Suspense>
-      </RouteGuard>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RouteGuard path={pathname}>
+          <Suspense fallback={<PageLoader />}>
+            <Page />
+          </Suspense>
+        </RouteGuard>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

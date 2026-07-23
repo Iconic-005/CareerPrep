@@ -1,39 +1,103 @@
 /* =============================================================================
-   BASE — Reset, global elements, typography
+   BASE — Reset, global elements, typography & responsive constraints
    ============================================================================= */
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
+}
 
 body {
   margin: 0;
+  width: 100%;
   min-width: 320px;
-  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 0.94rem;
+  line-height: 1.5;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left,  rgba(97, 84, 246, 0.08), transparent 24%),
-    radial-gradient(circle at top right, rgba(27, 86, 230, 0.08), transparent 28%),
-    var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at top left,  rgba(97, 84, 246, 0.05), transparent 24%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.05), transparent 28%);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-button, input, textarea { font: inherit; }
-button   { cursor: pointer; }
-button:disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
+#root {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+img, video, iframe, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+/* Touch-friendly target sizing for interactive elements */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+select,
+.nav-link,
+.ghost-button,
+.primary-button,
+.icon-circle,
+.icon-button {
+  min-height: 44px;
+}
 
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid rgba(27, 86, 230, 0.35);
-  outline-offset: 3px;
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 
-a    { color: inherit; text-decoration: none; }
-svg  { width: 1em; height: 1em; display: block; flex: 0 0 auto; }
-textarea { resize: vertical; }
-#root { min-height: 100vh; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+  flex: 0 0 auto;
+}
+
+textarea {
+  resize: vertical;
+}
 
 /* Headings reset — Manrope font for all display headings */
 .brand h1,
@@ -56,7 +120,9 @@ textarea { resize: vertical; }
 
 .panel h3,
 .resource-panel__header h3,
-.section-head h2 { color: var(--heading); }
+.section-head h2 {
+  color: var(--heading);
+}
 
 /* Utility text helpers */
 .text-muted   { color: var(--muted); }
@@ -69,7 +135,7 @@ textarea { resize: vertical; }
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #65758b;
+  color: var(--muted);
 }
 
 /* Muted color shorthand for many read-only elements */
@@ -93,7 +159,9 @@ textarea { resize: vertical; }
 .compare-row span,
 .goal-item span:last-child,
 .visual-panel__art,
-.profile-card p { color: var(--muted); }
+.profile-card p {
+  color: var(--muted);
+}
 
 /* Heading color for key value elements */
 .hero__mock-header span,
@@ -105,4 +173,6 @@ textarea { resize: vertical; }
 .spotlight-card__footer strong,
 .profile-card h3,
 .message__body strong,
-.notification-row h3 { color: var(--heading); }
+.notification-row h3 {
+  color: var(--heading);
+}

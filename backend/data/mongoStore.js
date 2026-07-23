@@ -1549,47 +1549,6 @@ export async function saveChatMessages(userId, userMessage, assistantReply) {
   await computeCalculatedMetrics(userId);
 }
 
-export async function getInterviewReport(userId, interviewId) {
-  await ensureUserInitialized(userId);
-
-  if (!interviewId) {
-    return null;
-  }
-
-  try {
-    const interview = await MockInterviewModel.findOne({
-      _id: interviewId,
-      userId,
-      status: 'completed',
-    });
-
-    if (interview) {
-      return {
-        id: interview._id.toString(),
-        userId: interview.userId,
-        status: interview.status,
-        score: interview.score,
-        maxScore: interview.maxScore,
-        headline: interview.headline,
-        percentileText: interview.percentileText,
-        targetCompany: interview.targetCompany,
-        role: interview.role,
-        difficulty: interview.difficulty,
-        hintsUsedCount: interview.hintsUsedCount || 0,
-        scoreDeduction: interview.scoreDeduction || 0,
-        skillsRadar: interview.skillsRadar,
-        strengths: interview.strengths,
-        improvements: interview.improvements,
-        nextSteps: interview.nextSteps,
-      };
-    }
-  } catch (err) {
-    return null;
-  }
-
-  return null;
-}
-
 // Notifications
 export async function getNotifications(userId) {
   await ensureUserInitialized(userId);

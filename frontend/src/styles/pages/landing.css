@@ -88,12 +88,12 @@
   gap: 0.55rem;
   padding: 0.85rem 1.4rem;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--slate-800);
+  background: var(--panel);
+  color: var(--text);
   font-weight: 700;
   font-size: 0.96rem;
-  border: 1px solid rgba(189, 199, 217, 0.9);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-card);
   transition: all 0.2s ease;
   text-decoration: none;
 }

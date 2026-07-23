@@ -5,7 +5,8 @@
 /* ── Redesigned Dashboard (main-content--dashboard) ── */
 .main-content--dashboard {
   margin-left: 16rem;
-  background-color: var(--slate-50);
+  background-color: var(--bg);
+  color: var(--text);
   padding: 1.75rem 2.25rem 3rem;
   min-height: 100vh;
 }
