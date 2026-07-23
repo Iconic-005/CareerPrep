@@ -116,11 +116,12 @@
   color: #344054;
 }
 
+.icon-circle { border-radius: 50%; }
 .icon-circle--active,
 .avatar-chip--active { color: var(--blue); border-color: rgba(27, 86, 230, 0.28); }
 
-.avatar-chip { width: auto; padding: 0 0.65rem; font-weight: 800; }
-.avatar-chip-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+.avatar-chip { width: 2.45rem; height: 2.45rem; padding: 0; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center; font-weight: 800; flex-shrink: 0; }
+.avatar-chip-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 .primary-square { background: var(--blue); color: #fff; box-shadow: var(--shadow-button); }
 

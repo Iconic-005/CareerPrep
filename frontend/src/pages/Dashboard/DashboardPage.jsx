@@ -87,7 +87,17 @@ export default function DashboardPage() {
               )}
               <Icon name="bell" />
             </button>
-            <div className="db-avatar-chip">{userInitial}</div>
+            <div className="db-avatar-chip" title={firstName}>
+              {(user?.avatar || user?.avatarUrl || dashboardData?.user?.avatar || dashboardData?.profile?.avatarUrl) ? (
+                <img
+                  src={user?.avatar || user?.avatarUrl || dashboardData?.user?.avatar || dashboardData?.profile?.avatarUrl}
+                  alt={firstName}
+                  className="db-avatar-chip-img"
+                />
+              ) : (
+                userInitial
+              )}
+            </div>
           </div>
         </div>
 

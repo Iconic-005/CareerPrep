@@ -20,7 +20,8 @@
 .rm-user-text  { text-align: right; }
 .rm-user-name  { display: block; font-size: 0.92rem; font-weight: 800; color: var(--slate-900); }
 .rm-user-sub   { font-size: 0.78rem; color: var(--slate-500); font-weight: 500; }
-.rm-avatar-chip { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, var(--blue-500)); color: #ffffff; font-weight: 700; font-size: 0.9rem; display: grid; place-items: center; box-shadow: 0 2px 8px rgba(37, 108, 240, 0.25); }
+.rm-avatar-chip { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, var(--blue-500)); color: #ffffff; font-weight: 700; font-size: 0.9rem; display: grid; place-items: center; box-shadow: 0 2px 8px rgba(37, 108, 240, 0.25); overflow: hidden; flex-shrink: 0; }
+.rm-avatar-chip img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 /* ── Generation Bar ── */
 .rm-generation-bar { margin-bottom: 20px; padding: 16px 20px !important; }

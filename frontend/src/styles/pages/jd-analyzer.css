@@ -21,7 +21,8 @@
 .jd-icon-btn { width: 38px; height: 38px; border-radius: 50%; background: #ffffff; border: 1px solid var(--slate-300); color: var(--slate-600); display: grid; place-items: center; cursor: pointer; transition: var(--t-normal); }
 .jd-icon-btn:hover { background: var(--slate-100); color: var(--slate-900); border-color: var(--slate-400); }
 
-.jd-avatar-chip { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, var(--blue-500)); color: #ffffff; font-weight: 700; font-size: 0.88rem; display: grid; place-items: center; box-shadow: 0 2px 8px rgba(37, 108, 240, 0.25); }
+.jd-avatar-chip { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, var(--blue-500)); color: #ffffff; font-weight: 700; font-size: 0.88rem; display: grid; place-items: center; box-shadow: 0 2px 8px rgba(37, 108, 240, 0.25); overflow: hidden; flex-shrink: 0; }
+.jd-avatar-chip img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 /* ── Grid Layouts ── */
 .jd-top-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-bottom: 2rem; align-items: stretch; }

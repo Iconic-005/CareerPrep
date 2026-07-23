@@ -137,7 +137,13 @@ export default function RoadmapPage() {
                 <span className="rm-user-name">{candidateName}</span>
                 <span className="rm-user-sub">{targetRole} @ {targetCompany}</span>
               </div>
-              <div className="rm-avatar-chip">{userInitials}</div>
+              <div className="rm-avatar-chip">
+                {(user?.avatar || user?.avatarUrl) ? (
+                  <img src={user.avatar || user.avatarUrl} alt={candidateName} />
+                ) : (
+                  userInitials
+                )}
+              </div>
             </div>
           </div>
         </div>

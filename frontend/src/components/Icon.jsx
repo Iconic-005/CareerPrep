@@ -415,6 +415,16 @@ export function Icon({ name }) {
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
         </Svg>
       );
+    case 'rocket':
+    case 'project':
+      return (
+        <Svg>
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.71 1.26-1.54 1.62-2.46l4.47-4.47 5.38-5.38a2.5 2.5 0 0 1 3.54 3.54l-5.38 5.38-4.47 4.47c-.92.36-1.75.91-2.46 1.62z" />
+          <circle cx="15" cy="9" r="1" />
+          <path d="M9 12l-3 3" />
+          <path d="M12 9l3-3" />
+        </Svg>
+      );
     case 'bulb':
       return (
         <Svg>

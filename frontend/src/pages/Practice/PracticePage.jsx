@@ -131,7 +131,13 @@ export default function PracticePage() {
                 <Icon name="spark" />
                 <span>{userStats.xp} XP</span>
               </div>
-              <div className="rm-avatar-chip">{userInitials}</div>
+              <div className="rm-avatar-chip">
+                {(user?.avatar || user?.avatarUrl) ? (
+                  <img src={user.avatar || user.avatarUrl} alt={user?.name || 'User'} />
+                ) : (
+                  userInitials
+                )}
+              </div>
             </div>
           </div>
 

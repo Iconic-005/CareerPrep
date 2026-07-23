@@ -269,6 +269,7 @@ export async function getCurrentUser(userId) {
     name: profile?.name || 'User',
     title: profile?.title || '',
     avatar: profile?.avatarUrl || '/images/alex_thompson.png',
+    avatarUrl: profile?.avatarUrl || '/images/alex_thompson.png',
   };
 }
 

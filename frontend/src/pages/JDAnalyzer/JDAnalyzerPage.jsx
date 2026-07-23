@@ -44,7 +44,13 @@ export default function JDAnalyzerPage() {
             <button type="button" className="jd-icon-btn" aria-label="Notifications">
               <Icon name="bell" />
             </button>
-            <div className="jd-avatar-chip">{userInitials}</div>
+            <div className="jd-avatar-chip">
+              {(user?.avatar || user?.avatarUrl) ? (
+                <img src={user.avatar || user.avatarUrl} alt={user?.name || 'User'} />
+              ) : (
+                userInitials
+              )}
+            </div>
           </div>
         </div>
 

@@ -94,7 +94,7 @@ export function useProfile(updateUserCtx) {
       const data = await updateProfile(buildPayload(patch));
       setProfile(data);
       if (patch.name || patch.avatarUrl) {
-        updateUserCtx({ name: data.name, avatar: data.avatarUrl });
+        updateUserCtx({ name: data.name, avatar: data.avatarUrl, avatarUrl: data.avatarUrl });
       }
     } catch {
       // silent
@@ -106,7 +106,7 @@ export function useProfile(updateUserCtx) {
     try {
       const data = await updateProfile(buildPayload());
       setProfile(data);
-      updateUserCtx({ name: data.name, avatar: data.avatarUrl });
+      updateUserCtx({ name: data.name, avatar: data.avatarUrl, avatarUrl: data.avatarUrl });
       showNotification('Profile changes saved successfully!');
     } catch (err) {
       showNotification(err.message || 'Error saving profile');

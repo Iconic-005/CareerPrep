@@ -95,11 +95,7 @@ export default function ProfilePage() {
         {/* TOP APP HEADER */}
         <header className="page-header page-header--profile">
           <div className="brand-header-title header-brand-container">
-            <img src="/logo.png" alt="CareerPrep Logo" className="brand-logo-img" />
-            <div>
-              <h1 className="brand-header-logo">CareerPrep</h1>
-              <span className="brand-header-subtitle">AI Career OS</span>
-            </div>
+            <h1 className="brand-header-logo">Profile</h1>
           </div>
           <div className="page-header__actions">
             <RouteLink path="/notifications" className="icon-circle" activeClassName="icon-circle--active">
@@ -508,7 +504,14 @@ export default function ProfilePage() {
                 <button type="button" className="ghost-button" onClick={() => setShowAvatarModal(false)}>
                   Cancel
                 </button>
-                <button type="button" className="primary-button" onClick={() => setShowAvatarModal(false)}>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    handleSaveProfile();
+                    setShowAvatarModal(false);
+                  }}
+                >
                   Done
                 </button>
               </div>
