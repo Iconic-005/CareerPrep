@@ -28,9 +28,6 @@ export function ChatHeader({
         <div>
           <div className="chat-header__title-row">
             <h1 className="chat-header__title">CareerPrep AI Coach</h1>
-            <span className="chat-role-pill">
-              Target: {targetRole || 'Software Engineer'} {targetCompany ? `@ ${targetCompany}` : ''}
-            </span>
           </div>
           <span className="chat-header__subtitle">AI Career Architect & Interview Mentor</span>
         </div>

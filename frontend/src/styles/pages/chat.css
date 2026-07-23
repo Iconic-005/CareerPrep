@@ -824,8 +824,29 @@
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.45rem 0.85rem;
-  border-radius: 12px;
   cursor: pointer;
+}
+
+/* ── Chat Disclaimer ── */
+.chat-disclaimer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--slate-500);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.chat-disclaimer-icon {
+  font-size: 0.82rem;
+  color: var(--blue-600);
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ── Quick Actions Panel ── */
