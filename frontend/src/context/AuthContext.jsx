@@ -46,6 +46,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('careerprep_token');
     localStorage.removeItem('careerprep_userid');
     localStorage.removeItem('careerprep_username');
+    localStorage.removeItem('careerprep_role_resumes');
     setUser(null);
     navigate('/auth');
   };

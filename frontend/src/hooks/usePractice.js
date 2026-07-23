@@ -456,6 +456,22 @@ export function usePractice() {
     showToast('Copied full solution to code editor!');
   };
 
+  const handleSwitchAptitudeMode = (modeId) => {
+    setAptitudeMode(modeId);
+    if (modeId === 'practice') {
+      setIsTimerPaused(true);
+      showToast('Practice Mode: Untimed self-paced questions');
+    } else if (modeId === 'mock') {
+      setAptitudeTimer(1800);
+      setIsTimerPaused(false);
+      showToast('Mock Test Mode: 30-minute timer started');
+    } else if (modeId === 'timed') {
+      setAptitudeTimer(900);
+      setIsTimerPaused(false);
+      showToast('Timed Assessment: 15-minute timer started');
+    }
+  };
+
   return {
     selectedCareerTrack,
     setSelectedCareerTrack: handleSelectCareerTrack,
@@ -467,26 +483,27 @@ export function usePractice() {
     setMode,
     toastMsg,
 
-    // Stats (initialized to 0s for new users)
+    // Coding State
     userStats,
-
-    // Coding Arena State
-    isCodingLoading,
-    codingError,
-    codingQuestions,
-    activeCodingIndex,
-    currentCodingQuestion,
+    selectedCareerTrack,
+    handleSelectCareerTrack,
+    availableTopics,
     topicFilter,
     setTopicFilter,
     difficultyFilter,
     setDifficultyFilter,
     searchQuery,
     setSearchQuery,
-    availableTopics,
-    language,
-    setLanguage,
+    isCodingLoading,
+    codingError,
+    codingQuestions,
+    activeCodingIndex,
+    setActiveCodingIndex,
+    currentCodingQuestion,
     code,
     setCode,
+    language,
+    setLanguage,
     consoleTab,
     setConsoleTab,
     consoleOutput,
@@ -512,6 +529,7 @@ export function usePractice() {
     aptitudeError,
     aptitudeMode,
     setAptitudeMode,
+    handleSwitchAptitudeMode,
     activeCategory,
     setActiveCategory,
     aptitudeQuestions,

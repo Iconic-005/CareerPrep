@@ -632,9 +632,26 @@ export async function getResume(userId) {
   resume.completenessScore = metrics.completenessScore;
   resume.missingSections = metrics.missingSections;
   resume.score = `${metrics.atsScore} / 100`;
+
+  const combinedTargetRoles = Array.from(new Set([
+    ...(profile?.targetRoles || []),
+    ...(resume.targetRoles || []),
+    resume.contact?.title,
+    'AI Engineer',
+    'Software Engineer',
+    'Senior Product Designer',
+    'Product Manager',
+    'Data Scientist',
+  ].filter(Boolean)));
+
+  resume.targetRoles = combinedTargetRoles;
+  resume.markModified('targetRoles');
   await resume.save();
 
-  return resume.toObject();
+  const resumeObj = resume.toObject();
+  resumeObj.targetRoles = combinedTargetRoles;
+  resumeObj.roleResumes = resume.roleResumes || {};
+  return resumeObj;
 }
 
 export async function updateResume(userId, payload = {}) {
@@ -660,6 +677,23 @@ export async function updateResume(userId, payload = {}) {
       if (payload.contact.portfolio) profile.portfolio = payload.contact.portfolio;
       await profile.save();
     }
+  }
+
+  if (payload.targetRoles !== undefined) {
+    const existingRoles = resume.targetRoles || [];
+    const mergedTargetRoles = Array.from(new Set([...existingRoles, ...payload.targetRoles].filter(Boolean)));
+    resume.targetRoles = mergedTargetRoles;
+    resume.markModified('targetRoles');
+    const profile = await ProfileModel.findOne({ userId });
+    if (profile) {
+      profile.targetRoles = mergedTargetRoles;
+      await profile.save();
+    }
+  }
+  if (payload.roleResumes !== undefined) {
+    const existingRoleResumes = (typeof resume.roleResumes === 'object' && resume.roleResumes) ? resume.roleResumes : {};
+    resume.roleResumes = { ...existingRoleResumes, ...payload.roleResumes };
+    resume.markModified('roleResumes');
   }
 
   if (payload.summary !== undefined) {

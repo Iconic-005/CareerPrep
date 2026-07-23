@@ -248,6 +248,38 @@ export function Icon({ name }) {
           <path d="M10 20a2 2 0 0 0 4 0" />
         </Svg>
       );
+    case 'calculator':
+      return (
+        <Svg>
+          <rect x="4" y="2" width="16" height="20" rx="2" />
+          <line x1="8" y1="6" x2="16" y2="6" />
+          <line x1="16" y1="14" x2="16" y2="18" />
+          <path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01" />
+        </Svg>
+      );
+    case 'book':
+      return (
+        <Svg>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </Svg>
+      );
+    case 'layers':
+      return (
+        <Svg>
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </Svg>
+      );
+    case 'target':
+      return (
+        <Svg>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </Svg>
+      );
     case 'user':
       return (
         <Svg>

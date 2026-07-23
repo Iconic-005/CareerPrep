@@ -95,7 +95,20 @@ export function useResume(user) {
     if (data.missingSkills) setMissingSkills(data.missingSkills || []);
     if (data.missingSections) setMissingSections(data.missingSections || []);
     if (data.suggestions) setSuggestions(data.suggestions || []);
-    if (data.versions) setVersionHistory(data.versions || []);
+    const backendRoles = Array.isArray(data.targetRoles) ? data.targetRoles : [];
+    const defaultRoles = [user?.title, 'AI Engineer', 'Software Engineer', 'Senior Product Designer', 'Product Manager', 'Data Scientist'];
+    const mergedRoles = Array.from(new Set([...defaultRoles, ...backendRoles].filter(Boolean)));
+    setAvailableRoles(mergedRoles);
+
+    if (data.roleResumes && typeof data.roleResumes === 'object' && Object.keys(data.roleResumes).length > 0) {
+      setRoleResumes((prev) => ({ ...prev, ...data.roleResumes }));
+      try {
+        localStorage.setItem('careerprep_role_resumes', JSON.stringify(data.roleResumes));
+      } catch {}
+    }
+    if (data.contact?.title) {
+      setSelectedRole(data.contact.title);
+    }
     if (data.updatedAt) {
       setLastSaved(new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     }
@@ -261,10 +274,21 @@ export function useResume(user) {
         skillMatchScore: patch.skillMatchScore !== undefined ? patch.skillMatchScore : skillMatchScore,
         missingSkills: patch.missingSkills !== undefined ? patch.missingSkills : missingSkills,
         suggestions: patch.suggestions !== undefined ? patch.suggestions : suggestions,
+        targetRoles: patch.targetRoles !== undefined ? patch.targetRoles : availableRoles,
+        roleResumes: patch.roleResumes !== undefined ? patch.roleResumes : roleResumes,
       };
 
       const updated = await updateResume(payload);
       if (updated) {
+        if (updated.targetRoles && Array.isArray(updated.targetRoles)) {
+          setAvailableRoles(Array.from(new Set(['AI Engineer', 'Software Engineer', 'Senior Product Designer', 'Product Manager', 'Data Scientist', ...updated.targetRoles].filter(Boolean))));
+        }
+        if (updated.roleResumes && typeof updated.roleResumes === 'object' && Object.keys(updated.roleResumes).length > 0) {
+          setRoleResumes((prev) => ({ ...prev, ...updated.roleResumes }));
+          try {
+            localStorage.setItem('careerprep_role_resumes', JSON.stringify(updated.roleResumes));
+          } catch {}
+        }
         if (updated.versions) setVersionHistory(updated.versions);
         setLastSaved(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       }
@@ -417,37 +441,65 @@ export function useResume(user) {
       [currentRoleKey]: currentSnapshot,
     };
 
+    let nextContact = contact;
+    let nextSummary = summary;
+    let nextExp = experience;
+    let nextEdu = education;
+    let nextProj = projects;
+    let nextSkills = skills;
+    let nextCerts = certifications;
+    let nextAchs = achievements;
+
     if (updatedRoleResumes[roleName]) {
       // Restore saved snapshot for target role
       const saved = updatedRoleResumes[roleName];
-      setContact(saved.contact || { ...contact, title: roleName });
-      if (saved.summary !== undefined) setSummary(saved.summary);
-      if (saved.experience) setExperience(saved.experience);
-      if (saved.education) setEducation(saved.education);
-      if (saved.projects) setProjects(saved.projects);
-      if (saved.skills) setSkills(saved.skills);
-      if (saved.certifications) setCertifications(saved.certifications);
-      if (saved.achievements) setAchievements(saved.achievements);
+      nextContact = saved.contact || { ...contact, title: roleName };
+      if (saved.summary !== undefined) nextSummary = saved.summary;
+      if (saved.experience) nextExp = saved.experience;
+      if (saved.education) nextEdu = saved.education;
+      if (saved.projects) nextProj = saved.projects;
+      if (saved.skills) nextSkills = saved.skills;
+      if (saved.certifications) nextCerts = saved.certifications;
+      if (saved.achievements) nextAchs = saved.achievements;
       if (saved.atsScore !== undefined) setAtsScore(saved.atsScore);
       if (saved.skillMatchScore !== undefined) setSkillMatchScore(saved.skillMatchScore);
     } else {
       // Create new role preset
-      const newContact = { ...contact, title: roleName };
-      const newSummary = `Results-driven ${roleName} with hands-on experience building scalable applications, managing component libraries, and optimizing backend performance. Committed to engineering excellence and delivering measurable business impact.`;
-      setContact(newContact);
-      setSummary(newSummary);
+      nextContact = { ...contact, title: roleName };
+      nextSummary = `Results-driven ${roleName} with hands-on experience building scalable applications, managing component libraries, and optimizing backend performance. Committed to engineering excellence and delivering measurable business impact.`;
     }
+
+    setContact(nextContact);
+    setSummary(nextSummary);
+    setExperience(nextExp);
+    setEducation(nextEdu);
+    setProjects(nextProj);
+    setSkills(nextSkills);
+    setCertifications(nextCerts);
+    setAchievements(nextAchs);
 
     setSelectedRole(roleName);
     setRoleResumes(updatedRoleResumes);
     try {
       localStorage.setItem('careerprep_role_resumes', JSON.stringify(updatedRoleResumes));
-    } catch {
-      // silent
-    }
+    } catch {}
+
+    const updatedTargetRoles = Array.from(new Set([...availableRoles, roleName]));
+    setAvailableRoles(updatedTargetRoles);
 
     showToast(`Switched resume for role: "${roleName}"`, 'success');
-    saveResumeToDb({ contact: { ...contact, title: roleName } });
+    saveResumeToDb({
+      contact: nextContact,
+      summary: nextSummary,
+      experience: nextExp,
+      education: nextEdu,
+      projects: nextProj,
+      skills: nextSkills,
+      certifications: nextCerts,
+      achievements: nextAchs,
+      targetRoles: updatedTargetRoles,
+      roleResumes: updatedRoleResumes,
+    });
   };
 
   const handleCreateNewRole = (e) => {
@@ -455,14 +507,59 @@ export function useResume(user) {
     if (!newRoleInput.trim()) return;
     const roleName = newRoleInput.trim();
 
-    if (!availableRoles.includes(roleName)) {
-      setAvailableRoles((prev) => [...prev, roleName]);
-    }
-
+    const updatedTargetRoles = Array.from(new Set([...availableRoles, roleName]));
+    setAvailableRoles(updatedTargetRoles);
     setShowNewRoleModal(false);
-    const createdRole = roleName;
     setNewRoleInput('');
-    handleSelectRole(createdRole);
+
+    // Save current active snapshot
+    const currentRoleKey = contact.title || selectedRole || 'AI Engineer';
+    const currentSnapshot = {
+      contact,
+      summary,
+      experience,
+      education,
+      projects,
+      skills,
+      certifications,
+      achievements,
+      atsScore,
+      skillMatchScore,
+    };
+
+    const newContact = { ...contact, title: roleName };
+    const newSummary = `Results-driven ${roleName} with hands-on experience building scalable applications, managing component libraries, and optimizing backend performance. Committed to engineering excellence and delivering measurable business impact.`;
+
+    const updatedRoleResumes = {
+      ...roleResumes,
+      [currentRoleKey]: currentSnapshot,
+      [roleName]: {
+        contact: newContact,
+        summary: newSummary,
+        experience,
+        education,
+        projects,
+        skills,
+        certifications,
+        achievements,
+      },
+    };
+
+    setContact(newContact);
+    setSummary(newSummary);
+    setRoleResumes(updatedRoleResumes);
+    setSelectedRole(roleName);
+    try {
+      localStorage.setItem('careerprep_role_resumes', JSON.stringify(updatedRoleResumes));
+    } catch {}
+
+    showToast(`Created & saved resume for role: "${roleName}"`, 'success');
+    saveResumeToDb({
+      contact: newContact,
+      summary: newSummary,
+      targetRoles: updatedTargetRoles,
+      roleResumes: updatedRoleResumes,
+    });
   };
 
   // Restore Version Snapshot

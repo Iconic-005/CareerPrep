@@ -218,6 +218,8 @@ const resumeSchema = new mongoose.Schema(
     ],
     resumeText: { type: String, default: '' },
     score: { type: String, default: 'Not Generated' },
+    targetRoles: [{ type: String }],
+    roleResumes: { type: mongoose.Schema.Types.Mixed, default: {} },
     versions: [
       {
         id: String,

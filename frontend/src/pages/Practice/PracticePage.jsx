@@ -63,6 +63,7 @@ export default function PracticePage() {
     aptitudeError,
     aptitudeMode,
     setAptitudeMode,
+    handleSwitchAptitudeMode,
     activeCategory,
     setActiveCategory,
     aptitudeQuestions,
@@ -491,7 +492,7 @@ export default function PracticePage() {
                       key={m.id}
                       type="button"
                       className={`mode-sub-tab ${aptitudeMode === m.id ? 'mode-sub-tab--active' : ''}`}
-                      onClick={() => setAptitudeMode(m.id)}
+                      onClick={() => handleSwitchAptitudeMode(m.id)}
                     >
                       {m.name}
                     </button>
@@ -499,13 +500,36 @@ export default function PracticePage() {
                 </div>
               </div>
 
-              <div className="aptitude-header-actions">
-                <div className="aptitude-timer-chip">
-                  <Icon name="clock" />
-                  <span>Timer: {formatTimer(aptitudeTimer)}</span>
+              {aptitudeMode !== 'practice' && (
+                <div className="aptitude-header-actions">
+                  <div className="aptitude-timer-chip">
+                    <Icon name="clock" />
+                    <span>Timer: {formatTimer(aptitudeTimer)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* MODE SPECIFIC INFO BANNERS */}
+            {aptitudeMode === 'mock' && (
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontSize: '1.4rem' }}>📝</div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1e40af' }}>Mock Test Mode (30-Minute Timed Exam)</h4>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#3b82f6' }}>Complete all 10 questions under real exam conditions. Your 30-minute timer counts down automatically.</p>
                 </div>
               </div>
-            </div>
+            )}
+
+            {aptitudeMode === 'timed' && (
+              <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontSize: '1.4rem' }}>⚡</div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#92400e' }}>Timed Assessment Mode (15-Minute Speed Challenge)</h4>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#b45309' }}>High-velocity problem-solving. Test your speed and accuracy under strict time constraints.</p>
+                </div>
+              </div>
+            )}
 
             {/* CATEGORY GRID */}
             <div className="aptitude-categories-grid">
@@ -644,13 +668,6 @@ export default function PracticePage() {
                             onClick={() => setShowExplanation(prev => !prev)}
                           >
                             {showExplanation ? 'Hide Explanation' : 'Show Explanation'}
-                          </button>
-                          <button
-                            type="button"
-                            className="aptitude-nav-btn"
-                            onClick={handleRandomAptitudeQuestion}
-                          >
-                            🎲 Random Q
                           </button>
                           <button
                             type="button"
