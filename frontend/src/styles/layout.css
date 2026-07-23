@@ -187,9 +187,35 @@
   justify-content: space-between;
   gap: 1rem;
 }
-.marketing-header__brand   { display: flex; align-items: center; gap: 0.75rem; font-weight: 800; color: var(--blue); }
+
+.marketing-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.marketing-header .brand__mark {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.9rem;
+  padding: 5px;
+}
+
+.marketing-header .brand-name-text {
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  font-family: 'Manrope', sans-serif;
+  line-height: 1;
+}
+
 .marketing-header__nav,
 .marketing-header__actions { display: flex; align-items: center; gap: 0.75rem; }
+
+
 
 .marketing-link { padding: 0.45rem 0.2rem; background: transparent; color: #475467; font-weight: 700; border: 0; border-bottom: 2px solid transparent; transition: var(--t-fast); }
 .marketing-link--active { color: var(--blue); border-bottom-color: var(--blue); }

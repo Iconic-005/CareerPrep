@@ -90,6 +90,47 @@
 .primary-button--full,
 .ghost-button--full { width: 100%; }
 
+/* ── Marketing Header Sign In & Get Started buttons ── */
+.header-signin-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid rgba(27, 86, 230, 0.3);
+  transition: var(--t-normal);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-signin-btn:hover {
+  background: rgba(27, 86, 230, 0.08);
+  border-color: var(--blue);
+}
+
+.header-signup-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #0f5ae8, #1945d7);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  box-shadow: var(--shadow-button);
+  transition: var(--t-normal);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-signup-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(27, 86, 230, 0.35);
+}
+
+
 .ghost-button:hover,
 .primary-button:hover,
 .pager-button:hover,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { navigate } from '../../hooks/usePathname.js';
+import { RouteLink } from '../../components/Common/RouteLink.jsx';
 import { submitAuth } from '../../services/authService.js';
 
 export default function AuthPage() {
@@ -33,14 +34,30 @@ export default function AuthPage() {
     }
   };
 
+  const handleGoogleAuth = () => {
+    login('demo_google_token_123', {
+      id: 'usr_google_1',
+      name: 'Google User',
+      email: 'user@gmail.com',
+      avatar: '/images/avatar_alex.png',
+    });
+    navigate('/dashboard');
+  };
+
   return (
     <div className="auth-shell">
       <section className="auth-panel auth-panel--form">
         <div className="auth-form">
+          <div style={{ marginBottom: '12px' }}>
+            <RouteLink path="/" className="ghost-button" style={{ fontSize: '0.82rem', padding: '4px 12px', minHeight: 'unset' }}>
+              ← Back to Home
+            </RouteLink>
+          </div>
+
           <div className="auth-brand">
-            <div className="brand__mark brand__mark--img">
+            <RouteLink path="/" className="brand__mark brand__mark--img" style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
               <img src="/logo.png" alt="CareerPrep Logo" className="brand__logo-img" />
-            </div>
+            </RouteLink>
             <div>
               <h1>{isLogin ? 'Welcome back' : 'Create an account'}</h1>
               <p>
@@ -68,10 +85,11 @@ export default function AuthPage() {
             </button>
           </div>
 
-          <button type="button" className="oauth-button" onClick={() => navigate('/dashboard')}>
+          <button type="button" className="oauth-button" onClick={handleGoogleAuth}>
             <Icon name="spark" />
             Continue with Google
           </button>
+
 
           <div className="divider">
             <span>or email</span>

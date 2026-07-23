@@ -25,7 +25,7 @@ export function SidebarShell() {
   const { logout } = useAuth();
   return (
     <aside className="sidebar">
-      <div className="brand">
+      <RouteLink path="/dashboard" className="brand" style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
         <div className="brand__mark brand__mark--img">
           <img src="/logo.png" alt="CareerPrep Logo" className="brand__logo-img" />
         </div>
@@ -36,7 +36,7 @@ export function SidebarShell() {
             <span className="brand__badge">LIVE</span>
           </div>
         </div>
-      </div>
+      </RouteLink>
 
       <nav className="sidebar__nav">
         <ShellNav />
@@ -45,10 +45,11 @@ export function SidebarShell() {
       <div className="sidebar__promo">
         <p>Upgrade to Pro</p>
         <span>Unlock AI-powered JD analysis and unlimited mock interviews.</span>
-        <button type="button" className="sidebar__promo-btn">
+        <RouteLink path="/settings" className="sidebar__promo-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
           Go Premium
-        </button>
+        </RouteLink>
       </div>
+
 
       <div className="sidebar__footer">
         <RouteLink path="/settings" className="nav-link" activeClassName="nav-link--active">

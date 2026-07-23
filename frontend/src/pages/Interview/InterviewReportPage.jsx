@@ -5,7 +5,6 @@ import { SidebarShell } from '../../components/Layout/Sidebar.jsx';
 import { MobileNav } from '../../components/Layout/MobileNav.jsx';
 import { AppFooter } from '../../components/Layout/AppFooter.jsx';
 import { RouteLink } from '../../components/Common/RouteLink.jsx';
-import { navigate } from '../../hooks/usePathname.js';
 
 export default function InterviewReportPage() {
   const { user } = useAuth();
@@ -50,11 +49,15 @@ export default function InterviewReportPage() {
               <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>AI Mock Interview Setup</h1>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Configure your targeted role and company to launch an interactive simulation.</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#eff6ff', color: '#256cf0', padding: '6px 14px', borderRadius: '16px', fontSize: '0.82rem', fontWeight: 700 }}>
-              <Icon name="shieldCheck" />
-              <span>AI Simulation Ready</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', color: '#475569', padding: '6px 14px', borderRadius: '16px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #e2e8f0' }}>
+                <Icon name="shieldCheck" />
+                <span>AI Ready</span>
+              </div>
             </div>
           </header>
+
+
 
           {toastMsg ? (
             <div className="profile-toast">
@@ -410,7 +413,8 @@ export default function InterviewReportPage() {
   }
 
   // EMPTY STATE WHEN NO VALID COMPLETED INTERVIEW EXISTS
-  if (!reportData || reportData.status !== 'completed') {
+  if (!reportData) {
+
     return (
       <div className="app-shell">
         <SidebarShell />
@@ -466,9 +470,6 @@ export default function InterviewReportPage() {
           </div>
 
           <div className="report-header-actions">
-            <button type="button" className="ghost-button" onClick={handleExitReport} title="Exit report and return to setup">
-              <span>← Back to Setup</span>
-            </button>
             <button type="button" className="ghost-button" onClick={handleDownloadPDF}>
               <Icon name="download" />
               <span>Download PDF</span>

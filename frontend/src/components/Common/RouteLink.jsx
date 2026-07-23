@@ -6,13 +6,20 @@ import { useAuth } from '../../context/AuthContext.jsx';
  * A button-based link that uses the custom pushState router.
  * Applies activeClassName when the current pathname matches path.
  */
-export function RouteLink({ path, children, className = '', activeClassName = '', onClick }) {
-  const active = window.location.pathname === path;
+export function RouteLink({ path, children, className = '', activeClassName = '', style, title, onClick }) {
+  const cleanPath = (path || '/').split('?')[0].split('#')[0];
+  const rawPath = window.location.pathname || '/';
+  const currentPath = rawPath !== '/' && rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
+
+  const active = currentPath === cleanPath;
 
   return (
     <button
       type="button"
-      onClick={() => {
+      style={style}
+      title={title}
+      onClick={(e) => {
+        e.preventDefault();
         navigate(path);
         onClick?.();
       }}
@@ -30,15 +37,17 @@ export function RouteLink({ path, children, className = '', activeClassName = ''
  */
 export function RouteGuard({ path, children }) {
   const { user, loading } = useAuth();
+  const rawPath = path || '/';
+  const cleanPath = rawPath.split('?')[0].split('#')[0];
 
   useEffect(() => {
-    if (!loading && !user && path !== '/' && path !== '/auth') {
+    if (!loading && !user && cleanPath !== '/' && cleanPath !== '/auth') {
       navigate('/auth');
     }
-    if (!loading && user && path === '/auth') {
+    if (!loading && user && cleanPath === '/auth') {
       navigate('/dashboard');
     }
-  }, [user, loading, path]);
+  }, [user, loading, cleanPath]);
 
   if (loading) {
     return (
@@ -77,8 +86,9 @@ export function RouteGuard({ path, children }) {
     );
   }
 
-  const isPublic = path === '/' || path === '/auth';
+  const isPublic = cleanPath === '/' || cleanPath === '/auth';
   if (!user && !isPublic) return null;
 
   return children;
 }
+

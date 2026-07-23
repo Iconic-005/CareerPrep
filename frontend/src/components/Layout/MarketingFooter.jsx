@@ -1,21 +1,22 @@
 import { Icon } from '../Icon.jsx';
+import { RouteLink } from '../Common/RouteLink.jsx';
 
 export function MarketingFooter() {
   return (
     <footer className="footer footer--marketing">
       <div className="footer-top">
-        <div className="footer-brand">
+        <RouteLink path="/" className="footer-brand" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
           <div className="brand__mark brand__mark--small brand__mark--img">
             <img src="/logo.png" alt="CareerPrep Logo" className="brand__logo-img" />
           </div>
           <span>CareerPrep</span>
-        </div>
+        </RouteLink>
 
         <div className="footer__links">
-          <a href="/">Privacy Policy</a>
-          <a href="/">Terms of Service</a>
-          <a href="/">Contact Support</a>
-          <a href="/">Career Blog</a>
+          <RouteLink path="/" className="marketing-link">Privacy Policy</RouteLink>
+          <RouteLink path="/" className="marketing-link">Terms of Service</RouteLink>
+          <RouteLink path="/auth" className="marketing-link">Contact Support</RouteLink>
+          <RouteLink path="/" className="marketing-link">Career Blog</RouteLink>
         </div>
 
         <div className="footer-actions">
@@ -33,3 +34,4 @@ export function MarketingFooter() {
     </footer>
   );
 }
+

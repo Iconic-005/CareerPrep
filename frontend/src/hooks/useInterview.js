@@ -50,66 +50,39 @@ export function useInterview() {
     const storedId = localStorage.getItem('careerprep_active_interview_id');
     const id = paramId || storedId;
 
-    if (currentPath === '/mock-interviews') {
-      if (id) {
-        setView('report');
-        setLoading(true);
-        getInterviewReport(id)
-          .then((data) => {
-            if (data && data.status === 'completed') {
-              setReportData(data);
-              localStorage.setItem('careerprep_active_interview_id', id);
-            } else {
-              localStorage.removeItem('careerprep_active_interview_id');
-              setReportData(null);
-              setView('config');
-            }
-          })
-          .catch(() => {
-            localStorage.removeItem('careerprep_active_interview_id');
-            setReportData(null);
-            setView('config');
-          })
-          .finally(() => setLoading(false));
-      } else {
-        if (view !== 'session') {
-          setView('config');
-        }
-        setReportData(null);
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (currentPath === '/interview-report') {
-      if (!id) {
-        navigate('/mock-interviews');
-        return;
-      }
-
-      setView('report');
+    if (currentPath === '/mock-interviews' || currentPath === '/interview-report') {
       setLoading(true);
       getInterviewReport(id)
         .then((data) => {
-          if (data && data.status === 'completed') {
+          if (data && (data.status === 'completed' || data.id || data.score)) {
             setReportData(data);
-            localStorage.setItem('careerprep_active_interview_id', id);
+            if (data.id) localStorage.setItem('careerprep_active_interview_id', data.id);
+            if (currentPath === '/interview-report') {
+              setView('report');
+            }
           } else {
-            localStorage.removeItem('careerprep_active_interview_id');
             setReportData(null);
-            navigate('/mock-interviews');
+            if (currentPath === '/interview-report') {
+              navigate('/mock-interviews');
+            } else if (view !== 'session') {
+              setView('config');
+            }
           }
         })
         .catch(() => {
-          localStorage.removeItem('careerprep_active_interview_id');
           setReportData(null);
-          navigate('/mock-interviews');
+          if (currentPath === '/interview-report') {
+            navigate('/mock-interviews');
+          } else if (view !== 'session') {
+            setView('config');
+          }
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [pathname, window.location.search]);
+  }, [window.location.pathname, window.location.search]);
+
 
   const showToast = (msg) => {
     setToastMsg(msg);

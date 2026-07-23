@@ -1476,7 +1476,43 @@ export async function evaluateMockInterview(userId, { role, company, difficulty,
   }
 }
 
+export async function getInterviewReport(userId, interviewId = null) {
+  await ensureUserInitialized(userId);
+  let interviewDoc = null;
+  if (interviewId) {
+    try {
+      interviewDoc = await MockInterviewModel.findOne({ userId, _id: interviewId });
+    } catch {
+      interviewDoc = null;
+    }
+  }
+  if (!interviewDoc) {
+    interviewDoc = await MockInterviewModel.findOne({ userId }).sort({ createdAt: -1 });
+  }
+  if (!interviewDoc) return null;
+
+  return {
+    id: interviewDoc._id.toString(),
+    score: interviewDoc.score,
+    maxScore: interviewDoc.maxScore,
+    hintsUsedCount: interviewDoc.hintsUsedCount || 0,
+    scoreDeduction: interviewDoc.scoreDeduction || 0,
+    headline: interviewDoc.headline,
+    percentileText: interviewDoc.percentileText,
+    targetCompany: interviewDoc.targetCompany,
+    role: interviewDoc.role,
+    difficulty: interviewDoc.difficulty,
+    skillsRadar: interviewDoc.skillsRadar,
+    strengths: interviewDoc.strengths,
+    improvements: interviewDoc.improvements,
+    nextSteps: interviewDoc.nextSteps,
+    status: interviewDoc.status,
+    createdAt: interviewDoc.createdAt,
+  };
+}
+
 export async function clearChatHistory(userId) {
+
   await ensureUserInitialized(userId);
   await AIChatHistoryModel.updateOne({ userId }, { $set: { messages: [] } });
   await AIChatSessionModel.deleteMany({ userId });
