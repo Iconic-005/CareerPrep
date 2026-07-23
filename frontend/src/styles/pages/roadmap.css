@@ -119,8 +119,9 @@
 
 /* ── Timeline Milestones ── */
 .rm-timeline-wrap { position: relative; padding-left: 0; margin-bottom: 32px; }
+.rm-timeline-wrap::before { display: none; }
 .rm-timeline-node { display: grid; grid-template-columns: 100px 40px 1fr; gap: 16px; align-items: start; margin-bottom: 16px; position: relative; }
-.rm-timeline-node::after { content: ''; position: absolute; left: 119px; top: 40px; bottom: -16px; width: 2px; background: #e2e8f0; z-index: 0; }
+.rm-timeline-node::after { content: ''; position: absolute; left: 135px; top: 40px; bottom: -16px; width: 2px; background: #e2e8f0; z-index: 0; }
 .rm-timeline-node:last-child::after { display: none; }
 .rm-timeline-node--done::after { background: #a7f3d0; }
 
@@ -198,7 +199,7 @@
   .rm-top-3col { grid-template-columns: 1fr; }
   .rm-phase-grid { grid-template-columns: 1fr 1fr; }
   .rm-timeline-node { grid-template-columns: 80px 36px 1fr; gap: 10px; }
-  .rm-timeline-node::after { left: 97px; }
+  .rm-timeline-node::after { left: 107px; }
   .rm-strategy-grid { grid-template-columns: 1fr; }
   .rm-resource-list { grid-template-columns: 1fr; }
   .rm-toast { right: 12px; left: 12px; max-width: none; }
