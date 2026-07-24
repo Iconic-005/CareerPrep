@@ -7,12 +7,14 @@ const defaultProjects = [
     title: 'Nexus Wallet',
     description: 'Crypto asset management redesigned for clarity with intuitive interaction patterns.',
     image: '/images/nexus_wallet.png',
+    isExample: true,
   },
   {
     id: 'proj_2',
     title: 'DataStream Dashboard',
     description: 'Real-time analytics for enterprise-level logistics with live monitoring metrics.',
     image: '/images/datastream_dashboard.png',
+    isExample: true,
   },
 ];
 
@@ -70,7 +72,14 @@ export function useProfile(updateUserCtx) {
         setAvatarUrl(data.avatarUrl || '/images/alex_thompson.png');
         setExperiences(data.experiences || []);
         setEducation(data.education || []);
-        setProjects((data.projects && data.projects.length > 0) ? data.projects : defaultProjects);
+        const loadedProjects = (data.projects && data.projects.length > 0) ? data.projects : defaultProjects;
+        const flaggedProjects = loadedProjects.map((p) => {
+          if (p.id === 'proj_1' || p.id === 'proj_2' || p.isExample) {
+            return { ...p, isExample: true };
+          }
+          return p;
+        });
+        setProjects(flaggedProjects);
         setSkills(data.skills || []);
         setSkillsActive(data.skillsActive || []);
         setTargetRoles(data.targetRoles || []);

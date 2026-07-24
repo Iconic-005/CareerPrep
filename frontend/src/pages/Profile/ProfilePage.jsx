@@ -282,7 +282,12 @@ export default function ProfilePage() {
                     <div className="section-icon-badge section-icon-badge--blue">
                       <Icon name="rocket" />
                     </div>
-                    <h3>Featured Projects</h3>
+                    <div>
+                      <h3 style={{ margin: 0 }}>Featured Projects</h3>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: '2px 0 0 0' }}>
+                        Sample reference projects for portfolio formatting. Click ✕ to remove or + Add Project for custom work.
+                      </p>
+                    </div>
                   </div>
                   <div className="profile-section-actions">
                     <button
@@ -314,7 +319,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="featured-projects-grid">
                     {projects.map((proj) => (
-                      <div key={proj.id} className="project-card">
+                      <div key={proj.id} className="project-card" style={{ position: 'relative' }}>
                         <button
                           type="button"
                           className="project-card__delete-btn"
@@ -343,6 +348,29 @@ export default function ProfilePage() {
                           >
                             <Icon name="rocket" />
                           </div>
+                          {proj.isExample ? (
+                            <span
+                              className="example-badge"
+                              style={{
+                                position: 'absolute',
+                                top: '10px',
+                                left: '10px',
+                                background: 'rgba(15, 23, 42, 0.8)',
+                                backdropFilter: 'blur(4px)',
+                                color: '#60a5fa',
+                                border: '1px solid rgba(96, 165, 250, 0.4)',
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '3px 9px',
+                                borderRadius: '9999px',
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                                zIndex: 2,
+                              }}
+                            >
+                              Sample Example
+                            </span>
+                          ) : null}
                         </div>
                         <div className="project-card__info">
                           <h4>{proj.title}</h4>
