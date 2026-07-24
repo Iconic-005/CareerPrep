@@ -1,14 +1,27 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
+import dns from 'dns';
 import apiRoutes from './routes/apiRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env from backend directory or root directory
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// Configure Node DNS to use public DNS servers to resolve MongoDB SRV records (fixes querySrv ECONNREFUSED on local network DNS)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+  // Ignore DNS set failure if restricted environment
+}
+
 const app = express();
 const port = Number(process.env.PORT || 3001);
 
