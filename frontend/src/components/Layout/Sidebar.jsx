@@ -66,7 +66,7 @@ export function SidebarShell({ isOpen: propIsOpen, onClose: propOnClose }) {
           <p>Upgrade to Pro</p>
           <span>Unlock AI-powered JD analysis and unlimited mock interviews.</span>
           <RouteLink
-            path="/settings"
+            path="/settings?tab=billing"
             className="sidebar__promo-btn"
             onClick={handleClose}
             style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}

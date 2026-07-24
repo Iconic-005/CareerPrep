@@ -1,11 +1,32 @@
 import { useState, useEffect } from 'react';
 import { getSettings, updateSettings } from '../services/settingsService.js';
 
+const getTabFromUrl = () => {
+  if (typeof window === 'undefined') return 'Notifications';
+  const params = new URLSearchParams(window.location.search);
+  const tabParam = params.get('tab');
+  if (tabParam) {
+    const formatted = tabParam.charAt(0).toUpperCase() + tabParam.slice(1).toLowerCase();
+    if (['Notifications', 'Security', 'Billing'].includes(formatted)) {
+      return formatted;
+    }
+  }
+  return 'Notifications';
+};
+
 export function useSettings() {
-  const [activeTab, setActiveTab] = useState('Notifications');
+  const [activeTab, setActiveTab] = useState(getTabFromUrl);
   const [preferences, setPreferences] = useState({ email: true, reminders: true, insights: false });
   const [settingsData, setSettingsData] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getTabFromUrl());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     getSettings()

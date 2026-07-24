@@ -61,90 +61,477 @@ function NotificationsTab({ preferences, setPreferences }) {
 }
 
 function BillingTab() {
-  const invoices = [
-    { id: 'INV-2026-003', date: 'Jul 01, 2026', amount: '$19.00', status: 'Paid', plan: 'Pro CareerPrep Plan' },
-    { id: 'INV-2026-002', date: 'Jun 01, 2026', amount: '$19.00', status: 'Paid', plan: 'Pro CareerPrep Plan' },
-    { id: 'INV-2026-001', date: 'May 01, 2026', amount: '$19.00', status: 'Paid', plan: 'Pro CareerPrep Plan' },
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+  const [activePlanId, setActivePlanId] = useState('free'); // 'free' | 'pro_monthly' | 'pro_yearly'
+  const [paymentMethod, setPaymentMethod] = useState(null); // null by default
+  const [invoices, setInvoices] = useState([]); // empty by default
+  const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [isAddCardOnly, setIsAddCardOnly] = useState(false);
+
+  // Form states for Modal — initialized completely empty (no preloaded values)
+  const [cardForm, setCardForm] = useState({ name: '', number: '', exp: '', cvc: '' });
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free Plan',
+      desc: 'Essential practice tools to start your AI career preparation journey.',
+      monthlyPrice: '$0',
+      yearlyPrice: '$0',
+      cyclePeriod: 'forever',
+      features: [
+        '3 AI Mock Interviews / month',
+        'Basic Resume Review & Feedback',
+        'Standard Job Description Match',
+        'Access to Public Practice Questions',
+      ],
+      popular: false,
+    },
+    {
+      id: 'pro_monthly',
+      name: 'Pro Monthly',
+      desc: 'Comprehensive AI OS for job seekers aiming for top tier tech offers.',
+      monthlyPrice: '$19',
+      yearlyPrice: '$19',
+      cyclePeriod: 'month',
+      features: [
+        'Unlimited AI Mock Interviews & Voice Coaching',
+        'Unlimited JD Analysis & Key Skill Gap Analysis',
+        'Custom Interactive Skill Growth Roadmaps',
+        'High-Priority AI Response Speed',
+        'Export Detailed Performance PDF Reports',
+      ],
+      popular: false,
+    },
+    {
+      id: 'pro_yearly',
+      name: 'Pro Yearly',
+      desc: 'Best value for continuous preparation until you land your dream job.',
+      monthlyPrice: '$149',
+      yearlyPrice: '$149',
+      cyclePeriod: 'year',
+      savingsBadge: 'Save ~35% • 2 Months Free',
+      features: [
+        'All Pro Monthly Features Included',
+        'Save $79 per year (2 Months Free)',
+        '1-on-1 AI Resume Tailoring Assistant',
+        'Unlimited Mock Interview Audio/Transcript Exports',
+        'VIP 24/7 Priority Support',
+      ],
+      popular: true,
+    },
   ];
+
+  const handleOpenUpgrade = (plan) => {
+    if (plan.id === activePlanId) return;
+    if (plan.id === 'free') {
+      setActivePlanId('free');
+      return;
+    }
+    setSelectedPlanForUpgrade(plan);
+    setIsAddCardOnly(false);
+    setCardForm({ name: '', number: '', exp: '', cvc: '' });
+    setShowCheckoutModal(true);
+  };
+
+  const handleOpenAddCardModal = () => {
+    setSelectedPlanForUpgrade(null);
+    setIsAddCardOnly(true);
+    setCardForm({ name: '', number: '', exp: '', cvc: '' });
+    setShowCheckoutModal(true);
+  };
+
+  const handleConfirmModal = (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    setTimeout(() => {
+      const cleanDigits = cardForm.number.replace(/\D/g, '');
+      const last4 = cleanDigits.slice(-4) || '4242';
+      
+      setPaymentMethod({
+        brand: 'VISA',
+        last4: last4,
+        exp: cardForm.exp || '12/28',
+      });
+
+      if (!isAddCardOnly && selectedPlanForUpgrade) {
+        setActivePlanId(selectedPlanForUpgrade.id);
+        const newInvoice = {
+          id: `INV-2026-${String(invoices.length + 1).padStart(3, '0')}`,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          amount: selectedPlanForUpgrade.cyclePeriod === 'year' ? '$149.00' : '$19.00',
+          status: 'Paid',
+          plan: selectedPlanForUpgrade.name,
+        };
+        setInvoices((prev) => [newInvoice, ...prev]);
+      }
+
+      setIsProcessing(false);
+      setShowCheckoutModal(false);
+      setSelectedPlanForUpgrade(null);
+      setIsAddCardOnly(false);
+      setCardForm({ name: '', number: '', exp: '', cvc: '' });
+    }, 600);
+  };
+
+  const handleCancelSubscription = () => {
+    setActivePlanId('free');
+  };
+
+  const getActivePlanDetails = () => {
+    if (activePlanId === 'pro_yearly') return { name: 'Pro Yearly Plan', price: '$149 / year', cycle: 'Renews annually' };
+    if (activePlanId === 'pro_monthly') return { name: 'Pro Monthly Plan', price: '$19 / month', cycle: 'Renews monthly' };
+    return { name: 'Free Plan', price: '$0', cycle: 'No recurring charges' };
+  };
+
+  const activePlanInfo = getActivePlanDetails();
 
   return (
     <div className="billing-tab-content">
+      {/* Current Plan & Payment Summary Card */}
       <div className="settings-billing-grid">
         <div className="billing-plan-card">
           <div className="plan-card-header">
             <span className="plan-card-label" style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase' }}>Current Plan</span>
-            <span className="plan-status-badge">
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-              Active
+            <span
+              className="plan-status-badge"
+              style={{
+                background: activePlanId === 'free' ? 'var(--bg-secondary)' : 'var(--green-soft)',
+                color: activePlanId === 'free' ? 'var(--muted)' : '#16a34a',
+                border: activePlanId === 'free' ? '1px solid var(--stroke)' : 'none',
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: activePlanId === 'free' ? '#94a3b8' : '#16a34a', display: 'inline-block' }} />
+              {activePlanId === 'free' ? 'Free Tier' : 'Active Subscription'}
             </span>
           </div>
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 4px 0' }}>Pro CareerPrep Plan</h3>
-            <p className="plan-price-num">$19 <span style={{ fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 600 }}>/ month</span></p>
-            <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: 0 }}>Renews automatically on Aug 01, 2026.</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 4px 0' }}>{activePlanInfo.name}</h3>
+            <p className="plan-price-num">{activePlanInfo.price}</p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: 0 }}>{activePlanInfo.cycle}</p>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '8px' }}>
-            <button type="button" className="primary-button" style={{ fontSize: '0.85rem' }}>Upgrade Plan</button>
-            <button type="button" className="ghost-button" style={{ fontSize: '0.85rem' }}>Cancel</button>
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {activePlanId !== 'free' ? (
+              <button type="button" onClick={handleCancelSubscription} className="ghost-button" style={{ fontSize: '0.85rem' }}>
+                Cancel Subscription
+              </button>
+            ) : (
+              <span style={{ fontSize: '0.82rem', color: 'var(--primary)', fontWeight: 700 }}>Choose a plan below to upgrade</span>
+            )}
           </div>
         </div>
 
         <div className="billing-payment-card">
           <div className="plan-card-header">
             <span className="plan-card-label" style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase' }}>Payment Method</span>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)' }}>Default</span>
+            {paymentMethod && <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)' }}>Default</span>}
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <div style={{ padding: '6px 10px', background: 'var(--panel)', border: '1px solid var(--stroke)', borderRadius: '8px', fontWeight: 800, fontSize: '0.88rem', color: 'var(--primary)' }}>
-                VISA
+            {paymentMethod ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ padding: '6px 10px', background: 'var(--panel)', border: '1px solid var(--stroke)', borderRadius: '8px', fontWeight: 800, fontSize: '0.88rem', color: 'var(--primary)' }}>
+                  {paymentMethod.brand}
+                </div>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--heading)' }}>•••• •••• •••• {paymentMethod.last4}</strong>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Expires {paymentMethod.exp}</span>
+                </div>
               </div>
-              <div>
-                <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--heading)' }}>•••• •••• •••• 4242</strong>
-                <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Expires 12 / 2028</span>
+            ) : (
+              <div style={{ padding: '4px 0' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--heading)', fontWeight: 700, margin: '0 0 4px 0' }}>No Card Attached</p>
+                <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '0.85rem' }}>
+                  Add a payment card to manage your subscription.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenAddCardModal}
+                  className="primary-button"
+                  style={{ fontSize: '0.85rem', width: '100%' }}
+                >
+                  + Add Card Details
+                </button>
               </div>
+            )}
+          </div>
+          {paymentMethod && (
+            <div style={{ marginTop: '1rem', display: 'flex', gap: '8px' }}>
+              <button type="button" onClick={handleOpenAddCardModal} className="secondary-button" style={{ fontSize: '0.82rem', flex: 1 }}>
+                Update Card
+              </button>
+              <button type="button" onClick={() => setPaymentMethod(null)} className="ghost-button" style={{ fontSize: '0.82rem', flex: 1 }}>
+                Remove Card
+              </button>
             </div>
-          </div>
-          <div style={{ marginTop: '1rem' }}>
-            <button type="button" className="ghost-button" style={{ fontSize: '0.85rem', width: '100%' }}>Update Card Details</button>
-          </div>
+          )}
         </div>
       </div>
 
-      <div style={{ marginTop: '1.75rem' }}>
-        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 1rem 0' }}>Billing History & Receipts</h4>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="invoice-table">
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td>
-                    <strong>{inv.id}</strong>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted)' }}>{inv.plan}</span>
-                  </td>
-                  <td>{inv.date}</td>
-                  <td>{inv.amount}</td>
-                  <td>
-                    <span className="plan-status-badge">{inv.status}</span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button type="button" className="text-button" style={{ fontSize: '0.82rem' }}>Download PDF</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Multi-Plan Subscription Options */}
+      <div style={{ marginTop: '2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 6px 0' }}>Subscription Plans</h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--muted)', margin: 0 }}>Select the plan that best matches your interview and career goals.</p>
+        </div>
+
+        {/* Billing Cycle Selector */}
+        <div className="billing-cycle-bar">
+          <button
+            type="button"
+            className={`cycle-btn ${billingCycle === 'monthly' ? 'cycle-btn--active' : ''}`}
+            onClick={() => setBillingCycle('monthly')}
+          >
+            Monthly Billing
+          </button>
+          <button
+            type="button"
+            className={`cycle-btn ${billingCycle === 'yearly' ? 'cycle-btn--active' : ''}`}
+            onClick={() => setBillingCycle('yearly')}
+          >
+            Yearly Billing
+          </button>
+          <span className="discount-tag">2 Months Free</span>
+        </div>
+
+        {/* Dynamic 2-Tier Pricing Grid controlled by Billing Cycle */}
+        <div className="pricing-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          {/* Free Tier Card */}
+          <div className={`pricing-card ${activePlanId === 'free' ? 'pricing-card--active' : ''}`}>
+            <div>
+              <h4 className="pricing-card__title">Free Plan</h4>
+              <p className="pricing-card__desc">Essential practice tools to start your AI career preparation journey.</p>
+              <div className="pricing-card__price">
+                $0 <span>/ forever</span>
+              </div>
+
+              <ul className="pricing-features">
+                <li><Icon name="checkCircle" /><span>3 AI Mock Interviews / month</span></li>
+                <li><Icon name="checkCircle" /><span>Basic Resume Review & Feedback</span></li>
+                <li><Icon name="checkCircle" /><span>Standard Job Description Match</span></li>
+                <li><Icon name="checkCircle" /><span>Access to Public Practice Questions</span></li>
+              </ul>
+            </div>
+
+            <div style={{ marginTop: 'auto' }}>
+              <button
+                type="button"
+                onClick={() => handleOpenUpgrade({ id: 'free', name: 'Free Plan' })}
+                disabled={activePlanId === 'free'}
+                className={activePlanId === 'free' ? 'ghost-button' : 'secondary-button'}
+                style={{ width: '100%', padding: '10px 16px', fontSize: '0.88rem', fontWeight: 700, borderRadius: '10px' }}
+              >
+                {activePlanId === 'free' ? 'Current Plan' : 'Downgrade to Free'}
+              </button>
+            </div>
+          </div>
+
+          {/* Dynamic Pro Plan Card (Switches based on Monthly/Yearly toggle) */}
+          {(() => {
+            const isYearly = billingCycle === 'yearly';
+            const proPlanId = isYearly ? 'pro_yearly' : 'pro_monthly';
+            const isActive = activePlanId === proPlanId;
+
+            const proPlanObj = {
+              id: proPlanId,
+              name: isYearly ? 'Pro Yearly Plan' : 'Pro Monthly Plan',
+              price: isYearly ? '$149' : '$19',
+              cyclePeriod: isYearly ? 'year' : 'month',
+            };
+
+            return (
+              <div className={`pricing-card pricing-card--popular ${isActive ? 'pricing-card--active' : ''}`}>
+                <span className="popular-badge">
+                  {isYearly ? '⭐ Best Value • 2 Months Free' : 'Most Popular'}
+                </span>
+                <div>
+                  <h4 className="pricing-card__title">{isYearly ? 'Pro Yearly' : 'Pro Monthly'}</h4>
+                  <p className="pricing-card__desc">
+                    {isYearly
+                      ? 'Best value for continuous preparation until you land your dream job offer.'
+                      : 'Comprehensive AI OS for job seekers aiming for top tier tech offers.'}
+                  </p>
+                  
+                  <div className="pricing-card__price">
+                    {isYearly ? '$149' : '$19'}{' '}
+                    <span>{isYearly ? '/ year' : '/ month'}</span>
+                  </div>
+
+                  <p style={{ fontSize: '0.78rem', color: isYearly ? '#16a34a' : 'var(--muted)', fontWeight: 700, margin: '-8px 0 1.25rem 0' }}>
+                    {isYearly
+                      ? 'Equivalent to $12.42 / month (Save $79 / 2 Months Free!)'
+                      : 'Billed monthly. Flexible cancellation anytime.'}
+                  </p>
+
+                  <ul className="pricing-features">
+                    <li><Icon name="checkCircle" /><span>Unlimited AI Mock Interviews & Voice Coaching</span></li>
+                    <li><Icon name="checkCircle" /><span>Unlimited JD Analysis & Key Skill Gap Analysis</span></li>
+                    <li><Icon name="checkCircle" /><span>Custom Interactive Skill Growth Roadmaps</span></li>
+                    <li><Icon name="checkCircle" /><span>High-Priority AI Response Speed</span></li>
+                    <li><Icon name="checkCircle" /><span>Export Detailed Performance PDF Reports</span></li>
+                    {isYearly && <li><Icon name="checkCircle" /><span>1-on-1 AI Resume Tailoring Assistant</span></li>}
+                    {isYearly && <li><Icon name="checkCircle" /><span>VIP 24/7 Priority Support</span></li>}
+                  </ul>
+                </div>
+
+                <div style={{ marginTop: 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenUpgrade(proPlanObj)}
+                    disabled={isActive}
+                    className={isActive ? 'ghost-button' : 'primary-button'}
+                    style={{ width: '100%', padding: '10px 16px', fontSize: '0.88rem', fontWeight: 700, borderRadius: '10px' }}
+                  >
+                    {isActive ? 'Current Active Plan' : isYearly ? 'Upgrade to Pro Yearly ($149/yr)' : 'Upgrade to Pro Monthly ($19/mo)'}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
+
+      {/* Receipts & Invoices Table */}
+      <div style={{ marginTop: '2rem' }}>
+        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--heading)', margin: '0 0 1rem 0' }}>Billing History & Receipts</h4>
+        {invoices.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="invoice-table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr key={inv.id}>
+                    <td>
+                      <strong>{inv.id}</strong>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted)' }}>{inv.plan}</span>
+                    </td>
+                    <td>{inv.date}</td>
+                    <td>{inv.amount}</td>
+                    <td>
+                      <span className="plan-status-badge">{inv.status}</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button type="button" className="text-button" style={{ fontSize: '0.82rem' }}>Download PDF</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--stroke)', borderRadius: '14px', padding: '1.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--muted)', margin: 0 }}>No payment receipts found. Upgrading to a Pro plan will display your invoice history here.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Checkout / Add Card Modal */}
+      {showCheckoutModal && (
+        <div className="modal-backdrop" onClick={() => setShowCheckoutModal(false)}>
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--stroke)',
+              borderRadius: '20px',
+              padding: '2rem',
+              maxWidth: '480px',
+              width: '90%',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--heading)', margin: 0 }}>
+                {isAddCardOnly ? 'Add Payment Card' : `Upgrade to ${selectedPlanForUpgrade?.name}`}
+              </h3>
+              <button type="button" onClick={() => setShowCheckoutModal(false)} className="ghost-button" style={{ padding: '4px 8px' }}>✕</button>
+            </div>
+
+            {!isAddCardOnly && selectedPlanForUpgrade && (
+              <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--stroke)', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--heading)' }}>{selectedPlanForUpgrade.name}</span>
+                  <strong style={{ color: 'var(--primary)' }}>
+                    {selectedPlanForUpgrade.cyclePeriod === 'year' ? '$149.00 / yr' : '$19.00 / mo'}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: 0 }}>Includes unlimited AI Mock Interviews, JD Analysis & Priority Coach.</p>
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmModal} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '4px' }}>Cardholder Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sanju Sharma"
+                  value={cardForm.name}
+                  onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--stroke)', background: 'var(--bg-secondary)', color: 'var(--text)', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '4px' }}>Card Number</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="4532 •••• •••• ••••"
+                  value={cardForm.number}
+                  onChange={(e) => setCardForm({ ...cardForm, number: e.target.value })}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--stroke)', background: 'var(--bg-secondary)', color: 'var(--text)', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '4px' }}>Expires</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MM/YY"
+                    value={cardForm.exp}
+                    onChange={(e) => setCardForm({ ...cardForm, exp: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--stroke)', background: 'var(--bg-secondary)', color: 'var(--text)', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '4px' }}>CVC</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="123"
+                    value={cardForm.cvc}
+                    onChange={(e) => setCardForm({ ...cardForm, cvc: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--stroke)', background: 'var(--bg-secondary)', color: 'var(--text)', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setShowCheckoutModal(false)} className="ghost-button" style={{ flex: 1 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isProcessing} className="primary-button" style={{ flex: 2 }}>
+                  {isProcessing ? 'Saving...' : isAddCardOnly ? 'Save Card Details' : 'Confirm & Upgrade'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
